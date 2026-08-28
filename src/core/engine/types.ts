@@ -25,6 +25,44 @@ export interface ResetOverrides {
   hyperparams?: Hyperparams
 }
 
+// Phase 21 — reused wherever a terminal transition's cause needs to be identified
+// (SimulationEngine.ts's finishEpisode()), classified from the same EnvRenderModel
+// fields isSuccessTransition already read (goal/bombs) — no new Environment API. 'other'
+// covers any future terminalCells-only ending, or a non-'grid' EnvRenderModel kind.
+export type EpisodeTerminationReason = 'goal' | 'bomb' | 'other'
+
+/**
+ * Phase 21 — one completed Episode's statistics. `steps`/`totalReward` are read from the
+ * same counters EngineStats already tracks per-episode (episodeLength/episodeReward) —
+ * not recomputed separately. `explorationCount`/`exploitationCount` are tallied from the
+ * real `ActionSelection.wasExploration` result at each step (never re-derived via
+ * `Math.random() < epsilon`), so `explorationCount + exploitationCount === steps` always.
+ */
+export interface EpisodeStats {
+  episode: number
+  steps: number
+  totalReward: number
+  terminationReason: EpisodeTerminationReason
+  explorationCount: number
+  exploitationCount: number
+  /** explorationCount / steps. 0 if steps is 0 (never happens in practice, guarded anyway). */
+  explorationRate: number
+  /** totalReward / steps. 0 if steps is 0 (never happens in practice, guarded anyway). */
+  averageReward: number
+  /** Distinct StateKeys occupied during the Episode (start state through the terminal state). */
+  uniqueStates: number
+  /**
+   * Phase 26 — the Episode's full ordered sequence of transitions (state → action →
+   * reward → nextState), exactly as executed. Not derivable from any other existing
+   * field: `episodeVisitedStates` (used only to compute `uniqueStates` above) is a `Set`,
+   * which discards both visit order and repeat counts (confirmed by reading
+   * SimulationEngine.ts before this Phase — no ordered per-step array existed anywhere).
+   * Length always equals `steps`. Never truncated here — any display-length limit is a
+   * UI-only concern (src/viz/panels/EpisodeTrajectory.tsx).
+   */
+  trajectory: Transition[]
+}
+
 export interface EngineStats {
   totalReward: number
   episodeReward: number
@@ -33,10 +71,25 @@ export interface EngineStats {
   successRate: number
   rewardHistory: number[]
   avgRewardMovingWindow: number
+  /**
+   * Phase 21 — the most recently completed Episode's stats, or null before any Episode
+   * has finished (never a stale/mid-episode value — set exactly once per finishEpisode()
+   * call, alongside episodeStatsHistory below).
+   */
+  latestEpisodeStats: EpisodeStats | null
+  /** Phase 21 — history of completed Episodes' stats, capped the same way rewardHistory is. */
+  episodeStatsHistory: EpisodeStats[]
 }
 
 export interface EngineSnapshot {
   status: EngineStatus
+  /**
+   * Phase 23 — the currently active Algorithm's registry id (e.g. "q-learning",
+   * "sarsa"). The Engine already tracked this privately since Phase 1 (constructor
+   * option / reset({ algorithmId }) — see ResetOverrides above); this just exposes the
+   * existing value so the UI has a source of truth instead of mirroring its own copy.
+   */
+  algorithmId: string
   episode: number
   stepInCurrentEpisode: number
   currentState: StateKey
@@ -46,4 +99,10 @@ export interface EngineSnapshot {
   envRenderModel: EnvRenderModel
   agentSnapshot: AgentSnapshot
   stats: EngineStats
+  /**
+   * Phase 18 — the Algorithm's current hyperparameters (alpha/gamma/epsilon), so the UI
+   * can observe them (e.g. an Epsilon control) without maintaining its own mirrored
+   * copy that could drift from the Engine's actual value across reset()/setHyperparams().
+   */
+  hyperparams: Hyperparams
 }

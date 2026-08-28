@@ -24,9 +24,11 @@ export interface GridEditorDraft {
   start: Position
   goal: Position
   walls: Position[]
+  bombs: Position[]
+  bombPenalty: number
 }
 
-export type EditMode = 'wall' | 'start' | 'goal'
+export type EditMode = 'wall' | 'start' | 'goal' | 'bomb'
 
 export function samePosition(a: Position, b: Position): boolean {
   return a.x === b.x && a.y === b.y
@@ -39,6 +41,8 @@ export function draftFromRenderModel(renderModel: Extract<EnvRenderModel, { kind
     start: parseStateKey(renderModel.start),
     goal: parseStateKey(renderModel.goal),
     walls: renderModel.walls.map(parseStateKey),
+    bombs: renderModel.bombs.map(parseStateKey),
+    bombPenalty: renderModel.bombPenalty,
   }
 }
 
@@ -48,6 +52,8 @@ export function draftToRenderModel(draft: GridEditorDraft): Extract<EnvRenderMod
     width: draft.width,
     height: draft.height,
     walls: draft.walls.map(toStateKey),
+    bombs: draft.bombs.map(toStateKey),
+    bombPenalty: draft.bombPenalty,
     start: toStateKey(draft.start),
     goal: toStateKey(draft.goal),
     // No live agent exists for a Draft — Start is shown as a stand-in so the preview
@@ -80,6 +86,15 @@ export function validateDraft(draft: GridEditorDraft): string[] {
   if (draft.walls.some((w) => samePosition(w, draft.goal))) errors.push('Goal cannot be a wall.')
   if (draft.walls.some((w) => !inBounds(w, draft))) errors.push('One or more walls are outside the grid.')
 
+  // Phase 20 — Bomb/Start/Goal collisions are already prevented at click-time
+  // (EnvEditor.tsx's handleCellClick never lets one land on the other), but validated
+  // here too so a Draft built any other way (e.g. a future non-click seeding path) is
+  // still caught, exactly like the Wall checks above.
+  if (draft.bombs.some((b) => samePosition(b, draft.start))) errors.push('Start cannot be a bomb.')
+  if (draft.bombs.some((b) => samePosition(b, draft.goal))) errors.push('Goal cannot be a bomb.')
+  if (draft.bombs.some((b) => !inBounds(b, draft))) errors.push('One or more bombs are outside the grid.')
+  if (!Number.isFinite(draft.bombPenalty)) errors.push('Bomb penalty must be a number.')
+
   return errors
 }
 
@@ -90,6 +105,8 @@ export function draftToGridWorldConfig(draft: GridEditorDraft): GridWorldConfig 
     start: draft.start,
     goal: draft.goal,
     walls: draft.walls,
+    bombs: draft.bombs,
+    bombPenalty: draft.bombPenalty,
     stepReward: DEFAULT_CONFIG.stepReward,
     goalReward: DEFAULT_CONFIG.goalReward,
     terminalCells: DEFAULT_CONFIG.terminalCells,

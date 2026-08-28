@@ -8,6 +8,10 @@ export type EnvRenderModel = {
   width: number
   height: number
   walls: StateKey[]
+  /** Phase 20 — Bomb cell positions (terminal, penalty reward — see GridWorldConfig.bombs). */
+  bombs: StateKey[]
+  /** Phase 20 — the uniform penalty reward for entering any bomb cell. */
+  bombPenalty: number
   start: StateKey
   goal: StateKey
   agentPos: StateKey

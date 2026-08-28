@@ -6,10 +6,15 @@ Value·Q-value / Policy)을 직접 관찰하고 조작할 수 있는 인터랙�
 시뮬레이션(GridWorld, Q-Learning/SARSA, 상태 머신 등)은 순수 TypeScript로 구현되어
 React·DOM에 의존하지 않으며, 서버나 외부 API 없이 정적 파일만으로 브라우저에서 완결됩니다.
 
+**Live Demo**: https://oyueo-mm.github.io/RL-Playground/
+
 ## 주요 기능
 
-- **Environment**: GridWorld (Wall / Start / Goal / Grid 크기 편집 가능)
-- **Algorithm**: Q-Learning, SARSA (ε-greedy 행동 선택, on/off-policy TD control)
+- **Environment**: GridWorld (Wall / Start / Goal / Bomb / Grid 크기 편집 가능 — Bomb는
+  진입 시 penalty reward를 받고 Episode가 즉시 종료되는 위험 State)
+- **Algorithm**: Q-Learning, SARSA (ε-greedy 행동 선택, on/off-policy TD control) — UI
+  Selector로 전환 가능(IDLE 상태에서만, 전환 시 새 학습 실험으로 초기화). Epsilon(탐험률)/
+  Alpha(학습률)/Gamma(할인율) 모두 실행 중 UI에서 실시간 조절 가능
 - **학습 제어**: Step / Run / Run Episode(실행할 Episode 수 지정 가능) / Pause / Resume / Reset,
   4단계 Speed(Slow/Normal/Fast/Very Fast)
 - **관찰**:
@@ -17,21 +22,30 @@ React·DOM에 의존하지 않으며, 서버나 외부 API 없이 정적 파일�
   - Q-value 막대그래프 (State 선택 시)
   - Policy Overlay — 각 State의 greedy action을 화살표로 표시
   - Value Heatmap — 각 State의 V(s)=max Q(s,·)를 색상으로 표시
-  - Statistics — Episode / Total Reward / Episode Length / Success Rate
-  - Reward Chart — Episode별 보상 추이 SVG 라인 차트
+  - Statistics — Episode / Total Reward / Episode Length / Success Rate, 그리고 Episode
+    단위 상세 통계(Steps/Termination/Exploration·Exploitation/Exploration Rate/Average
+    Reward/Unique States)와 최근 Episode 기록 테이블 — 기록의 각 행을 선택(클릭 또는
+    키보드)하면 해당 Episode의 상세(Episode Detail)를 확인할 수 있음
+  - Reward Chart — Episode별 보상 추이 SVG 라인 차트, 선택된 Episode의 지점을 강조 표시
+  - Learning Progress — Total Reward / Steps / Exploration Rate 세 가지 지표를 나란히
+    비교하는 추이 차트, Episode History 선택과 연동되어 동일 Episode가 함께 강조 표시됨
+  - Episode Trajectory — 선택한 Episode에서 Agent가 실제로 방문한 State/Action/Reward
+    순서를 Grid 위 경로 오버레이와 Step 단위 상세 테이블로 확인(반복 방문 State도 순서
+    그대로 보존, 매우 긴 Episode는 처음 50개만 표시 후 전체 보기 가능)
 - **Environment Editor**: Grid 크기 변경, Wall 추가/삭제, Start/Goal 지정 — Draft 편집 후
   Apply해야 실제 시뮬레이션에 반영(적용 시 학습 상태 전체 초기화, 취소 시 미반영)
 
-## v1 범위
+## v1.1 범위
 
-**포함(구현 완료)**: 위 "주요 기능" 전체.
+**포함(구현 완료)**: 위 "주요 기능" 전체(Algorithm Selector UI, Bomb Environment, Episode
+Statistics/Selection, Learning Progress, Episode Trajectory 포함).
 
-**Post-MVP(v1에는 없음, 의도적으로 제외)**:
+**Post-MVP(현재는 없음, 의도적으로 제외)**:
 
 - 셀별 커스텀 Reward / 임의 Terminal 지정 편집
 - Environment 설정 JSON export/import
-- Algorithm 선택 UI(현재는 코드에서만 전환 가능)
 - Q-value 변화 이력 스파크라인
+- Episode 간 비교(Episode Comparison) 뷰
 
 **Future(설계만 되어 있고 구현 안 됨)**: TD(0), Softmax/UCB 정책, 새로운 Environment 등.
 
@@ -43,7 +57,7 @@ React·DOM에 의존하지 않으며, 서버나 외부 API 없이 정적 파일�
 ```bash
 npm install
 npm run dev      # 개발 서버 (http://localhost:5173)
-npm run test     # Vitest — 26 test files / 223 tests
+npm run test     # Vitest — 34 test files / 539 tests
 npm run lint     # ESLint
 npm run build    # 프로덕션 빌드 (dist/)
 npm run preview  # 빌드 결과를 로컬에서 정적으로 서빙
@@ -82,7 +96,7 @@ src/
 
 ## 테스트
 
-`npm run test` 기준 **26 test files / 223 tests** 전부 통과(Core 순수 함수/클래스 단위
+`npm run test` 기준 **34 test files / 539 tests** 전부 통과(Core 순수 함수/클래스 단위
 테스트부터 실제 Engine을 사용하는 브라우저 통합 테스트까지 포함).
 
 ## 배포

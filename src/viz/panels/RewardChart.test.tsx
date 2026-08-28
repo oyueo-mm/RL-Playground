@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
+import { translations } from '../../ui/i18n'
 import { RewardChart } from './RewardChart'
 
 afterEach(cleanup)
@@ -75,5 +76,85 @@ describe('RewardChart', () => {
   it('has an accessible description', () => {
     render(<RewardChart rewardHistory={[1, 2]} />)
     expect(screen.getByRole('img', { name: /reward history/i })).toBeTruthy()
+  })
+
+  // Phase 19 — the chart's actual data source (confirmed by reading
+  // SimulationEngine.ts's finishEpisode(): one point per completed Episode, whose value
+  // is `episodeReward`, the sum of every step's reward across that Episode) is now
+  // explained on-screen instead of left for the reader to infer from an unlabeled line.
+  describe('Phase 19 — axis explanation', () => {
+    it('shows an X-axis label (English default: "Episode")', () => {
+      render(<RewardChart rewardHistory={[1, 2, 3]} />)
+      expect(screen.getByTestId('reward-chart-x-axis').textContent).toBe('X: Episode')
+    })
+
+    it('shows a Y-axis label (English default: "Total Reward")', () => {
+      render(<RewardChart rewardHistory={[1, 2, 3]} />)
+      expect(screen.getByTestId('reward-chart-y-axis').textContent).toBe('Y: Total Reward')
+    })
+
+    it('shows a short description matching the actual data meaning', () => {
+      render(<RewardChart rewardHistory={[1, 2, 3]} />)
+      expect(screen.getByTestId('reward-chart-description').textContent).toBe(
+        "Each point is one completed Episode's Total Reward.",
+      )
+    })
+
+    it('renders the axis labels and description in Korean', () => {
+      render(<RewardChart rewardHistory={[1, 2, 3]} t={translations.ko} />)
+      expect(screen.getByTestId('reward-chart-x-axis').textContent).toBe('X: 에피소드')
+      expect(screen.getByTestId('reward-chart-y-axis').textContent).toBe('Y: 총 보상')
+      expect(screen.getByTestId('reward-chart-description').textContent).toBe(
+        '각 점은 완료된 한 Episode의 총 보상을 나타냅니다.',
+      )
+    })
+
+    it('does not render axis labels in the empty state (nothing to label yet)', () => {
+      render(<RewardChart rewardHistory={[]} />)
+      expect(screen.queryByTestId('reward-chart-x-axis')).toBeNull()
+      expect(screen.queryByTestId('reward-chart-y-axis')).toBeNull()
+    })
+  })
+
+  describe('Phase 24 — selected Episode highlight', () => {
+    it('shows no highlight when selectedEpisode is not provided', () => {
+      render(<RewardChart rewardHistory={[1, 2, 3]} episodeNumbers={[1, 2, 3]} />)
+      expect(screen.queryByTestId('reward-chart-selected-point')).toBeNull()
+      expect(screen.queryByTestId('reward-chart-selected-label')).toBeNull()
+    })
+
+    it('shows no highlight when selectedEpisode is null', () => {
+      render(<RewardChart rewardHistory={[1, 2, 3]} episodeNumbers={[1, 2, 3]} selectedEpisode={null} />)
+      expect(screen.queryByTestId('reward-chart-selected-point')).toBeNull()
+    })
+
+    it('highlights the point matching selectedEpisode via episodeNumbers', () => {
+      render(<RewardChart rewardHistory={[1, 2, 3]} episodeNumbers={[10, 11, 12]} selectedEpisode={11} />)
+      expect(screen.getByTestId('reward-chart-selected-point')).toBeTruthy()
+      expect(screen.getByTestId('reward-chart-selected-guide')).toBeTruthy()
+      expect(screen.getByTestId('reward-chart-selected-label').textContent).toBe('Selected Episode: 11')
+    })
+
+    it('shows no highlight when selectedEpisode is not found in episodeNumbers (e.g. evicted from history)', () => {
+      render(<RewardChart rewardHistory={[1, 2, 3]} episodeNumbers={[10, 11, 12]} selectedEpisode={999} />)
+      expect(screen.queryByTestId('reward-chart-selected-point')).toBeNull()
+    })
+
+    it('highlight label translates to Korean', () => {
+      render(
+        <RewardChart
+          rewardHistory={[1, 2, 3]}
+          episodeNumbers={[1, 2, 3]}
+          selectedEpisode={2}
+          t={translations.ko}
+        />,
+      )
+      expect(screen.getByTestId('reward-chart-selected-label').textContent).toBe('선택된 Episode: 2')
+    })
+
+    it('episodeNumbers defaulting to [] (omitted) never crashes even with a non-null selectedEpisode', () => {
+      render(<RewardChart rewardHistory={[1, 2, 3]} selectedEpisode={2} />)
+      expect(screen.queryByTestId('reward-chart-selected-point')).toBeNull()
+    })
   })
 })

@@ -134,8 +134,10 @@ Step 단위로 학습을 진행시키면서 State/Action/Reward/TD Target/TD Err
   제공한다(`ARCHITECTURE.md` §7.3/§11).
 - FR-9 *(Post-MVP)*: 임의의 셀을 Terminal state로 지정/해제할 수 있다. FR-8과 동일하게
   데이터 구조는 MVP부터, 편집 UI는 Post-MVP.
-- FR-10: (향후) Trap, 다중 Goal, 특수 Tile, 이동 비용, 확률적 이동(slip), Wind/장애물
-  dynamics를 지원할 수 있는 데이터 구조를 최초 설계에 반영한다(즉시 UI 제공은 아님).
+- FR-10: Trap(Bomb) — 진입 시 penalty reward를 받고 Episode가 즉시 종료되는 위험
+  State. 배치/삭제 편집 UI, Grid 시각화, penalty 값 조절 UI까지 Phase 20에서 구현
+  완료(Wall/Start/Goal과 동시에 배치 불가). 다중 Goal, 특수 Tile, 이동 비용, 확률적
+  이동(slip), Wind/장애물 dynamics는 (향후) 데이터 구조만 고려 대상이며 미구현.
 - FR-11 *(Post-MVP)*: 편집한 환경 설정을 저장/불러오기(JSON export/import 또는 로컬 저장)
   할 수 있다(최소 JSON export/import만 제공 가능). MVP에서는 제외한다
   (`ARCHITECTURE.md` §7.3/§11, `DESIGN_REVIEW.md` §4).

@@ -4,13 +4,20 @@ import type { StateKey } from '../core/types/rl'
 import { GridSvg } from '../viz/grid/GridSvg'
 import { PolicyOverlay } from '../viz/grid/PolicyOverlay'
 import { ValueHeatmap } from '../viz/grid/ValueHeatmap'
+import { TrajectoryOverlay } from '../viz/grid/TrajectoryOverlay'
 import { PlaybackControls } from '../viz/controls/PlaybackControls'
 import { SpeedControl } from '../viz/controls/SpeedControl'
+import { AlgorithmSelector } from '../viz/controls/AlgorithmSelector'
+import { EpsilonControl } from '../viz/controls/EpsilonControl'
+import { AlphaControl } from '../viz/controls/AlphaControl'
+import { GammaControl } from '../viz/controls/GammaControl'
 import { LanguageSelector } from '../viz/controls/LanguageSelector'
 import { InspectorPanel } from '../viz/panels/InspectorPanel'
 import { QValueBars } from '../viz/panels/QValueBars'
 import { StatsPanel } from '../viz/panels/StatsPanel'
 import { RewardChart } from '../viz/panels/RewardChart'
+import { LearningProgress } from '../viz/panels/LearningProgress'
+import { EpisodeTrajectory } from '../viz/panels/EpisodeTrajectory'
 import { EnvEditor } from '../viz/controls/EnvEditor'
 import { engine } from './engine'
 import { useSimulationEngine } from './hooks/useSimulationEngine'
@@ -28,6 +35,16 @@ function App() {
   // field to read back — see the Phase 5 report's "발견된 문제"). The actual execution
   // speed always lives in and is driven by engine.setSpeed()/Scheduler.
   const [selectedState, setSelectedState] = useState<StateKey | null>(null)
+  // Phase 24: which Episode History row is selected, by real Episode number (not array
+  // index — see StatsPanel.tsx's Phase 24 comment on why). Cleared explicitly on every
+  // path that resets Episode numbering back to 0 (plain Reset, Algorithm switch,
+  // Environment Editor Apply) — without this, a later Episode reusing the same number
+  // (e.g. Episode 3 again after a fresh reset) would silently "resurrect" a stale
+  // selection the user never asked for. History-overflow eviction (the 200-entry cap)
+  // does NOT need explicit handling here: Episode numbers only ever increase within one
+  // experiment, so an evicted Episode's number can never recur, and StatsPanel's
+  // `episodeStatsHistory.find()` already degrades to "no selection" (null) safely.
+  const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null)
   const [showPolicy, setShowPolicy] = useState(false)
   const [showValue, setShowValue] = useState(false)
   const [speed, setSpeed] = useState<SpeedSetting>(() => engine.getSpeed())
@@ -47,6 +64,17 @@ function App() {
   const handleSpeedChange = (next: SpeedSetting) => {
     engine.setSpeed(next)
     setSpeed(next)
+  }
+
+  // Phase 19 §7: Wall cells are not a real State (the agent can never occupy one — see
+  // GridWorldEnv.step()'s wall branch, which always keeps `next = current`), so
+  // selecting one should never produce a Q-value/Greedy Value display. GridSvg itself is
+  // intentionally left generic (it's reused by EnvEditor's Draft grid, where clicking a
+  // wall means "remove this wall," not "select for inspection") — this filter lives here
+  // instead, scoped only to the live grid's inspection-selection callback.
+  const handleStateSelect = (state: StateKey) => {
+    if (snapshot.envRenderModel.kind === 'grid' && snapshot.envRenderModel.walls.includes(state)) return
+    setSelectedState(state)
   }
 
   return (
@@ -80,7 +108,7 @@ function App() {
                 renderModel={snapshot.envRenderModel}
                 cellSize={CELL_SIZE}
                 selectedState={selectedState}
-                onStateSelect={setSelectedState}
+                onStateSelect={handleStateSelect}
               />
               {showValue && (
                 <ValueHeatmap
@@ -98,6 +126,22 @@ function App() {
                   className="absolute inset-0"
                 />
               )}
+              {/*
+                Phase 26: drawn automatically whenever an Episode is selected (same
+                auto-linking behavior Reward Chart/Learning Progress/Episode Detail
+                already have since Phase 24/25) — no separate show/hide toggle, since
+                selecting a History row is itself already the deliberate "show me this"
+                action. Renders nothing (returns null) if the selected Episode isn't
+                found or has an empty trajectory, so it never errors on a stale selection.
+              */}
+              <TrajectoryOverlay
+                renderModel={snapshot.envRenderModel}
+                episodeStatsHistory={snapshot.stats.episodeStatsHistory}
+                selectedEpisode={selectedEpisode}
+                cellSize={CELL_SIZE}
+                className="absolute inset-0"
+                ariaLabel={`${t.episodeTrajectory.ariaLabelPrefix} ${selectedEpisode ?? ''}`}
+              />
             </div>
           ) : null}
 
@@ -137,13 +181,65 @@ function App() {
             onRunEpisode={() => engine.run({ episodes: episodeCount })}
             onPause={() => engine.pause()}
             onResume={() => engine.resume()}
-            onReset={() => engine.reset()}
+            onReset={() => {
+              engine.reset()
+              setSelectedEpisode(null)
+            }}
             t={t}
             episodeCount={episodeCount}
             onEpisodeCountChange={setEpisodeCount}
           />
 
           <SpeedControl speed={speed} onChange={handleSpeedChange} t={t} />
+
+          {/*
+            Phase 23: reads directly from EngineSnapshot.algorithmId (Engine's existing
+            source of truth, no mirrored React state). Changing it calls the existing
+            reset({ algorithmId }) path (ResetOverrides.algorithmId has existed since
+            Phase 1/2) — this gives a fresh Agent/stats/hyperparams for the newly
+            selected Algorithm while preserving the current Environment config, exactly
+            like the plain Reset button already does. Disabled outside IDLE so the
+            update rule can never change mid-Episode.
+          */}
+          <AlgorithmSelector
+            algorithmId={snapshot.algorithmId}
+            onChange={(algorithmId) => {
+              engine.reset({ algorithmId })
+              setSelectedEpisode(null)
+            }}
+            disabled={snapshot.status !== 'idle'}
+            t={t}
+          />
+
+          {/*
+            Phase 18: reads directly from EngineSnapshot.hyperparams.epsilon rather than
+            mirroring its own React state — unlike `speed` above (which has to be
+            mirrored because EngineSnapshot doesn't expose it), epsilon IS now in the
+            snapshot, so there's a single source of truth and no possibility of drifting
+            from the Engine's actual value across reset()/setHyperparams().
+          */}
+          <EpsilonControl
+            epsilon={snapshot.hyperparams.epsilon}
+            onChange={(epsilon) => engine.setHyperparams({ epsilon })}
+            t={t}
+            locale={locale}
+          />
+
+          {/* Phase 22 — same source-of-truth reasoning as EpsilonControl above: reads
+              directly from EngineSnapshot.hyperparams, never mirrored into local state. */}
+          <AlphaControl
+            alpha={snapshot.hyperparams.alpha}
+            onChange={(alpha) => engine.setHyperparams({ alpha })}
+            t={t}
+            locale={locale}
+          />
+
+          <GammaControl
+            gamma={snapshot.hyperparams.gamma}
+            onChange={(gamma) => engine.setHyperparams({ gamma })}
+            t={t}
+            locale={locale}
+          />
 
           <button
             type="button"
@@ -169,6 +265,9 @@ function App() {
                 // exist in the new Grid (different size, or now off-grid) — clear it
                 // rather than leaving QValueBars showing a stale/meaningless selection.
                 setSelectedState(null)
+                // Phase 24: Apply also resets Episode numbering back to 0 (same reset()
+                // call as above), so any selected Episode History row must be cleared too.
+                setSelectedEpisode(null)
               }}
               t={t}
               locale={locale}
@@ -196,8 +295,38 @@ function App() {
             locale={locale}
           />
           <QValueBars selectedState={selectedState} agentSnapshot={snapshot.agentSnapshot} t={t} locale={locale} />
-          <StatsPanel episode={snapshot.episode} stats={snapshot.stats} t={t} />
-          <RewardChart rewardHistory={snapshot.stats.rewardHistory} t={t} />
+          <StatsPanel
+            episode={snapshot.episode}
+            stats={snapshot.stats}
+            t={t}
+            selectedEpisode={selectedEpisode}
+            onSelectEpisode={setSelectedEpisode}
+          />
+          <RewardChart
+            rewardHistory={snapshot.stats.rewardHistory}
+            episodeNumbers={snapshot.stats.episodeStatsHistory.map((row) => row.episode)}
+            selectedEpisode={selectedEpisode}
+            t={t}
+          />
+          {/* Phase 25 — reuses the same episodeStatsHistory/selectedEpisode Phase 24
+              already established as the single source of truth; no new Engine reads. */}
+          <LearningProgress
+            episodeStatsHistory={snapshot.stats.episodeStatsHistory}
+            selectedEpisode={selectedEpisode}
+            t={t}
+          />
+          {/*
+            Phase 26 — `key` remounts this panel whenever the selection changes, so its
+            internal "Show all steps" toggle always starts collapsed again for a newly
+            selected Episode rather than staying expanded from a previous, unrelated one.
+          */}
+          <EpisodeTrajectory
+            key={selectedEpisode ?? 'none'}
+            episodeStatsHistory={snapshot.stats.episodeStatsHistory}
+            selectedEpisode={selectedEpisode}
+            t={t}
+            locale={locale}
+          />
         </div>
       </div>
     </main>

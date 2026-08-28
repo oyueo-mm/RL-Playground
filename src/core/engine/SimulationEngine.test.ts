@@ -154,6 +154,8 @@ describe('SimulationEngine — runEpisode()', () => {
         stepReward: -0.1,
         goalReward: 10,
         terminalCells: [],
+        bombs: [],
+        bombPenalty: -10,
       },
     })
 
@@ -180,6 +182,8 @@ describe('SimulationEngine — run({ episodes })', () => {
         stepReward: -0.1,
         goalReward: 10,
         terminalCells: [],
+        bombs: [],
+        bombPenalty: -10,
       },
     })
 
@@ -434,6 +438,8 @@ describe('SimulationEngine — Phase 12: episode execution model', () => {
         stepReward: -0.1,
         goalReward: 10,
         terminalCells: [],
+        bombs: [],
+        bombPenalty: -10,
       },
     })
 
@@ -529,6 +535,8 @@ describe('SimulationEngine — Phase 12: episode execution model', () => {
         stepReward: -0.1,
         goalReward: 10,
         terminalCells: [],
+        bombs: [],
+        bombPenalty: -10,
       },
     })
 
@@ -582,5 +590,903 @@ describe('SimulationEngine — 500 episode smoke test', () => {
     // (which would indicate the agent never learns / never reaches the goal at all).
     expect(snapshot.stats.successCount).toBeGreaterThan(0)
     expect(snapshot.stats.avgRewardMovingWindow).toBeGreaterThan(-5)
+  })
+})
+
+describe('SimulationEngine — Phase 18: setHyperparams() / epsilon control', () => {
+  it('EngineSnapshot exposes the current hyperparameters, defaulting to the Algorithm schema defaults (epsilon=1.0)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 1.0 })
+  })
+
+  it('setHyperparams({ epsilon: 0 }) is reflected in the snapshot and makes action selection fully greedy (no exploration)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+
+    engine.setHyperparams({ epsilon: 0 })
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0)
+
+    for (let i = 0; i < 10; i++) engine.step()
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.lastActionSelection!.wasExploration).toBe(false)
+  })
+
+  it('setHyperparams({ epsilon: 1 }) makes every action selection exploration', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+
+    engine.setHyperparams({ epsilon: 1 })
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(1)
+
+    for (let i = 0; i < 10; i++) engine.step()
+    expect(engine.getSnapshot().lastActionSelection!.wasExploration).toBe(true)
+  })
+
+  it('an intermediate epsilon value is stored and reported exactly', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+    engine.setHyperparams({ epsilon: 0.37 })
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.37)
+  })
+
+  it('does not reset the Environment, Agent/Q-table, episode, or stats', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, hyperparams: { alpha: 0.5, gamma: 0.9, epsilon: 0 } })
+
+    engine.step()
+    const before = engine.getSnapshot()
+    expect(before.agentSnapshot.kind).toBe('Q')
+    const qTableBefore = before.agentSnapshot.kind === 'Q' ? before.agentSnapshot.qTable : null
+    expect(Object.keys(qTableBefore!).length).toBeGreaterThan(0) // learning already happened
+
+    engine.setHyperparams({ epsilon: 0.5 })
+    const after = engine.getSnapshot()
+
+    expect(after.currentState).toBe(before.currentState)
+    expect(after.episode).toBe(before.episode)
+    expect(after.stats.totalReward).toBe(before.stats.totalReward)
+    expect(after.agentSnapshot).toEqual(before.agentSnapshot) // Q-table byte-for-byte unchanged
+    expect(after.status).toBe(before.status)
+  })
+
+  it('takes effect starting with the very next action selection, mid-episode', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, hyperparams: { alpha: 0.1, gamma: 0.9, epsilon: 0 } })
+
+    engine.step() // greedy while epsilon=0
+    expect(engine.getSnapshot().lastActionSelection!.wasExploration).toBe(false)
+
+    engine.setHyperparams({ epsilon: 1 }) // same in-progress episode, no reset
+    engine.step() // must now explore
+    const snap = engine.getSnapshot()
+    expect(snap.lastActionSelection!.wasExploration).toBe(true)
+    expect(snap.episode).toBe(0) // still the same episode throughout
+  })
+
+  it('can be changed while RUNNING and while PAUSED without disturbing the in-flight run', () => {
+    const { source, flushOne } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, speed: { mode: 'interval', intervalMs: 200 } })
+
+    engine.run({ episodes: 5 })
+    expect(engine.getSnapshot().status).toBe('running')
+    expect(() => engine.setHyperparams({ epsilon: 0.2 })).not.toThrow()
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.2)
+    expect(engine.getSnapshot().status).toBe('running') // unaffected
+
+    engine.pause()
+    expect(() => engine.setHyperparams({ epsilon: 0.8 })).not.toThrow()
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.8)
+    expect(engine.getSnapshot().status).toBe('paused') // unaffected
+
+    engine.resume()
+    expect(flushOne()).toBe(true) // the run is still alive and progressing, unaffected
+  })
+
+  it('reset() restores hyperparameters to the Algorithm schema defaults, undoing any setHyperparams() call', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+
+    engine.setHyperparams({ epsilon: 0.05 })
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.05)
+
+    engine.reset()
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(1.0)
+  })
+})
+
+describe('SimulationEngine — Phase 20: Bomb', () => {
+  // width=2, start=(0,0), bomb=(1,0): action 3 (right) reaches the Bomb; actions 0/1/2
+  // all self-loop at (0,0) (up/left go out of bounds or nowhere, down also out of
+  // bounds on a height=1 grid). With epsilon=1 (default), each step has a 1-in-4 chance
+  // of ending the episode via the Bomb — flushAll() (bounded, effectively unlimited)
+  // reliably reaches it, same technique Phase 12's random-walk tests already use.
+  const bombGridConfig = {
+    width: 2,
+    height: 1,
+    start: { x: 0, y: 0 },
+    goal: { x: 1, y: 1 }, // off this 2x1 grid's reachable area — only the Bomb can end an episode
+    walls: [],
+    stepReward: -0.1,
+    goalReward: 10,
+    terminalCells: [],
+    bombs: [{ x: 1, y: 0 }],
+    bombPenalty: -10,
+  }
+
+  it('a completed Run Episode via Bomb returns to idle, with the Bomb penalty reflected in stats', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: bombGridConfig })
+
+    engine.runEpisode()
+    flushAll()
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.status).toBe('idle')
+    expect(snapshot.episode).toBe(1)
+    // The episode's last transition must be the terminal Bomb entry with its penalty.
+    expect(snapshot.lastTransition!.reward).toBe(-10)
+    expect(snapshot.lastTransition!.done).toBe(true)
+    expect(snapshot.lastTransition!.nextState).toBe('1,0')
+  })
+
+  it('run({ episodes: N }): a Bomb ending Episode 1 does not stop the overall run — Episode 2 starts at Start', () => {
+    const { source, flushOne } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: bombGridConfig })
+
+    let sawEpisodeOneStart = false
+    function checkForEpisodeOneStart() {
+      const snap = engine.getSnapshot()
+      if (snap.episode === 1 && !sawEpisodeOneStart) {
+        sawEpisodeOneStart = true
+        expect(snap.currentState).toBe('0,0') // back at Start, not stuck at the Bomb
+        expect(snap.stepInCurrentEpisode).toBe(0)
+      }
+    }
+
+    // Scheduler.start() performs the first step synchronously (Phase 12), so the Bomb
+    // could already have ended episode 1 before the flush loop below even begins.
+    engine.run({ episodes: 3 })
+    checkForEpisodeOneStart()
+
+    for (let i = 0; i < 2000 && engine.getSnapshot().episode < 3; i++) {
+      flushOne()
+      checkForEpisodeOneStart()
+    }
+
+    expect(sawEpisodeOneStart).toBe(true)
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(engine.getSnapshot().episode).toBe(3)
+  })
+
+  it('Pause/Resume work normally on a Bomb-containing environment (no crash, progress continues)', () => {
+    const { source, flushOne } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      speed: { mode: 'interval', intervalMs: 200 },
+      envConfig: bombGridConfig,
+      hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 }, // deterministic self-loop, won't hit the Bomb
+    })
+
+    engine.run({ episodes: 1 })
+    flushOne()
+    const midSnapshot = engine.getSnapshot()
+    expect(midSnapshot.status).toBe('running')
+
+    engine.pause()
+    expect(engine.getSnapshot().status).toBe('paused')
+    expect(engine.getSnapshot().stepInCurrentEpisode).toBe(midSnapshot.stepInCurrentEpisode)
+
+    engine.resume()
+    expect(engine.getSnapshot().status).toBe('running')
+    expect(engine.getSnapshot().stepInCurrentEpisode).toBe(midSnapshot.stepInCurrentEpisode + 1)
+  })
+
+  it('Reset cancels an in-progress Bomb-environment run cleanly (same semantics as any other environment)', () => {
+    const { source, flushOne } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: bombGridConfig })
+
+    engine.run({ episodes: 10 })
+    expect(engine.getSnapshot().status).toBe('running')
+
+    engine.reset()
+
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(engine.getSnapshot().episode).toBe(0)
+    expect(flushOne()).toBe(false) // no leftover scheduled callback resurrects the old run
+  })
+
+  it('Reset (no envConfig override) preserves the Bomb placement/penalty already applied', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: bombGridConfig })
+
+    engine.step()
+    engine.reset()
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.envRenderModel.kind).toBe('grid')
+    if (snapshot.envRenderModel.kind === 'grid') {
+      expect(snapshot.envRenderModel.bombs).toEqual(['1,0'])
+      expect(snapshot.envRenderModel.bombPenalty).toBe(-10)
+    }
+  })
+
+  it('the Bomb penalty is included in episodeReward and recorded in rewardHistory (no separate reward pipeline)', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      envConfig: bombGridConfig,
+      // interval mode (not batch): exactly one step per emitted snapshot, so subscribe()
+      // below observes every single step's transition — batch mode would only expose
+      // the last step of each batch, undercounting the sum.
+      speed: { mode: 'interval', intervalMs: 200 },
+    })
+
+    // Sum every step's reward independently via subscribe(), exactly mirroring how
+    // Engine itself accumulates episodeReward (SimulationEngine.ts: `episodeReward +=
+    // transition.reward` per step) — this proves rewardHistory reflects the real
+    // per-step rewards (including the Bomb's) rather than some separately computed value.
+    let expectedTotal = 0
+    let sawTerminalBombReward = false
+    engine.subscribe((snap) => {
+      if (snap.lastTransition && !sawTerminalBombReward) {
+        expectedTotal += snap.lastTransition.reward
+        if (snap.lastTransition.done) sawTerminalBombReward = true
+      }
+    })
+
+    engine.runEpisode()
+    flushAll()
+
+    expect(sawTerminalBombReward).toBe(true)
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.status).toBe('idle')
+    expect(snapshot.stats.rewardHistory).toEqual([expectedTotal])
+    expect(snapshot.stats.totalReward).toBe(expectedTotal)
+  })
+
+  // Requirement §10: PolicyOverlay/ValueHeatmap must never draw a normal policy
+  // arrow/value for a Bomb cell. Both components only render for States that are keys
+  // in agentSnapshot.qTable, computed from Agent.applyUpdate(transition.state, ...) —
+  // the FROM state, never the terminal TO state. Since entering a Bomb always ends the
+  // Episode (finishEpisode() resets the environment before any further action is ever
+  // selected FROM the Bomb), a Bomb position should never become a qTable key — exactly
+  // the same mechanism that already makes this true for Goal today. This test proves
+  // that guarantee holds, so PolicyOverlay/ValueHeatmap correctly need no Bomb-specific
+  // code at all.
+  it('a Bomb cell never becomes a key in the Agent Q-table, across many episodes (same as Goal)', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      envConfig: bombGridConfig,
+      speed: { mode: 'batch', stepsPerFrame: 500 },
+      hyperparams: { alpha: 0.2, gamma: 0.9, epsilon: 0.5 },
+    })
+
+    engine.run({ episodes: 100 })
+    flushAll()
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.status).toBe('idle')
+    expect(snapshot.episode).toBe(100)
+    expect(snapshot.agentSnapshot.kind).toBe('Q')
+    if (snapshot.agentSnapshot.kind === 'Q') {
+      expect(Object.keys(snapshot.agentSnapshot.qTable)).not.toContain('1,0') // the Bomb's position
+    }
+  })
+})
+
+describe('SimulationEngine — Phase 21: Episode Statistics', () => {
+  // A 1-wide, 4-tall corridor: start=(0,3), goal=(0,0). With alpha=0 (Q-table never
+  // updates) and epsilon=0 (fully greedy), every step ties on an all-zero Q-vector and
+  // resolves to the lowest-index action — action 0 ("up", y-1) — every single time.
+  // "Up" from (0,3)->(0,2)->(0,1)->(0,0)=goal is a fully deterministic 3-step path, with
+  // no reliance on Math.random() at all: perfect for exact-value assertions.
+  const corridorGoalConfig = {
+    width: 1,
+    height: 4,
+    start: { x: 0, y: 3 },
+    goal: { x: 0, y: 0 },
+    walls: [],
+    stepReward: -1,
+    goalReward: 10,
+    terminalCells: [],
+    bombs: [],
+    bombPenalty: -10,
+  }
+  // Same corridor, but a Bomb sits where the Goal was — "up" from (0,1) reaches it in
+  // exactly 2 steps. Goal is placed off the reachable column so it can never trigger.
+  const corridorBombConfig = {
+    ...corridorGoalConfig,
+    goal: { x: 0, y: 3 }, // same as start — never reached by moving up
+    bombs: [{ x: 0, y: 1 }],
+    bombPenalty: -7,
+  }
+  const deterministicHyperparams = { alpha: 0, gamma: 0.9, epsilon: 0 }
+
+  function runCorridorToCompletion(engine: SimulationEngine) {
+    while (engine.getSnapshot().episode === 0) engine.step()
+  }
+
+  it('1/2/3. exactly one EpisodeStats is created on completion, with steps and totalReward matching the actual episode', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorGoalConfig, hyperparams: deterministicHyperparams })
+
+    runCorridorToCompletion(engine)
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.stats.episodeStatsHistory.length).toBe(1)
+    const stats = snapshot.stats.latestEpisodeStats!
+    expect(stats.episode).toBe(1)
+    expect(stats.steps).toBe(3) // (0,3)->(0,2)->(0,1)->(0,0), 3 transitions
+    expect(stats.totalReward).toBe(snapshot.stats.rewardHistory[0]) // same value rewardHistory already recorded
+    expect(stats.totalReward).toBeCloseTo(-1 + -1 + 10, 10) // 2 step penalties + the goal reward
+  })
+
+  it('4/5. explorationCount + exploitationCount === steps, and explorationRate is exact', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorGoalConfig, hyperparams: deterministicHyperparams })
+
+    runCorridorToCompletion(engine)
+
+    const stats = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(stats.explorationCount + stats.exploitationCount).toBe(stats.steps)
+    // epsilon=0 -> every step is exploitation, never exploration.
+    expect(stats.explorationCount).toBe(0)
+    expect(stats.exploitationCount).toBe(3)
+    expect(stats.explorationRate).toBe(0)
+  })
+
+  it('6. averageReward === totalReward / steps exactly', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorGoalConfig, hyperparams: deterministicHyperparams })
+
+    runCorridorToCompletion(engine)
+
+    const stats = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(stats.averageReward).toBeCloseTo(stats.totalReward / stats.steps, 10)
+  })
+
+  it('7. uniqueStates counts every distinct StateKey occupied, including the terminal cell', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorGoalConfig, hyperparams: deterministicHyperparams })
+
+    runCorridorToCompletion(engine)
+
+    const stats = engine.getSnapshot().stats.latestEpisodeStats!
+    // (0,3), (0,2), (0,1), (0,0) — 4 distinct cells, each visited exactly once.
+    expect(stats.uniqueStates).toBe(4)
+  })
+
+  it('8. a Goal-ended Episode is recorded with terminationReason "goal"', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorGoalConfig, hyperparams: deterministicHyperparams })
+
+    runCorridorToCompletion(engine)
+
+    expect(engine.getSnapshot().stats.latestEpisodeStats!.terminationReason).toBe('goal')
+  })
+
+  it('9. a Bomb-ended Episode is recorded with terminationReason "bomb", and the penalty is in totalReward', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorBombConfig, hyperparams: deterministicHyperparams })
+
+    runCorridorToCompletion(engine)
+
+    const stats = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(stats.terminationReason).toBe('bomb')
+    expect(stats.steps).toBe(2) // (0,3)->(0,2)->(0,1)=bomb
+    expect(stats.totalReward).toBeCloseTo(-1 + -7, 10) // 1 step penalty + the bomb penalty
+  })
+
+  it('10. Pause mid-Episode creates no EpisodeStats yet; completing after Resume creates exactly one', () => {
+    const { source, flushOne } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      speed: { mode: 'interval', intervalMs: 200 },
+      envConfig: corridorGoalConfig,
+      hyperparams: deterministicHyperparams,
+    })
+
+    engine.run({ episodes: 1 }) // step 1 synchronously: (0,3)->(0,2)
+    expect(engine.getSnapshot().stats.episodeStatsHistory).toEqual([])
+
+    engine.pause()
+    expect(engine.getSnapshot().stats.episodeStatsHistory).toEqual([]) // still none — Episode not done
+
+    engine.resume() // step 2 synchronously: (0,2)->(0,1)
+    expect(engine.getSnapshot().stats.episodeStatsHistory).toEqual([])
+
+    flushOne() // step 3: (0,1)->(0,0)=goal, Episode completes
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.status).toBe('idle')
+    expect(snapshot.stats.episodeStatsHistory.length).toBe(1)
+    expect(snapshot.stats.latestEpisodeStats!.steps).toBe(3)
+  })
+
+  it('11. running N episodes produces exactly N EpisodeStats entries', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      envConfig: {
+        width: 2,
+        height: 1,
+        start: { x: 0, y: 0 },
+        goal: { x: 1, y: 0 },
+        walls: [],
+        stepReward: -0.1,
+        goalReward: 10,
+        terminalCells: [],
+        bombs: [],
+        bombPenalty: -10,
+      },
+    })
+
+    engine.run({ episodes: 5 })
+    flushAll()
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.status).toBe('idle')
+    expect(snapshot.episode).toBe(5)
+    expect(snapshot.stats.episodeStatsHistory.length).toBe(5)
+    expect(snapshot.stats.episodeStatsHistory.map((s) => s.episode)).toEqual([1, 2, 3, 4, 5])
+  })
+
+  it('12. Reset clears episodeStatsHistory, the same way it clears rewardHistory', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorGoalConfig, hyperparams: deterministicHyperparams })
+
+    runCorridorToCompletion(engine)
+    expect(engine.getSnapshot().stats.episodeStatsHistory.length).toBe(1)
+
+    engine.reset()
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.stats.episodeStatsHistory).toEqual([])
+    expect(snapshot.stats.latestEpisodeStats).toBeNull()
+    expect(snapshot.stats.rewardHistory).toEqual([]) // unchanged existing policy, same reset
+  })
+
+  it('13. works correctly under Q-Learning (the default algorithm)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      algorithmId: 'q-learning',
+      envConfig: corridorGoalConfig,
+      hyperparams: deterministicHyperparams,
+    })
+
+    runCorridorToCompletion(engine)
+
+    const stats = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(stats.terminationReason).toBe('goal')
+    expect(stats.steps).toBe(3)
+    expect(stats.exploitationCount).toBe(3)
+  })
+
+  it('14. works correctly under SARSA (on-policy, uses pendingAction/pickNextAction)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      algorithmId: 'sarsa',
+      envConfig: corridorGoalConfig,
+      hyperparams: deterministicHyperparams,
+    })
+
+    runCorridorToCompletion(engine)
+
+    const stats = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(stats.terminationReason).toBe('goal')
+    expect(stats.steps).toBe(3)
+    expect(stats.explorationCount + stats.exploitationCount).toBe(3)
+    expect(stats.exploitationCount).toBe(3) // epsilon=0 -> SARSA's selectAction/pickNextAction are both greedy too
+  })
+
+  it('15. changing epsilon mid-Episode is reflected in the actual exploration/exploitation tally (not re-derived)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorGoalConfig, hyperparams: deterministicHyperparams })
+
+    engine.step() // epsilon=0 -> exploitation, deterministic: (0,3)->(0,2)
+    expect(engine.getSnapshot().lastActionSelection!.wasExploration).toBe(false)
+
+    engine.setHyperparams({ epsilon: 1 }) // force exploration for every subsequent step
+    let guard = 0
+    while (engine.getSnapshot().episode === 0 && guard < 5000) {
+      engine.step()
+      guard++
+    }
+
+    const stats = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(stats.exploitationCount).toBe(1) // exactly the one step taken before the epsilon change
+    expect(stats.explorationCount).toBeGreaterThanOrEqual(1) // every step after the change
+    expect(stats.exploitationCount + stats.explorationCount).toBe(stats.steps)
+  })
+})
+
+describe('SimulationEngine — Phase 22: setHyperparams({ alpha }) / setHyperparams({ gamma })', () => {
+  // Phase 22 makes no Core changes — setHyperparams() (Phase 18) already merges any
+  // Hyperparams key generically, and qLearning.ts/sarsa.ts already read hp.alpha/hp.gamma
+  // fresh on every computeUpdate() call. These tests are direct evidence that holds for
+  // alpha/gamma specifically too, not just epsilon (which is all Phase 18 exercised).
+
+  it('setHyperparams({ alpha }) / setHyperparams({ gamma }) update the snapshot independently of other hyperparams', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, hyperparams: { alpha: 0.1, gamma: 0.9, epsilon: 0.2 } })
+
+    engine.setHyperparams({ alpha: 0.6 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.6, gamma: 0.9, epsilon: 0.2 })
+
+    engine.setHyperparams({ gamma: 0.4 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.6, gamma: 0.4, epsilon: 0.2 })
+  })
+
+  it('changing alpha takes effect starting with the very next Q-value update, not retroactively', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
+
+    engine.step() // alpha=0 -> Q_new = Q_old + 0*(target-Q_old) = Q_old, unchanged
+    expect(engine.getSnapshot().lastTdInfo!.updatedEstimate).toBe(0)
+
+    engine.setHyperparams({ alpha: 1 }) // same in-progress episode, no reset
+    engine.step() // alpha=1 -> Q_new = Q_old + 1*(target-Q_old) = target, exactly
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.lastTdInfo!.updatedEstimate).toBe(snapshot.lastTdInfo!.target)
+  })
+
+  it('changing gamma takes effect starting with the very next TD target, not retroactively', () => {
+    const { source } = createManualTimerSource()
+    // Default 7x7 grid, Goal 12 steps away — the very first step from Start is
+    // guaranteed non-terminal, so gamma's bootstrap term is actually exercised.
+    const engine = new SimulationEngine({ timerSource: source, hyperparams: { alpha: 0.1, gamma: 0.9, epsilon: 0 } })
+
+    engine.setHyperparams({ gamma: 0 })
+    engine.step()
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.lastTransition!.done).toBe(false) // sanity: not a terminal step
+    // target = r + gamma·max Q(s',·) = r + 0 = r exactly, when gamma=0.
+    expect(snapshot.lastTdInfo!.target).toBeCloseTo(snapshot.lastTransition!.reward, 10)
+  })
+
+  it('reset() restores alpha/gamma to the Algorithm schema defaults too, not just epsilon', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+
+    engine.setHyperparams({ alpha: 0.99, gamma: 0.01 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.99, gamma: 0.01, epsilon: 1.0 })
+
+    engine.reset()
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 1.0 })
+  })
+
+  it('works identically under SARSA (same generic hyperparams pass-through, no algorithm-specific handling)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      algorithmId: 'sarsa',
+      hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 },
+    })
+
+    engine.step()
+    expect(engine.getSnapshot().lastTdInfo!.updatedEstimate).toBe(0) // alpha=0
+
+    engine.setHyperparams({ alpha: 1 })
+    engine.step()
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.lastTdInfo!.updatedEstimate).toBe(snapshot.lastTdInfo!.target) // alpha=1
+  })
+})
+
+describe('SimulationEngine — Phase 23: Algorithm selection', () => {
+  // Same 1x4 corridor fixture reasoning as Phase 21/the alpha/gamma tests above:
+  // alpha=0/epsilon=0 ties every step to the lowest-index action ("up"), a fully
+  // deterministic 3-step path to Goal, for RNG-free exact-value assertions.
+  const corridorConfig = {
+    width: 1,
+    height: 4,
+    start: { x: 0, y: 3 },
+    goal: { x: 0, y: 0 },
+    walls: [],
+    stepReward: -1,
+    goalReward: 10,
+    terminalCells: [],
+    bombs: [], // 1-wide corridor — no column exists off the "up" path to place a Bomb on
+    bombPenalty: -9,
+  }
+  const deterministicHyperparams = { alpha: 0, gamma: 0.9, epsilon: 0 }
+
+  it('EngineSnapshot.algorithmId reflects the constructor option (default "q-learning")', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+    expect(engine.getSnapshot().algorithmId).toBe('q-learning')
+  })
+
+  it('reset({ algorithmId }) — the existing ResetOverrides path — switches the active Algorithm', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+    expect(engine.getSnapshot().algorithmId).toBe('q-learning')
+
+    engine.reset({ algorithmId: 'sarsa' })
+    expect(engine.getSnapshot().algorithmId).toBe('sarsa')
+
+    engine.reset({ algorithmId: 'q-learning' })
+    expect(engine.getSnapshot().algorithmId).toBe('q-learning')
+  })
+
+  it('switching algorithm resets the Q-table, episode, and reward/episode-stats history (same as a plain reset())', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
+
+    while (engine.getSnapshot().episode === 0) engine.step() // complete one deterministic Episode
+    const before = engine.getSnapshot()
+    expect(before.episode).toBe(1)
+    expect(before.stats.rewardHistory.length).toBe(1)
+    expect(before.stats.episodeStatsHistory.length).toBe(1)
+    expect(before.agentSnapshot.kind).toBe('Q')
+    if (before.agentSnapshot.kind === 'Q') expect(Object.keys(before.agentSnapshot.qTable).length).toBeGreaterThan(0)
+
+    engine.reset({ algorithmId: 'sarsa' })
+
+    const after = engine.getSnapshot()
+    expect(after.algorithmId).toBe('sarsa')
+    expect(after.episode).toBe(0)
+    expect(after.stats.rewardHistory).toEqual([])
+    expect(after.stats.episodeStatsHistory).toEqual([])
+    expect(after.stats.latestEpisodeStats).toBeNull()
+    expect(after.agentSnapshot.kind).toBe('Q') // SARSA also requires a Q-agent
+    if (after.agentSnapshot.kind === 'Q') expect(Object.keys(after.agentSnapshot.qTable).length).toBe(0)
+
+    flushAll() // no dangling scheduled callback from the old run survives the switch
+  })
+
+  it('switching algorithm resets hyperparameters to the NEW algorithm\'s own schema defaults (never copies the old values)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, hyperparams: { alpha: 0.77, gamma: 0.11, epsilon: 0.33 } })
+
+    engine.reset({ algorithmId: 'sarsa' })
+
+    // qLearning.ts and sarsa.ts declare an identical schema (alpha=0.1/gamma=0.9/
+    // epsilon=1.0 defaults) — confirmed by reading both files — so this also proves the
+    // old engine's customized 0.77/0.11/0.33 values were NOT carried over.
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 1.0 })
+  })
+
+  it('switching algorithm preserves the current Environment config (Bomb/Start/Goal untouched)', () => {
+    const { source } = createManualTimerSource()
+    const customConfig = { ...corridorConfig, bombs: [{ x: 0, y: 2 }], bombPenalty: -9 }
+    const engine = new SimulationEngine({ timerSource: source, envConfig: customConfig })
+
+    engine.reset({ algorithmId: 'sarsa' })
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.envRenderModel.kind).toBe('grid')
+    if (snapshot.envRenderModel.kind === 'grid') {
+      expect(snapshot.envRenderModel.bombs).toEqual(['0,2'])
+      expect(snapshot.envRenderModel.bombPenalty).toBe(-9)
+      expect(snapshot.envRenderModel.start).toBe('0,3')
+      expect(snapshot.envRenderModel.goal).toBe('0,0')
+    }
+  })
+
+  it('Q-Learning produces TDInfo tagged "q-learning" and completes the deterministic corridor correctly', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      algorithmId: 'q-learning',
+      envConfig: corridorConfig,
+      hyperparams: deterministicHyperparams,
+    })
+
+    engine.step()
+    expect(engine.getSnapshot().lastTdInfo!.algorithm).toBe('q-learning')
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+    expect(engine.getSnapshot().stats.latestEpisodeStats!.terminationReason).toBe('goal')
+    expect(engine.getSnapshot().stats.latestEpisodeStats!.steps).toBe(3)
+  })
+
+  it('SARSA (selected via reset) produces TDInfo tagged "sarsa" and completes the deterministic corridor correctly', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig })
+    engine.reset({ algorithmId: 'sarsa', hyperparams: deterministicHyperparams })
+
+    engine.step()
+    expect(engine.getSnapshot().lastTdInfo!.algorithm).toBe('sarsa')
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+    expect(engine.getSnapshot().stats.latestEpisodeStats!.terminationReason).toBe('goal')
+    expect(engine.getSnapshot().stats.latestEpisodeStats!.steps).toBe(3)
+  })
+
+  it('does not disturb an in-progress run when the switch happens between runs (IDLE only, per UI gating) — reset() itself remains the only way to change algorithm mid-flow', () => {
+    // Core itself doesn't gate reset({ algorithmId }) by status (the UI does, via
+    // `disabled`) — this documents that reset() already tears down any in-flight run
+    // safely if called anyway, exactly like a plain reset() while RUNNING already does.
+    const { source, flushOne } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+    engine.run({ episodes: 5 })
+    expect(engine.getSnapshot().status).toBe('running')
+
+    engine.reset({ algorithmId: 'sarsa' })
+
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(engine.getSnapshot().algorithmId).toBe('sarsa')
+    expect(flushOne()).toBe(false) // no leftover scheduled callback resurrects the old run
+  })
+})
+
+describe('SimulationEngine — Phase 26: Episode trajectory', () => {
+  // Same 1x4 corridor fixture as the Phase 21/23/25 tests above — alpha=0/epsilon=0
+  // ties every step to the lowest-index action ("up"), giving a fully deterministic
+  // 3-step path to Goal.
+  const corridorConfig = {
+    width: 1,
+    height: 4,
+    start: { x: 0, y: 3 },
+    goal: { x: 0, y: 0 },
+    walls: [],
+    stepReward: -1,
+    goalReward: 10,
+    terminalCells: [],
+    bombs: [],
+    bombPenalty: -9,
+  }
+  const deterministicHyperparams = { alpha: 0, gamma: 0.9, epsilon: 0 }
+
+  it('records the trajectory as the exact ordered transition sequence (not a deduplicated set)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.trajectory).toEqual([
+      { state: '0,3', action: 0, nextState: '0,2', reward: -1, done: false },
+      { state: '0,2', action: 0, nextState: '0,1', reward: -1, done: false },
+      { state: '0,1', action: 0, nextState: '0,0', reward: 10, done: true },
+    ])
+  })
+
+  it('trajectory length always equals EpisodeStats.steps', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.trajectory.length).toBe(ep.steps)
+    expect(ep.trajectory.length).toBe(3)
+  })
+
+  it('each recorded action matches the action Algorithm.selectAction actually chose (cross-checked against lastActionSelection)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
+
+    engine.step()
+    const firstAction = engine.getSnapshot().lastActionSelection!.action
+    expect(firstAction).toBe(0) // "up" — argmax over an all-zero Q row, lowest index wins
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.trajectory[0].action).toBe(firstAction)
+    expect(ep.trajectory.every((t) => t.action === 0)).toBe(true)
+  })
+
+  it('each recorded reward matches the real per-step reward (step reward vs. the actual Goal reward on the final transition)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.trajectory[0].reward).toBe(-1) // stepReward
+    expect(ep.trajectory[1].reward).toBe(-1)
+    expect(ep.trajectory[2].reward).toBe(10) // goalReward, not stepReward+goalReward
+    expect(ep.trajectory.reduce((sum, t) => sum + t.reward, 0)).toBe(ep.totalReward)
+  })
+
+  it('Goal termination: last transition is state -> goal, terminationReason "goal"', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.terminationReason).toBe('goal')
+    expect(ep.trajectory[ep.trajectory.length - 1].nextState).toBe('0,0')
+    expect(ep.trajectory[ep.trajectory.length - 1].done).toBe(true)
+  })
+
+  it('Bomb termination: last transition is state -> bomb, terminationReason "bomb", reward is the real bombPenalty', () => {
+    // Same corridor shape, but the Bomb sits one cell before the Goal on the only path
+    // the deterministic "always up" policy ever takes — so the Bomb is guaranteed to be
+    // reached deterministically, without needing real random exploration.
+    const bombCorridorConfig = {
+      ...corridorConfig,
+      bombs: [{ x: 0, y: 1 }],
+      bombPenalty: -7,
+    }
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: bombCorridorConfig, hyperparams: deterministicHyperparams })
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.terminationReason).toBe('bomb')
+    expect(ep.trajectory).toEqual([
+      { state: '0,3', action: 0, nextState: '0,2', reward: -1, done: false },
+      { state: '0,2', action: 0, nextState: '0,1', reward: -7, done: true },
+    ])
+  })
+
+  it('repeated State visits are preserved in order (not collapsed like the Set-based uniqueStates count)', () => {
+    // width=2,height=1,start=(0,0), Goal at (1,0), alpha=1 (exact convergence — no
+    // floating-point ambiguity), epsilon=0. Q(start,·) starts all-zero, so the first
+    // three steps each pick the next lowest-index action in turn (up/down/left), and
+    // each one bounces off a boundary (height=1 forbids up/down; x=0 forbids left) back
+    // to the SAME start State — deterministically revisiting it 3 times before the 4th
+    // step's "right" finally reaches the Goal. This is a fully deterministic way to
+    // produce a genuine repeated-State trajectory without relying on real randomness.
+    const bounceConfig = {
+      width: 2,
+      height: 1,
+      start: { x: 0, y: 0 },
+      goal: { x: 1, y: 0 },
+      walls: [],
+      stepReward: -1,
+      goalReward: 10,
+      terminalCells: [],
+      bombs: [],
+      bombPenalty: -9,
+    }
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      envConfig: bounceConfig,
+      hyperparams: { alpha: 1, gamma: 0.9, epsilon: 0 },
+    })
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.trajectory).toEqual([
+      { state: '0,0', action: 0, nextState: '0,0', reward: -1, done: false }, // up: boundary bounce
+      { state: '0,0', action: 1, nextState: '0,0', reward: -1, done: false }, // down: boundary bounce
+      { state: '0,0', action: 2, nextState: '0,0', reward: -1, done: false }, // left: boundary bounce
+      { state: '0,0', action: 3, nextState: '1,0', reward: 10, done: true }, // right: reaches Goal
+    ])
+    expect(ep.trajectory.length).toBe(4)
+    // The Set-based uniqueStates count correctly collapses the 3 repeat visits to '0,0'
+    // down to 2 distinct States — proving trajectory (length 4) and uniqueStates (2) are
+    // genuinely different pieces of information, neither derivable from the other alone.
+    expect(ep.uniqueStates).toBe(2)
+    expect(ep.trajectory[0].state).toBe(ep.trajectory[1].state)
+    expect(ep.trajectory[1].state).toBe(ep.trajectory[2].state)
+  })
+
+  it('the accumulator is reset for the next Episode — trajectories never leak across Episode boundaries', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+    while (engine.getSnapshot().episode === 1) engine.step()
+
+    const history = engine.getSnapshot().stats.episodeStatsHistory
+    expect(history.length).toBe(2)
+    expect(history[0].trajectory.length).toBe(3)
+    expect(history[1].trajectory.length).toBe(3)
+    expect(history[0].trajectory).not.toBe(history[1].trajectory) // independent array references
+  })
+
+  it('reset() clears all recorded trajectories from episodeStatsHistory', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+    expect(engine.getSnapshot().stats.episodeStatsHistory.length).toBe(1)
+
+    engine.reset({ envConfig: corridorConfig })
+
+    expect(engine.getSnapshot().stats.episodeStatsHistory).toEqual([])
   })
 })

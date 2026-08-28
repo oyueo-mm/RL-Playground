@@ -44,6 +44,10 @@ function isWall(pos: Position, config: GridWorldConfig): boolean {
   return config.walls.some((wall) => samePosition(wall, pos))
 }
 
+function isBomb(pos: Position, config: GridWorldConfig): boolean {
+  return config.bombs.some((bomb) => samePosition(bomb, pos))
+}
+
 function applyAction(pos: Position, action: number): Position {
   switch (action) {
     case 0:
@@ -69,6 +73,11 @@ export function createDefaultGridWorldConfig(): GridWorldConfig {
     stepReward: -0.1,
     goalReward: 10,
     terminalCells: [],
+    bombs: [],
+    // Same magnitude as goalReward, opposite sign — a clear, symmetric penalty on the
+    // existing reward scale (stepReward=-0.1, goalReward=+10), per Phase 20 spec §3's
+    // own example rather than an arbitrary new number.
+    bombPenalty: -10,
   }
 }
 
@@ -96,7 +105,8 @@ export class GridWorldEnv implements Environment {
 
   isTerminal(state: StateKey): boolean {
     if (state === positionKey(this.config.goal)) return true
-    return this.config.terminalCells.some((cell) => positionKey(cell) === state)
+    if (this.config.terminalCells.some((cell) => positionKey(cell) === state)) return true
+    return this.config.bombs.some((bomb) => positionKey(bomb) === state)
   }
 
   step(action: number): StepResult {
@@ -112,6 +122,13 @@ export class GridWorldEnv implements Environment {
     } else if (isWall(attempted, this.config)) {
       next = current
       reward = this.config.stepReward
+    } else if (isBomb(attempted, this.config)) {
+      // Phase 20: entering a Bomb is terminal, exactly like Goal, but with its own
+      // penalty reward instead of goalReward. Bomb/Wall/Goal are mutually exclusive by
+      // construction (Environment Editor prevents placing one on top of another), so
+      // this branch never competes with the wall/goal branches for the same cell.
+      next = attempted
+      reward = this.config.bombPenalty
     } else if (samePosition(attempted, this.config.goal)) {
       next = attempted
       reward = this.config.goalReward
@@ -132,6 +149,8 @@ export class GridWorldEnv implements Environment {
       width: this.config.width,
       height: this.config.height,
       walls: this.config.walls.map(positionKey),
+      bombs: this.config.bombs.map(positionKey),
+      bombPenalty: this.config.bombPenalty,
       start: positionKey(this.config.start),
       goal: positionKey(this.config.goal),
       agentPos: positionKey(this.agent),

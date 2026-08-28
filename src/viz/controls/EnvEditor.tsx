@@ -55,22 +55,61 @@ export function EnvEditor({
   const isValid = errors.length === 0
 
   function updateWidth(value: number) {
-    setDraft((prev) => ({ ...prev, width: value, walls: prev.walls.filter((w) => w.x < value) }))
+    setDraft((prev) => ({
+      ...prev,
+      width: value,
+      walls: prev.walls.filter((w) => w.x < value),
+      bombs: prev.bombs.filter((b) => b.x < value),
+    }))
   }
 
   function updateHeight(value: number) {
-    setDraft((prev) => ({ ...prev, height: value, walls: prev.walls.filter((w) => w.y < value) }))
+    setDraft((prev) => ({
+      ...prev,
+      height: value,
+      walls: prev.walls.filter((w) => w.y < value),
+      bombs: prev.bombs.filter((b) => b.y < value),
+    }))
+  }
+
+  function updateBombPenalty(value: number) {
+    setDraft((prev) => ({ ...prev, bombPenalty: value }))
   }
 
   function handleCellClick(stateKey: StateKey) {
     const pos = parseStateKey(stateKey)
 
     if (mode === 'start') {
-      setDraft((prev) => ({ ...prev, start: pos, walls: prev.walls.filter((w) => !samePosition(w, pos)) }))
+      setDraft((prev) => ({
+        ...prev,
+        start: pos,
+        walls: prev.walls.filter((w) => !samePosition(w, pos)),
+        bombs: prev.bombs.filter((b) => !samePosition(b, pos)),
+      }))
       return
     }
     if (mode === 'goal') {
-      setDraft((prev) => ({ ...prev, goal: pos, walls: prev.walls.filter((w) => !samePosition(w, pos)) }))
+      setDraft((prev) => ({
+        ...prev,
+        goal: pos,
+        walls: prev.walls.filter((w) => !samePosition(w, pos)),
+        bombs: prev.bombs.filter((b) => !samePosition(b, pos)),
+      }))
+      return
+    }
+    if (mode === 'bomb') {
+      // Bomb/Start/Goal can never coexist on one cell — same rule as Wall below.
+      if (samePosition(pos, draft.start) || samePosition(pos, draft.goal)) return
+      setDraft((prev) => {
+        const exists = prev.bombs.some((b) => samePosition(b, pos))
+        return {
+          ...prev,
+          // Placing a Bomb where a Wall was clears the Wall — mirrors how moving
+          // Start/Goal onto a Wall clears it above (last placed entity wins).
+          walls: prev.walls.filter((w) => !samePosition(w, pos)),
+          bombs: exists ? prev.bombs.filter((b) => !samePosition(b, pos)) : [...prev.bombs, pos],
+        }
+      })
       return
     }
     // mode === 'wall': Start/Goal cells can never become walls.
@@ -79,6 +118,8 @@ export function EnvEditor({
       const exists = prev.walls.some((w) => samePosition(w, pos))
       return {
         ...prev,
+        // Same "last placed entity wins" rule, in the other direction.
+        bombs: prev.bombs.filter((b) => !samePosition(b, pos)),
         walls: exists ? prev.walls.filter((w) => !samePosition(w, pos)) : [...prev.walls, pos],
       }
     })
@@ -90,12 +131,13 @@ export function EnvEditor({
     onApply(draftToGridWorldConfig(draft))
   }
 
-  // Canonical mode ids ('wall'/'start'/'goal') drive data-testid/aria-pressed unchanged;
-  // only the visible button text is looked up per-locale.
+  // Canonical mode ids ('wall'/'start'/'goal'/'bomb') drive data-testid/aria-pressed
+  // unchanged; only the visible button text is looked up per-locale.
   const modeLabel: Record<EditMode, string> = {
     wall: t.envEditor.modeWall,
     start: t.envEditor.modeStart,
     goal: t.envEditor.modeGoal,
+    bomb: t.envEditor.modeBomb,
   }
 
   return (
@@ -127,10 +169,21 @@ export function EnvEditor({
             className="w-16 rounded border border-gray-300 px-1 py-0.5"
           />
         </label>
+        <label className="flex items-center gap-1">
+          {t.envEditor.bombPenalty}
+          <input
+            type="number"
+            step={0.1}
+            value={draft.bombPenalty}
+            onChange={(e) => updateBombPenalty(Number(e.target.value))}
+            data-testid="env-editor-bomb-penalty-input"
+            className="w-16 rounded border border-gray-300 px-1 py-0.5"
+          />
+        </label>
       </div>
 
       <div className="flex gap-2">
-        {(['wall', 'start', 'goal'] as const).map((m) => (
+        {(['wall', 'start', 'goal', 'bomb'] as const).map((m) => (
           <button
             key={m}
             type="button"

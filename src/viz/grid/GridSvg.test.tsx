@@ -11,6 +11,8 @@ const model: Extract<EnvRenderModel, { kind: 'grid' }> = {
   width: 3,
   height: 2,
   walls: ['1,0'],
+  bombs: [],
+  bombPenalty: -10,
   start: '0,0',
   goal: '2,1',
   agentPos: '0,0',
@@ -95,5 +97,38 @@ describe('GridSvg', () => {
     expect(screen.getByTestId('cell-0,0').getAttribute('data-cell-kind')).toBe('start')
     expect(screen.getByTestId('cell-2,1').getAttribute('data-cell-kind')).toBe('goal')
     expect(screen.queryByTestId('agent-marker')).not.toBeNull()
+  })
+
+  // Phase 20 — Bomb cells
+  describe('Bomb', () => {
+    const modelWithBomb: Extract<EnvRenderModel, { kind: 'grid' }> = { ...model, bombs: ['1,1'] }
+
+    it('marks a bomb cell distinctly from ordinary/wall/start/goal cells', () => {
+      render(<GridSvg renderModel={modelWithBomb} />)
+      expect(screen.getByTestId('cell-1,1').getAttribute('data-cell-kind')).toBe('bomb')
+      // Untouched cells from `model` still resolve exactly as before.
+      expect(screen.getByTestId('cell-1,0').getAttribute('data-cell-kind')).toBe('wall')
+      expect(screen.getByTestId('cell-0,0').getAttribute('data-cell-kind')).toBe('start')
+    })
+
+    it('renders a visible bomb glyph on top of the bomb cell', () => {
+      render(<GridSvg renderModel={modelWithBomb} />)
+      expect(screen.getByTestId('bomb-marker-1,1')).toBeTruthy()
+    })
+
+    it('does not render a bomb glyph on non-bomb cells', () => {
+      render(<GridSvg renderModel={modelWithBomb} />)
+      expect(screen.queryByTestId('bomb-marker-0,0')).toBeNull()
+      expect(screen.queryByTestId('bomb-marker-1,0')).toBeNull()
+    })
+
+    it('a bomb cell is still clickable for selection (the glyph does not intercept clicks)', () => {
+      const onStateSelect = vi.fn()
+      render(<GridSvg renderModel={modelWithBomb} onStateSelect={onStateSelect} />)
+
+      fireEvent.click(screen.getByTestId('cell-1,1'))
+
+      expect(onStateSelect).toHaveBeenCalledWith('1,1')
+    })
   })
 })

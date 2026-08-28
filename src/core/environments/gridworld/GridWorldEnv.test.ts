@@ -141,6 +141,8 @@ describe('GridWorldEnv', () => {
       width: 5,
       height: 4,
       walls: ['1,1', '2,2'],
+      bombs: [],
+      bombPenalty: -10,
       start: '0,0',
       goal: '4,3',
       agentPos: '1,0',
@@ -151,5 +153,48 @@ describe('GridWorldEnv', () => {
     const env = new GridWorldEnv(config({ start: { x: 0, y: 0 }, goal: { x: 6, y: 6 } }))
     expect(env.isTerminal('6,6')).toBe(true)
     expect(env.isTerminal('0,0')).toBe(false)
+  })
+
+  // Phase 20 — Bomb: a terminal cell with its own penalty reward, same mechanics as Goal.
+  describe('Bomb', () => {
+    it('entering a Bomb yields bombPenalty as the reward', () => {
+      const env = new GridWorldEnv(
+        config({ start: { x: 0, y: 0 }, goal: { x: 6, y: 6 }, bombs: [{ x: 1, y: 0 }], bombPenalty: -25 }),
+      )
+      const result = env.step(3) // right, into the bomb at (1,0)
+      expect(result.nextState).toBe('1,0')
+      expect(result.reward).toBe(-25)
+    })
+
+    it('entering a Bomb sets done=true', () => {
+      const env = new GridWorldEnv(
+        config({ start: { x: 0, y: 0 }, goal: { x: 6, y: 6 }, bombs: [{ x: 1, y: 0 }] }),
+      )
+      const result = env.step(3)
+      expect(result.done).toBe(true)
+      expect(env.isTerminal(result.nextState)).toBe(true)
+    })
+
+    it('a Bomb cell is reported terminal by isTerminal() as a pure query, independent of step()', () => {
+      const env = new GridWorldEnv(config({ bombs: [{ x: 3, y: 3 }] }))
+      expect(env.isTerminal('3,3')).toBe(true)
+      expect(env.isTerminal('3,4')).toBe(false)
+    })
+
+    it('getRenderModel() exposes bomb positions and the configured penalty', () => {
+      const env = new GridWorldEnv(config({ bombs: [{ x: 2, y: 1 }, { x: 4, y: 4 }], bombPenalty: -7 }))
+      const model = env.getRenderModel()
+      expect(model.bombs.sort()).toEqual(['2,1', '4,4'])
+      expect(model.bombPenalty).toBe(-7)
+    })
+
+    it('does not treat a non-bomb, non-wall, non-goal cell as terminal', () => {
+      const env = new GridWorldEnv(
+        config({ start: { x: 0, y: 0 }, goal: { x: 6, y: 6 }, bombs: [{ x: 1, y: 0 }] }),
+      )
+      const result = env.step(1) // down, into (0,1) — an ordinary cell
+      expect(result.done).toBe(false)
+      expect(result.reward).toBe(createDefaultGridWorldConfig().stepReward)
+    })
   })
 })

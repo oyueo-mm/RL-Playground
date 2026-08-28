@@ -170,6 +170,8 @@ describe('SimulationEngine + SARSA — terminal transition (Phase 8 §15)', () =
         stepReward: -0.1,
         goalReward: 10,
         terminalCells: [],
+        bombs: [],
+        bombPenalty: -10,
       },
     })
 

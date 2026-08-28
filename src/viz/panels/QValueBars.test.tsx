@@ -2,6 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { AgentSnapshot } from '../../core/types/render'
+import { translations } from '../../ui/i18n'
 import { QValueBars } from './QValueBars'
 
 afterEach(cleanup)
@@ -64,5 +65,36 @@ describe('QValueBars', () => {
     rerender(<QValueBars selectedState="0,0" agentSnapshot={updatedSnapshot} />)
 
     expect(screen.getByTestId('qvalue-up').textContent).toBe('9.000')
+  })
+
+  // Phase 19 — Greedy Value/Action reuse the exact quantities already computed
+  // elsewhere: max_a Q(s,a) (ValueHeatmap.tsx's `Math.max(...qVector)`) and
+  // argmax_a Q(s,a) via policy.ts's argmaxLowestIndex() (PolicyOverlay.tsx's tie-break).
+  describe('Phase 19 — Greedy Action / Greedy Value', () => {
+    it('shows the Greedy Action (argmax) and Greedy Value (max Q) for the selected State', () => {
+      // qTable['0,0'] = [1, -2, 3, -0.5] -> index 2 (Left) has the max value, 3.
+      render(<QValueBars selectedState="0,0" agentSnapshot={agentSnapshot} />)
+      expect(screen.getByTestId('greedy-action').textContent).toBe('Greedy Action: Left')
+      expect(screen.getByTestId('greedy-value').textContent).toBe('Greedy Value: 3.0000')
+    })
+
+    it('the lowest-index tie-break applies when multiple actions share the max Q-value', () => {
+      const tiedSnapshot: AgentSnapshot = { kind: 'Q', qTable: { '2,2': [5, 5, 1, 0] } }
+      render(<QValueBars selectedState="2,2" agentSnapshot={tiedSnapshot} />)
+      // Up (index 0) and Down (index 1) tie at 5 -> Up wins (lowest index).
+      expect(screen.getByTestId('greedy-action').textContent).toBe('Greedy Action: Up')
+      expect(screen.getByTestId('greedy-value').textContent).toBe('Greedy Value: 5.0000')
+    })
+
+    it('an unvisited State (all-zero fallback) reports Greedy Value 0', () => {
+      render(<QValueBars selectedState="6,6" agentSnapshot={agentSnapshot} />)
+      expect(screen.getByTestId('greedy-value').textContent).toBe('Greedy Value: 0.0000')
+    })
+
+    it('translates the Greedy Action/Value labels and the action name in Korean', () => {
+      render(<QValueBars selectedState="0,0" agentSnapshot={agentSnapshot} t={translations.ko} locale="ko" />)
+      expect(screen.getByTestId('greedy-action').textContent).toBe('탐욕적 행동: 왼쪽')
+      expect(screen.getByTestId('greedy-value').textContent).toBe('탐욕적 가치: 3.0000')
+    })
   })
 })

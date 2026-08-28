@@ -19,6 +19,8 @@ describe('environment registry', () => {
       stepReward: -0.1,
       goalReward: 10,
       terminalCells: [],
+      bombs: [],
+      bombPenalty: -10,
     })
     expect(env.getState()).toBe('0,0')
     expect(env.getRenderModel()).toMatchObject({ width: 3, height: 3, goal: '2,2' })

@@ -12,6 +12,8 @@ const baseRenderModel: Extract<EnvRenderModel, { kind: 'grid' }> = {
   width: 5,
   height: 5,
   walls: ['1,1'],
+  bombs: [],
+  bombPenalty: -10,
   start: '0,0',
   goal: '4,4',
   agentPos: '0,0',
@@ -33,6 +35,8 @@ function draft(overrides: Partial<GridEditorDraft> = {}): GridEditorDraft {
     start: { x: 0, y: 0 },
     goal: { x: 4, y: 4 },
     walls: [],
+    bombs: [],
+    bombPenalty: -10,
     ...overrides,
   }
 }
@@ -79,6 +83,8 @@ describe('EnvEditor — Grid size', () => {
       width: 10,
       height: 10,
       walls: ['7,7'],
+      bombs: [],
+      bombPenalty: -10,
       start: '0,0',
       goal: '9,9',
       agentPos: '0,0',
@@ -144,6 +150,125 @@ describe('EnvEditor — Wall editing', () => {
     const walls = onApply.mock.calls[0][0].walls
     expect(walls).not.toContainEqual({ x: 4, y: 4 })
   })
+})
+
+describe('EnvEditor — Phase 20: Bomb editing', () => {
+  it('clicking an empty cell in Bomb mode adds a bomb', () => {
+    const { onApply } = renderEditor()
+    fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
+    const grid = within(screen.getByTestId('env-editor-grid'))
+
+    fireEvent.click(grid.getByTestId('cell-3,3'))
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    expect(onApply.mock.calls[0][0].bombs).toContainEqual({ x: 3, y: 3 })
+  })
+
+  it('clicking an existing bomb in Bomb mode removes it', () => {
+    const { onApply } = renderEditor()
+    fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
+    const grid = within(screen.getByTestId('env-editor-grid'))
+
+    fireEvent.click(grid.getByTestId('cell-3,3')) // add
+    fireEvent.click(grid.getByTestId('cell-3,3')) // remove
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    expect(onApply.mock.calls[0][0].bombs).not.toContainEqual({ x: 3, y: 3 })
+  })
+
+  it('clicking the Start cell in Bomb mode does not place a bomb there', () => {
+    const { onApply } = renderEditor()
+    fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
+    const grid = within(screen.getByTestId('env-editor-grid'))
+
+    fireEvent.click(grid.getByTestId('cell-0,0')) // Start cell
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    expect(onApply.mock.calls[0][0].bombs).not.toContainEqual({ x: 0, y: 0 })
+  })
+
+  it('clicking the Goal cell in Bomb mode does not place a bomb there', () => {
+    const { onApply } = renderEditor()
+    fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
+    const grid = within(screen.getByTestId('env-editor-grid'))
+
+    fireEvent.click(grid.getByTestId('cell-4,4')) // Goal cell
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    expect(onApply.mock.calls[0][0].bombs).not.toContainEqual({ x: 4, y: 4 })
+  })
+
+  it('placing a Bomb on an existing Wall removes the Wall (Wall+Bomb can never coexist)', () => {
+    const { onApply } = renderEditor()
+    fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
+    const grid = within(screen.getByTestId('env-editor-grid'))
+
+    fireEvent.click(grid.getByTestId('cell-1,1')) // pre-existing wall cell (baseRenderModel)
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    const config = onApply.mock.calls[0][0]
+    expect(config.bombs).toContainEqual({ x: 1, y: 1 })
+    expect(config.walls).not.toContainEqual({ x: 1, y: 1 })
+  })
+
+  it('placing a Wall on an existing Bomb removes the Bomb (the other direction of the same rule)', () => {
+    const { onApply } = renderEditor()
+    fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
+    const grid = within(screen.getByTestId('env-editor-grid'))
+    fireEvent.click(grid.getByTestId('cell-3,3')) // place a bomb first
+
+    fireEvent.click(screen.getByTestId('env-editor-mode-wall'))
+    fireEvent.click(grid.getByTestId('cell-3,3')) // now wall it
+
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    const config = onApply.mock.calls[0][0]
+    expect(config.walls).toContainEqual({ x: 3, y: 3 })
+    expect(config.bombs).not.toContainEqual({ x: 3, y: 3 })
+  })
+
+  it('moving Start onto a bombed cell clears the bomb there (Start can never be a bomb)', () => {
+    const { onApply } = renderEditor()
+    fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
+    const grid = within(screen.getByTestId('env-editor-grid'))
+    fireEvent.click(grid.getByTestId('cell-2,2')) // place a bomb
+
+    fireEvent.click(screen.getByTestId('env-editor-mode-start'))
+    fireEvent.click(grid.getByTestId('cell-2,2'))
+
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    const config = onApply.mock.calls[0][0]
+    expect(config.start).toEqual({ x: 2, y: 2 })
+    expect(config.bombs).not.toContainEqual({ x: 2, y: 2 })
+  })
+
+  it('shrinking the grid drops bombs that fall outside the new bounds, same policy as walls', () => {
+    const { onApply } = renderEditor()
+    fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
+    const grid = within(screen.getByTestId('env-editor-grid'))
+    fireEvent.click(grid.getByTestId('cell-4,4')) // Goal cell — can't bomb it, pick another
+    fireEvent.click(grid.getByTestId('cell-3,3')) // in-range for now
+
+    fireEvent.change(screen.getByTestId('env-editor-width-input'), { target: { value: '3' } })
+    fireEvent.change(screen.getByTestId('env-editor-height-input'), { target: { value: '3' } })
+    fireEvent.click(screen.getByTestId('env-editor-mode-goal'))
+    fireEvent.click(within(screen.getByTestId('env-editor-grid')).getByTestId('cell-2,2')) // move Goal in-bounds
+
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    expect(onApply.mock.calls[0][0].bombs).toEqual([])
+  })
+
+  it('the Bomb penalty input value is carried through to Apply', () => {
+    const { onApply } = renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-bomb-penalty-input'), { target: { value: '-42' } })
+
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    expect(onApply.mock.calls[0][0].bombPenalty).toBe(-42)
+  })
+
 })
 
 describe('EnvEditor — Start mode', () => {
@@ -251,5 +376,46 @@ describe('draftToGridWorldConfig (pure function)', () => {
     expect(typeof config.stepReward).toBe('number')
     expect(typeof config.goalReward).toBe('number')
     expect(config.terminalCells).toEqual([])
+  })
+
+  // Phase 20 — unlike stepReward/goalReward/terminalCells above (which the Editor never
+  // exposes and always carries forward from the environment default), bombs/bombPenalty
+  // ARE Draft-owned fields the user edits directly, so they must pass through unchanged.
+  it('carries bombs/bombPenalty through unchanged (unlike the other, non-editable rewards)', () => {
+    const d = draft({ bombs: [{ x: 1, y: 1 }], bombPenalty: -25 })
+    const config = draftToGridWorldConfig(d)
+    expect(config.bombs).toEqual([{ x: 1, y: 1 }])
+    expect(config.bombPenalty).toBe(-25)
+  })
+})
+
+describe('validateDraft — Phase 20: Bomb collisions', () => {
+  it('rejects a Start that sits on a bomb', () => {
+    const errors = validateDraft(draft({ start: { x: 1, y: 1 }, bombs: [{ x: 1, y: 1 }] }))
+    expect(errors).toContain('Start cannot be a bomb.')
+  })
+
+  it('rejects a Goal that sits on a bomb', () => {
+    const errors = validateDraft(draft({ goal: { x: 4, y: 4 }, bombs: [{ x: 4, y: 4 }] }))
+    expect(errors).toContain('Goal cannot be a bomb.')
+  })
+
+  it('rejects an out-of-range bomb coordinate', () => {
+    const errors = validateDraft(draft({ bombs: [{ x: 99, y: 99 }] }))
+    expect(errors).toContain('One or more bombs are outside the grid.')
+  })
+
+  it('accepts a valid draft with a bomb that does not collide with anything', () => {
+    expect(validateDraft(draft({ bombs: [{ x: 2, y: 2 }] }))).toEqual([])
+  })
+
+  it('rejects a non-finite Bomb penalty', () => {
+    expect(validateDraft(draft({ bombPenalty: NaN }))).toContain('Bomb penalty must be a number.')
+    expect(validateDraft(draft({ bombPenalty: Infinity }))).toContain('Bomb penalty must be a number.')
+  })
+
+  it('accepts a positive or zero Bomb penalty (an unusual choice, but not an invalid one)', () => {
+    expect(validateDraft(draft({ bombPenalty: 0 }))).toEqual([])
+    expect(validateDraft(draft({ bombPenalty: 5 }))).toEqual([])
   })
 })

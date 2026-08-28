@@ -6,6 +6,7 @@
 import type { StateKey } from '../../core/types/rl'
 import type { AgentSnapshot } from '../../core/types/render'
 import { GRIDWORLD_ACTION_LABELS } from '../grid/actionLabels'
+import { argmaxLowestIndex } from '../grid/policy'
 import { useHighlightOnChange } from '../hooks/useHighlightOnChange'
 import { translations, translateActionLabel, type Dictionary, type Locale } from '../../ui/i18n'
 
@@ -49,11 +50,28 @@ export function QValueBars({ selectedState, agentSnapshot, t = translations.en, 
   const values = resolveQVector(agentSnapshot, selectedState)
   const maxAbs = Math.max(1e-6, ...values.map((v) => Math.abs(v)))
 
+  // Phase 19: "Greedy Value" is V(s) = max_a Q(s,a) — the exact same quantity
+  // ValueHeatmap.tsx already renders as color (`Math.max(...qVector)`), and
+  // "Greedy Action" is argmax_a Q(s,a) via the same argmaxLowestIndex() tie-break
+  // PolicyOverlay.tsx already uses to draw its arrows. Both reused here, not
+  // recomputed differently — indexing the SAME position into `values` for both keeps
+  // them consistent with each other by construction (never a mismatched pair).
+  const greedyActionIndex = argmaxLowestIndex(values)
+  const greedyValue = values[greedyActionIndex]
+  const greedyActionCanonicalLabel = GRIDWORLD_ACTION_LABELS[greedyActionIndex] ?? `Action ${greedyActionIndex}`
+
   return (
     <div className="w-full max-w-md space-y-2 rounded border border-gray-200 p-4 text-sm" data-testid="qvalue-bars">
       <h2 className="font-semibold text-gray-700">
         {t.qvalues.heading} — {selectedState}
       </h2>
+      <p className="text-gray-600" data-testid="greedy-action">
+        {t.qvalues.greedyAction}:{' '}
+        <span className="font-medium">{translateActionLabel(greedyActionCanonicalLabel, locale)}</span>
+      </p>
+      <p className="text-gray-600" data-testid="greedy-value">
+        {t.qvalues.greedyValue}: <span className="font-medium tabular-nums">{greedyValue.toFixed(4)}</span>
+      </p>
       {values.map((value, action) => {
         // Canonical (untranslated) label — GRIDWORLD_ACTION_LABELS ('Up'/'Down'/...) —
         // drives the data-testid, exactly as before. Only the visible text is localized.

@@ -678,7 +678,9 @@ Run은 Phase 12에서 "현재 Episode 1개만 실행"으로 의미가 확정되�
 - **TD(0)** — 고정된 랜덤 정책 평가라는 가장 단순한 형태부터 시작하되, "다른 알고리즘이
   학습한 Q로부터 유도한 정책을 평가"하는 기능(`PRODUCT_SPEC.md` §4.3.1)은 별도 설계 검토
   없이 추가하지 않는다(§7.2, `DESIGN_REVIEW.md` §1 R3/R8).
-- Trap, Multi-goal, 특수 Tile, 이동 비용, 확률적 이동, Wind/장애물 dynamics.
+- Multi-goal, 특수 Tile, 이동 비용, 확률적 이동, Wind/장애물 dynamics.
+  (Trap/Bomb는 Phase 20에서 구현 완료 — `GridWorldConfig.bombs`/`bombPenalty`, 아래
+  MVP 이후 섹션 참고.)
 - Softmax/UCB 행동 선택 정책, λ(eligibility trace) 계열 알고리즘.
 - Maze(비-사각 격자) 등 GridWorld와 위상 구조가 다른 환경.
 - Web Worker 기반 오프로딩(NFR-2 대응, 실제 성능 문제가 관측되면 그때 도입).
