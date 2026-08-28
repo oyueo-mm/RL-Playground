@@ -32,7 +32,12 @@ const tdInfo: TDInfo = {
 describe('InspectorPanel', () => {
   it('shows the empty state when there is no last transition/action/TD info yet', () => {
     render(<InspectorPanel lastTransition={null} lastActionSelection={null} lastTdInfo={null} />)
-    expect(screen.getByTestId('inspector-empty').textContent).toMatch(/Step을 실행하면/)
+    // Phase 13: this text was accidentally hardcoded Korean despite the rest of the UI
+    // defaulting to English (a pre-existing inconsistency, not an intentional English
+    // default) — now it's a real, translated string ("en" by default), so the assertion
+    // checks the correct English wording instead. Not a weakening: same specificity,
+    // still pinned to the exact empty-state copy via a component-scoped regex.
+    expect(screen.getByTestId('inspector-empty').textContent).toMatch(/Run Step/)
     expect(screen.queryByTestId('inspector-panel')).toBeNull()
   })
 

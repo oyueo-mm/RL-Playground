@@ -164,12 +164,14 @@ Step 단위로 학습을 진행시키면서 State/Action/Reward/TD Target/TD Err
 
 ### 4.4 학습 제어
 - FR-16: Step — 한 스텝(state→action→env.step→update)만 실행한다.
-- FR-17: Run Episode — 현재 Episode가 종료(Goal 도달/Terminal/최대 step 도달)될 때까지 실행.
-- FR-18: Run — 지정된 Episode 수만큼(또는 무한) 연속 실행.
+- FR-17: Run Episode — 지정된 Episode 수(기본값 1)만큼 연속 실행하며, 각 Episode는
+  종료(Goal 도달/Terminal) 시 다음 Episode가 Start state에서 시작된다(Phase 15).
+- FR-18: Run — 현재 Episode 1개만 실행하고 종료 시 정지한다(Phase 12에서 확정된 의미).
 - FR-19: Pause — 실행 중인 Run/Run Episode를 다음 스텝 경계에서 정지.
 - FR-20: Resume — Pause된 지점부터 이어서 실행.
 - FR-21: Reset — Q-table/V-table, 통계, 현재 Episode 진행 상태를 초기화(환경/알고리즘 설정은 유지).
-- FR-22: Episode 수 설정 — Run 시 실행할 Episode 개수(또는 "until stopped")를 지정.
+- FR-22: Episode 수 설정 — Run Episode 시 실행할 Episode 개수(정수, 최소 1, 기본값 1)를
+  지정하는 UI(Phase 15).
 - FR-23: Step Interval / Speed 설정 — 스텝 간 지연 시간(ms) 또는 "steps per animation frame"을
   슬라이더로 조정. 최저 속도(육안 관찰용)부터 최고 속도(다수 Episode 고속 실행)까지 지원.
 - FR-24: 실행 중 Speed 변경이 가능해야 하며, 현재 진행 중인 학습을 중단하지 않는다.

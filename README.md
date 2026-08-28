@@ -10,7 +10,8 @@ React·DOM에 의존하지 않으며, 서버나 외부 API 없이 정적 파일�
 
 - **Environment**: GridWorld (Wall / Start / Goal / Grid 크기 편집 가능)
 - **Algorithm**: Q-Learning, SARSA (ε-greedy 행동 선택, on/off-policy TD control)
-- **학습 제어**: Step / Run / Run Episode / Pause / Resume / Reset, 4단계 Speed(Slow/Normal/Fast/Very Fast)
+- **학습 제어**: Step / Run / Run Episode(실행할 Episode 수 지정 가능) / Pause / Resume / Reset,
+  4단계 Speed(Slow/Normal/Fast/Very Fast)
 - **관찰**:
   - Inspector — State/Action/Reward/TD Target(수식 포함)/TD Error, Q-value 갱신 전→후 값
   - Q-value 막대그래프 (State 선택 시)
@@ -29,7 +30,7 @@ React·DOM에 의존하지 않으며, 서버나 외부 API 없이 정적 파일�
 
 - 셀별 커스텀 Reward / 임의 Terminal 지정 편집
 - Environment 설정 JSON export/import
-- Algorithm 선택 UI(현재는 코드에서만 전환 가능), Episode 수 지정 UI
+- Algorithm 선택 UI(현재는 코드에서만 전환 가능)
 - Q-value 변화 이력 스파크라인
 
 **Future(설계만 되어 있고 구현 안 됨)**: TD(0), Softmax/UCB 정책, 새로운 Environment 등.

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDefaultGridWorldConfig } from '../core/environments/gridworld/GridWorldEnv'
 import App from './App'
@@ -268,10 +268,13 @@ describe('App (integration, real Engine — Phase 6 §9.3)', () => {
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 2000 })
 
     render(<App />)
+    // Phase 12: Run now executes exactly one episode per click (terminal -> idle) rather
+    // than auto-continuing, so multiple completed episodes are produced by clicking Run
+    // several times — each click completes synchronously within the single first batch
+    // (stepsPerFrame=2000 on a 2-cell grid), returning to idle before the next click.
     fireEvent.click(screen.getByTestId('playback-run'))
-    act(() => {
-      engine.pause() // stop once the synchronous first batch has run several episodes
-    })
+    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.click(screen.getByTestId('playback-run'))
 
     const snapshot = engine.getSnapshot()
     expect(snapshot.stats.rewardHistory.length).toBeGreaterThan(1)
@@ -433,5 +436,280 @@ describe('App (integration, real Engine — Phase 7 §15)', () => {
 
     expect(screen.getByTestId('qvalue-bars-empty')).toBeTruthy()
     expect(screen.queryByTestId('qvalue-bars')).toBeNull()
+  })
+})
+
+describe('App (integration, real Engine — Phase 13: language selector)', () => {
+  function langSelect(): HTMLSelectElement {
+    return screen.getByTestId('language-selector') as HTMLSelectElement
+  }
+  function selectKorean() {
+    fireEvent.change(langSelect(), { target: { value: 'ko' } })
+  }
+  function selectEnglish() {
+    fireEvent.change(langSelect(), { target: { value: 'en' } })
+  }
+
+  it('defaults to English', () => {
+    render(<App />)
+    expect(langSelect().value).toBe('en')
+    expect(screen.getByTestId('playback-run').textContent).toBe('Run')
+    expect(screen.getByTestId('playback-step').textContent).toBe('Step')
+    expect(screen.getByTestId('stats-panel').textContent).toContain('Statistics')
+  })
+
+  it('selecting 한국어 changes the major UI strings to Korean', () => {
+    render(<App />)
+    selectKorean()
+
+    expect(langSelect().value).toBe('ko')
+    expect(screen.getByTestId('playback-step').textContent).toBe('스텝')
+    expect(screen.getByTestId('playback-run').textContent).toBe('실행')
+    expect(screen.getByTestId('playback-run-episode').textContent).toBe('에피소드 실행')
+    expect(screen.getByTestId('playback-reset').textContent).toBe('초기화')
+    expect(screen.getByTestId('stats-panel').textContent).toContain('통계')
+    expect(screen.getByTestId('toggle-env-editor').textContent).toBe('환경 편집')
+  })
+
+  it('can be switched back to English from Korean', () => {
+    render(<App />)
+    selectKorean()
+    expect(screen.getByTestId('playback-run').textContent).toBe('실행')
+
+    selectEnglish()
+    expect(screen.getByTestId('playback-run').textContent).toBe('Run')
+    expect(screen.getByTestId('stats-panel').textContent).toContain('Statistics')
+  })
+
+  it('language change does not reset Engine state (Environment/Q-table/episode/stats untouched)', () => {
+    render(<App />)
+    fireEvent.click(screen.getByTestId('playback-step'))
+    const before = engine.getSnapshot()
+
+    selectKorean()
+
+    const after = engine.getSnapshot()
+    expect(after.currentState).toBe(before.currentState)
+    expect(after.envRenderModel).toEqual(before.envRenderModel)
+    expect(after.agentSnapshot).toEqual(before.agentSnapshot)
+    expect(after.episode).toBe(before.episode)
+    expect(after.stats).toEqual(before.stats)
+  })
+
+  it('Episode / Reward history / selected State are preserved across a language change', () => {
+    engine.reset({
+      envConfig: {
+        width: 2,
+        height: 1,
+        start: { x: 0, y: 0 },
+        goal: { x: 1, y: 0 },
+        walls: [],
+        stepReward: -0.1,
+        goalReward: 10,
+        terminalCells: [],
+      },
+    })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+
+    render(<App />)
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+    fireEvent.click(screen.getByTestId('cell-0,0'))
+    expect(screen.getByTestId('qvalue-bars').textContent).toContain('0,0')
+
+    const episodeBefore = engine.getSnapshot().episode
+    const rewardHistoryBefore = engine.getSnapshot().stats.rewardHistory
+
+    selectKorean()
+
+    expect(engine.getSnapshot().episode).toBe(episodeBefore)
+    expect(engine.getSnapshot().stats.rewardHistory).toEqual(rewardHistoryBefore)
+    // Selection itself is UI state, untouched by the language change — still showing
+    // the same State, just now via the translated "Q-값" heading instead of "Q-values".
+    expect(screen.getByTestId('qvalue-bars').textContent).toContain('0,0')
+    expect(screen.getByTestId('qvalue-bars').textContent).toContain('Q-값')
+  })
+
+  it('the Environment Editor stays open and displays correctly (including translated validation errors) when the language changes mid-edit', () => {
+    render(<App />)
+    fireEvent.click(screen.getByTestId('toggle-env-editor'))
+    expect(screen.getByTestId('env-editor')).toBeTruthy()
+
+    // Put the Draft into an invalid, in-progress state so the translated error message
+    // and the un-applied Draft value are both observable across the language switch.
+    fireEvent.change(screen.getByTestId('env-editor-width-input'), { target: { value: '1' } })
+    expect(screen.getByTestId('env-editor-errors')).toBeTruthy()
+
+    selectKorean()
+
+    // Still open (not force-closed or remounted-and-reset) and still showing the same
+    // in-progress, unapplied Draft value.
+    expect(screen.getByTestId('env-editor')).toBeTruthy()
+    expect((screen.getByTestId('env-editor-width-input') as HTMLInputElement).value).toBe('1')
+    expect(screen.getByTestId('env-editor-errors').textContent).toContain('너비는')
+    expect(screen.getByTestId('env-editor').textContent).toContain('환경 편집기')
+    expect(screen.getByTestId('env-editor-apply').textContent).toBe('환경 적용')
+  })
+})
+
+describe('App (integration, real Engine — Phase 15: Episode count)', () => {
+  function countInput(): HTMLInputElement {
+    return screen.getByTestId('episode-count-input') as HTMLInputElement
+  }
+  function setCount(value: string) {
+    fireEvent.change(countInput(), { target: { value } })
+  }
+  const tinyTwoCellGrid = {
+    width: 2,
+    height: 1,
+    start: { x: 0, y: 0 },
+    goal: { x: 1, y: 0 },
+    walls: [],
+    stepReward: -0.1,
+    goalReward: 10,
+    terminalCells: [],
+  }
+
+  it('A. defaults to 1', () => {
+    render(<App />)
+    expect(countInput().value).toBe('1')
+  })
+
+  it('B. can be changed to 5; invalid values (0, negative, decimal) are rejected', () => {
+    render(<App />)
+    setCount('5')
+    expect(countInput().value).toBe('5')
+
+    setCount('0')
+    expect(countInput().value).toBe('5') // unchanged — rejected
+    setCount('-1')
+    expect(countInput().value).toBe('5')
+    setCount('2.5')
+    expect(countInput().value).toBe('5')
+  })
+
+  it('C. Run still runs exactly 1 episode regardless of the Episode count input', () => {
+    engine.reset({ envConfig: tinyTwoCellGrid })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+    setCount('7') // set a count that would matter for Run Episode, but not for Run
+
+    fireEvent.click(screen.getByTestId('playback-run'))
+
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(engine.getSnapshot().episode).toBe(1)
+  })
+
+  it('D/G. Run Episode with count=3 completes exactly 3 episodes, then idle', () => {
+    engine.reset({ envConfig: tinyTwoCellGrid })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+    setCount('3')
+
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(engine.getSnapshot().episode).toBe(3)
+    // Reward history accumulates across all 3 (Statistics/Reward Chart, per §5).
+    expect(engine.getSnapshot().stats.rewardHistory.length).toBe(3)
+  })
+
+  it('E. the Episode count input is disabled while RUNNING', () => {
+    engine.setSpeed({ mode: 'interval', intervalMs: 500 })
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+
+    expect(engine.getSnapshot().status).toBe('running')
+    expect(countInput().disabled).toBe(true)
+
+    engine.pause() // don't leave a scheduled callback dangling past the test
+  })
+
+  it('F. Pause mid multi-episode Run Episode preserves progress, and Resume continues the same episode (not a restart)', () => {
+    // alpha=0 (no learning) + epsilon=0 (fully greedy) on an all-zero Q-table ties every
+    // step to the same lowest-index action ("up"), which self-loops against the default
+    // grid's top boundary — deterministic, and the episode never finishes on its own, so
+    // Pause/Resume can be tested without any risk of the episode ending mid-check (same
+    // technique as Phase 12's Core-level pause/resume test).
+    engine.reset({ envConfig: createDefaultGridWorldConfig(), hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
+    engine.setSpeed({ mode: 'interval', intervalMs: 500 })
+    render(<App />)
+    setCount('3')
+
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+    // Scheduler.start() performs the first step synchronously (Phase 12).
+    const afterFirstStep = engine.getSnapshot()
+    expect(afterFirstStep.status).toBe('running')
+    expect(afterFirstStep.stepInCurrentEpisode).toBe(1)
+    expect(afterFirstStep.episode).toBe(0)
+
+    fireEvent.click(screen.getByTestId('playback-pause'))
+    const paused = engine.getSnapshot()
+    expect(paused.status).toBe('paused')
+    expect(paused.stepInCurrentEpisode).toBe(1)
+    expect(paused.currentState).toBe(afterFirstStep.currentState)
+
+    fireEvent.click(screen.getByTestId('playback-resume'))
+    // resume() -> Scheduler.start() also performs the next step synchronously.
+    const afterResume = engine.getSnapshot()
+    expect(afterResume.status).toBe('running')
+    expect(afterResume.stepInCurrentEpisode).toBe(2) // continued, not restarted back to 1
+    expect(afterResume.episode).toBe(0) // still the same in-progress episode, none skipped
+
+    engine.pause() // don't leave a scheduled callback dangling past the test
+  })
+
+  it('H. Reset mid Run Episode cancels the run and any remaining episodes', () => {
+    engine.setSpeed({ mode: 'interval', intervalMs: 500 })
+    render(<App />)
+    setCount('5')
+
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+    expect(engine.getSnapshot().status).toBe('running')
+
+    fireEvent.click(screen.getByTestId('playback-reset'))
+
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(engine.getSnapshot().episode).toBe(0)
+
+    // A fresh Run Episode afterward uses whatever count is currently entered, unaffected
+    // by the cancelled run.
+    setCount('2')
+    engine.reset({ envConfig: tinyTwoCellGrid })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(engine.getSnapshot().episode).toBe(2)
+  })
+
+  it('I. the Episode count label is translated in English and Korean', () => {
+    render(<App />)
+    expect(screen.getByText('Episodes')).toBeTruthy()
+
+    fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
+    expect(screen.getByText('에피소드 수')).toBeTruthy()
+    // The count value itself is untouched by a language change.
+    expect(countInput().value).toBe('1')
+  })
+})
+
+describe('App (integration — Phase 16: layout stability, structural)', () => {
+  // jsdom has no real CSS box model, so pixel-position stability itself can only be
+  // proven in an actual browser (done for this Phase via Playwright — see the Phase 16
+  // report's measured before/after coordinates). What CAN be guarded here, cheaply and
+  // durably, is the specific CSS mechanism the fix depends on: if a future change
+  // silently drops `w-full` from the two-column row or `flex-1`/`max-w-md` from the
+  // right column, the shrink-to-fit + `items-center` re-centering bug this Phase fixed
+  // would silently come back. This test fails loudly if that happens.
+  it('the two-column row and the right column carry the width-stabilizing classes the Phase 16 fix depends on', () => {
+    render(<App />)
+
+    const twoColRow = screen.getByTestId('grid-stack').closest('.md\\:flex-row')
+    expect(twoColRow).toBeTruthy()
+    expect(twoColRow!.className).toContain('w-full')
+
+    const rightColumn = screen.getByTestId('stats-panel').parentElement!
+    expect(rightColumn.className).toContain('md:flex-1')
+    expect(rightColumn.className).toContain('md:max-w-md')
   })
 })

@@ -7,10 +7,14 @@ import type { StateKey } from '../../core/types/rl'
 import type { AgentSnapshot } from '../../core/types/render'
 import { GRIDWORLD_ACTION_LABELS } from '../grid/actionLabels'
 import { useHighlightOnChange } from '../hooks/useHighlightOnChange'
+import { translations, translateActionLabel, type Dictionary, type Locale } from '../../ui/i18n'
 
 export interface QValueBarsProps {
   selectedState: StateKey | null
   agentSnapshot: AgentSnapshot
+  /** Phase 13 — defaults to English so every pre-existing caller/test is unaffected. */
+  t?: Dictionary
+  locale?: Locale
 }
 
 // AgentSnapshot.qTable (Record<StateKey, number[]>) only contains states the agent has
@@ -30,14 +34,14 @@ function resolveQVector(agentSnapshot: AgentSnapshot, state: StateKey): number[]
   return agentSnapshot.qTable[state] ?? new Array(GRIDWORLD_ACTION_LABELS.length).fill(0)
 }
 
-export function QValueBars({ selectedState, agentSnapshot }: QValueBarsProps) {
+export function QValueBars({ selectedState, agentSnapshot, t = translations.en, locale = 'en' }: QValueBarsProps) {
   if (!selectedState) {
     return (
       <div
         className="w-full max-w-md rounded border border-gray-200 p-4 text-sm text-gray-500"
         data-testid="qvalue-bars-empty"
       >
-        Grid에서 State를 선택하세요.
+        {t.qvalues.empty}
       </div>
     )
   }
@@ -47,26 +51,35 @@ export function QValueBars({ selectedState, agentSnapshot }: QValueBarsProps) {
 
   return (
     <div className="w-full max-w-md space-y-2 rounded border border-gray-200 p-4 text-sm" data-testid="qvalue-bars">
-      <h2 className="font-semibold text-gray-700">Q-values — {selectedState}</h2>
-      {values.map((value, action) => (
-        <QValueBarRow
-          key={action}
-          label={GRIDWORLD_ACTION_LABELS[action] ?? `Action ${action}`}
-          value={value}
-          maxAbs={maxAbs}
-        />
-      ))}
+      <h2 className="font-semibold text-gray-700">
+        {t.qvalues.heading} — {selectedState}
+      </h2>
+      {values.map((value, action) => {
+        // Canonical (untranslated) label — GRIDWORLD_ACTION_LABELS ('Up'/'Down'/...) —
+        // drives the data-testid, exactly as before. Only the visible text is localized.
+        const canonicalLabel = GRIDWORLD_ACTION_LABELS[action] ?? `Action ${action}`
+        return (
+          <QValueBarRow
+            key={action}
+            testIdLabel={canonicalLabel}
+            displayLabel={translateActionLabel(canonicalLabel, locale)}
+            value={value}
+            maxAbs={maxAbs}
+          />
+        )
+      })}
     </div>
   )
 }
 
 interface QValueBarRowProps {
-  label: string
+  testIdLabel: string
+  displayLabel: string
   value: number
   maxAbs: number
 }
 
-function QValueBarRow({ label, value, maxAbs }: QValueBarRowProps) {
+function QValueBarRow({ testIdLabel, displayLabel, value, maxAbs }: QValueBarRowProps) {
   const highlight = useHighlightOnChange(value)
   // Bar width is relative to the largest |value| among the currently displayed
   // actions, and capped at 50% of the track (each side of the zero-line) — so bars
@@ -75,8 +88,8 @@ function QValueBarRow({ label, value, maxAbs }: QValueBarRowProps) {
   const isPositive = value >= 0
 
   return (
-    <div className="flex items-center gap-2" data-testid={`qvalue-row-${label.toLowerCase()}`}>
-      <span className="w-14 shrink-0 text-gray-600">{label}</span>
+    <div className="flex items-center gap-2" data-testid={`qvalue-row-${testIdLabel.toLowerCase()}`}>
+      <span className="w-14 shrink-0 text-gray-600">{displayLabel}</span>
       <div className="relative h-4 flex-1 overflow-hidden rounded bg-gray-100">
         <div className="absolute top-0 left-1/2 h-full w-px bg-gray-300" />
         <div
@@ -86,7 +99,7 @@ function QValueBarRow({ label, value, maxAbs }: QValueBarRowProps) {
           style={{ width: `${widthPercent}%` }}
         />
       </div>
-      <span className="w-16 shrink-0 text-right tabular-nums" data-testid={`qvalue-${label.toLowerCase()}`}>
+      <span className="w-16 shrink-0 text-right tabular-nums" data-testid={`qvalue-${testIdLabel.toLowerCase()}`}>
         {value.toFixed(3)}
       </span>
     </div>

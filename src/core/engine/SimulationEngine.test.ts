@@ -414,6 +414,153 @@ describe('SimulationEngine — computation vs. emit frequency invariant', () => 
   })
 })
 
+// Phase 12: clarifies the Episode execution model. Run/Run Episode/Pause/Resume/Reset
+// already had correct state-machine plumbing from Phase 2's design (generation token,
+// runMode/remainingEpisodes as Engine — not Scheduler — fields, environment.reset() only
+// inside finishEpisode()); the actual bug this phase fixes was UI-layer only (App.tsx's
+// Run button called run({ episodes: 1000 }) instead of running just the current
+// episode). These tests pin down the Core-level guarantees the UI fix depends on.
+describe('SimulationEngine — Phase 12: episode execution model', () => {
+  it('run({ episodes: 1 }) runs exactly the current episode to termination, then idle', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      envConfig: {
+        width: 2,
+        height: 1,
+        start: { x: 0, y: 0 },
+        goal: { x: 1, y: 0 },
+        walls: [],
+        stepReward: -0.1,
+        goalReward: 10,
+        terminalCells: [],
+      },
+    })
+
+    engine.run({ episodes: 1 })
+    flushAll()
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.status).toBe('idle')
+    expect(snapshot.episode).toBe(1)
+  })
+
+  it('pause preserves exact mid-episode progress, and resume continues the same episode from the next step (not a restart)', () => {
+    const { source, flushOne } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      speed: { mode: 'interval', intervalMs: 200 },
+      // alpha=0 freezes the Q-table (no learning), epsilon=0 is fully greedy — with an
+      // all-zero Q-table that never changes, action selection ties on every step and the
+      // lowest-index action ("up") always wins, so the agent deterministically self-loops
+      // against the top boundary of the default 7x7 grid forever. This makes step count
+      // and position fully predictable without depending on any RNG behavior.
+      hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 },
+    })
+
+    // Scheduler.start() runs the first batch synchronously, so run() itself already
+    // performs step 1 before any flushOne() — only 2 more flushes are needed to reach 3.
+    engine.run({ episodes: 1 })
+    flushOne()
+    flushOne()
+    const midSnapshot = engine.getSnapshot()
+    expect(midSnapshot.status).toBe('running')
+    expect(midSnapshot.stepInCurrentEpisode).toBe(3)
+    expect(midSnapshot.currentState).toBe('0,0')
+
+    engine.pause()
+    const pausedSnapshot = engine.getSnapshot()
+    expect(pausedSnapshot.status).toBe('paused')
+    expect(pausedSnapshot.stepInCurrentEpisode).toBe(3)
+    expect(pausedSnapshot.currentState).toBe('0,0')
+    expect(pausedSnapshot.stats.totalReward).toBe(midSnapshot.stats.totalReward)
+
+    // resume() -> Scheduler.start() also performs the next step synchronously, so no
+    // extra flushOne() is needed to observe step 4.
+    engine.resume()
+    const afterResumeSnapshot = engine.getSnapshot()
+    expect(afterResumeSnapshot.status).toBe('running')
+    // Exactly one more step than at pause time — proves resume executed step 4, not a
+    // fresh episode restarting back at step 1.
+    expect(afterResumeSnapshot.stepInCurrentEpisode).toBe(4)
+    expect(afterResumeSnapshot.episode).toBe(0) // still the same, unfinished episode
+  })
+
+  it('pause/resume during runEpisode() (single-episode mode) completes the same episode without restarting or duplicating it', () => {
+    const { source, flushOne, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, speed: { mode: 'interval', intervalMs: 200 } })
+
+    // runEpisode() -> Scheduler.start() also performs step 1 synchronously, so only 1
+    // more flushOne() is needed to reach step 2.
+    engine.runEpisode()
+    flushOne()
+    const midSnapshot = engine.getSnapshot()
+    expect(midSnapshot.status).toBe('running')
+    expect(midSnapshot.episode).toBe(0) // not finished yet
+    expect(midSnapshot.stepInCurrentEpisode).toBe(2)
+
+    engine.pause()
+    const pausedSnapshot = engine.getSnapshot()
+    expect(pausedSnapshot.stepInCurrentEpisode).toBe(2)
+    expect(pausedSnapshot.currentState).toBe(midSnapshot.currentState)
+
+    engine.resume()
+    flushAll() // drive the SAME episode to completion (default 7x7 grid, random walk)
+
+    const finalSnapshot = engine.getSnapshot()
+    expect(finalSnapshot.status).toBe('idle')
+    // Exactly one episode total — a restart-on-resume bug would either duplicate this to
+    // 2, or a lost-progress bug would show a step count inconsistent with continuation.
+    expect(finalSnapshot.episode).toBe(1)
+  })
+
+  it('a new episode starts from the environment Start state when a multi-episode run continues past a terminal transition', () => {
+    const { source, flushOne } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      speed: { mode: 'interval', intervalMs: 200 },
+      hyperparams: { alpha: 0.1, gamma: 0.9, epsilon: 1 }, // fully random -> reliably reaches Goal
+      envConfig: {
+        width: 2,
+        height: 1,
+        start: { x: 0, y: 0 },
+        goal: { x: 1, y: 0 },
+        walls: [],
+        stepReward: -0.1,
+        goalReward: 10,
+        terminalCells: [],
+      },
+    })
+
+    let sawEpisodeOneStart = false
+    function checkForEpisodeOneStart() {
+      const snap = engine.getSnapshot()
+      if (snap.episode === 1 && !sawEpisodeOneStart) {
+        sawEpisodeOneStart = true
+        // The moment the 1st episode ends and the 2nd begins, currentState must already
+        // be back at Start (0,0) — not wherever episode 1's terminal transition landed.
+        expect(snap.currentState).toBe('0,0')
+        expect(snap.stepInCurrentEpisode).toBe(0)
+      }
+    }
+
+    // Scheduler.start() performs the first step synchronously, so episode 1 could in
+    // principle already have started before the flush loop below even begins — check
+    // right after run() too, not just after each flushOne().
+    engine.run({ episodes: 2 })
+    checkForEpisodeOneStart()
+
+    for (let i = 0; i < 500 && engine.getSnapshot().episode < 2; i++) {
+      flushOne()
+      checkForEpisodeOneStart()
+    }
+
+    expect(sawEpisodeOneStart).toBe(true)
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(engine.getSnapshot().episode).toBe(2)
+  })
+})
+
 describe('SimulationEngine — 500 episode smoke test', () => {
   it('Q-Learning improves over 500 episodes on GridWorld (headless)', () => {
     const { source, flushAll } = createManualTimerSource()

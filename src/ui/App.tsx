@@ -6,6 +6,7 @@ import { PolicyOverlay } from '../viz/grid/PolicyOverlay'
 import { ValueHeatmap } from '../viz/grid/ValueHeatmap'
 import { PlaybackControls } from '../viz/controls/PlaybackControls'
 import { SpeedControl } from '../viz/controls/SpeedControl'
+import { LanguageSelector } from '../viz/controls/LanguageSelector'
 import { InspectorPanel } from '../viz/panels/InspectorPanel'
 import { QValueBars } from '../viz/panels/QValueBars'
 import { StatsPanel } from '../viz/panels/StatsPanel'
@@ -13,12 +14,9 @@ import { RewardChart } from '../viz/panels/RewardChart'
 import { EnvEditor } from '../viz/controls/EnvEditor'
 import { engine } from './engine'
 import { useSimulationEngine } from './hooks/useSimulationEngine'
+import { translations, type Locale } from './i18n'
 
 const CELL_SIZE = 48
-
-// No episode-count input exists yet (FR-22 is Post-MVP — ARCHITECTURE.md §11), so "Run"
-// starts a long run that the user stops with Pause, per Phase 5 §16 Scenario A/E.
-const RUN_EPISODES = 1000
 
 function App() {
   const snapshot = useSimulationEngine(engine)
@@ -34,6 +32,17 @@ function App() {
   const [showValue, setShowValue] = useState(false)
   const [speed, setSpeed] = useState<SpeedSetting>(() => engine.getSpeed())
   const [showEditor, setShowEditor] = useState(false)
+  // Phase 15: how many episodes "Run Episode" runs — pure UI state, never written into
+  // Engine/Core. Once engine.run({ episodes: episodeCount }) is called, the Engine's own
+  // remainingEpisodes takes over as the sole source of truth for the in-flight run;
+  // changing this state afterward (impossible anyway while RUNNING/PAUSED — the input is
+  // disabled) can never retroactively affect it.
+  const [episodeCount, setEpisodeCount] = useState(1)
+  // Phase 13: locale is pure UI state, entirely separate from the Engine — it never
+  // reads from or writes to `engine`, so changing it can never reset/affect Episode,
+  // Q-table, Environment, or reward history (no localStorage either, per Phase 13 §6).
+  const [locale, setLocale] = useState<Locale>('en')
+  const t = translations[locale]
 
   const handleSpeedChange = (next: SpeedSetting) => {
     engine.setSpeed(next)
@@ -42,10 +51,29 @@ function App() {
 
   return (
     <main className="mx-auto flex max-w-4xl flex-col items-center gap-6 p-8">
-      <h1 className="text-3xl font-semibold">RL Playground</h1>
+      <div className="flex w-full max-w-4xl items-center justify-between">
+        <h1 className="text-3xl font-semibold">RL Playground</h1>
+        <LanguageSelector locale={locale} onChange={setLocale} t={t} />
+      </div>
 
-      <div className="flex flex-col items-center gap-4 md:flex-row md:items-start md:justify-center">
-        <div className="flex flex-col items-center gap-4">
+      {/*
+        Phase 16: this row previously had no explicit width, so it was shrink-to-fit
+        content-sized — and `items-center` on <main> re-centers each of its direct
+        children as a block. That meant whenever InspectorPanel's rendered width changed
+        (its short "empty" placeholder vs. the full populated panel — see Phase 15
+        report), the row's own natural width changed, so its centered position shifted,
+        dragging the left column (PlaybackControls included) ~18px sideways with it —
+        even though nothing in the left column itself had changed.
+        Fix: `w-full` makes this row's own width stable (matches <main>'s available
+        width, same pattern the h1/language-selector row above already uses), which
+        removes it from `items-center`'s content-driven re-centering. The right column
+        below gets `md:flex-1 md:max-w-md` instead of being shrink-to-fit — its box width
+        is now determined by leftover flex space (stable, viewport-driven), capped at the
+        same 28rem/max-w-md every child already used, so switching between InspectorPanel's
+        empty/populated content changes what's inside that box, never the box itself.
+      */}
+      <div className="flex w-full flex-col items-center gap-4 md:flex-row md:items-start md:justify-center">
+        <div className="flex flex-none flex-col items-center gap-4">
           {snapshot.envRenderModel.kind === 'grid' ? (
             <div className="relative" data-testid="grid-stack">
               <GridSvg
@@ -81,7 +109,7 @@ function App() {
                 onChange={(e) => setShowPolicy(e.target.checked)}
                 data-testid="toggle-policy"
               />
-              Policy
+              {t.overlay.policy}
             </label>
             <label className="flex items-center gap-1">
               <input
@@ -90,21 +118,32 @@ function App() {
                 onChange={(e) => setShowValue(e.target.checked)}
                 data-testid="toggle-value"
               />
-              Value
+              {t.overlay.value}
             </label>
           </div>
 
           <PlaybackControls
             status={snapshot.status}
             onStep={() => engine.step()}
-            onRun={() => engine.run({ episodes: RUN_EPISODES })}
-            onRunEpisode={() => engine.runEpisode()}
+            // Phase 12: Run always executes exactly the current episode (terminal ->
+            // idle) — that meaning is unchanged by Phase 15's episode-count input, which
+            // only affects Run Episode.
+            onRun={() => engine.run({ episodes: 1 })}
+            // Phase 15: Run Episode now runs the user-specified count via the same
+            // run({ episodes }) API Run uses (episodeCount defaults to 1, so with no
+            // input interaction this is behaviorally identical to Phase 12's
+            // engine.runEpisode() default). No Core change needed — run({episodes}) and
+            // its remainingEpisodes/runMode bookkeeping already fully support this.
+            onRunEpisode={() => engine.run({ episodes: episodeCount })}
             onPause={() => engine.pause()}
             onResume={() => engine.resume()}
             onReset={() => engine.reset()}
+            t={t}
+            episodeCount={episodeCount}
+            onEpisodeCountChange={setEpisodeCount}
           />
 
-          <SpeedControl speed={speed} onChange={handleSpeedChange} />
+          <SpeedControl speed={speed} onChange={handleSpeedChange} t={t} />
 
           <button
             type="button"
@@ -112,14 +151,16 @@ function App() {
             data-testid="toggle-env-editor"
             className="rounded bg-purple-100 px-4 py-2 text-sm font-medium text-purple-800 hover:bg-purple-200"
           >
-            {showEditor ? 'Hide Environment Editor' : 'Edit Environment'}
+            {showEditor ? t.envToggle.hide : t.envToggle.show}
           </button>
 
           {showEditor && snapshot.envRenderModel.kind === 'grid' ? (
             <EnvEditor
               // Re-created (via key) whenever the editor is reopened, so a stale Draft
               // from a previous open never lingers — Draft always starts from whatever
-              // the environment looks like right now.
+              // the environment looks like right now. Locale is NOT part of this key, so
+              // switching languages while the editor is open re-renders it in place
+              // (Phase 13 §7/§8 F/G) rather than remounting and losing the Draft.
               key={showEditor ? 'open' : 'closed'}
               currentRenderModel={snapshot.envRenderModel}
               onApply={(config) => {
@@ -129,19 +170,34 @@ function App() {
                 // rather than leaving QValueBars showing a stale/meaningless selection.
                 setSelectedState(null)
               }}
+              t={t}
+              locale={locale}
             />
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-4">
+        {/*
+          `min-w-0` overrides the flex item's default `min-width:auto` — without it, a
+          child with a large fixed-pixel intrinsic size (RewardChart's SVG is a fixed
+          320px wide, not responsive) can force this column wider than its flex-computed
+          share once it appears, which is otherwise invisible until content actually
+          exceeds the available width (only reproduces at the tightest tested viewport,
+          768px, and only once the Reward Chart replaces its empty-state placeholder —
+          see the Phase 16 report). RewardChart.tsx itself also gets `overflow-x-auto` as
+          a defensive fallback so if a chart still doesn't fit, it scrolls inside its own
+          card instead of pushing the surrounding layout.
+        */}
+        <div className="flex min-w-0 flex-col gap-4 md:flex-1 md:max-w-md">
           <InspectorPanel
             lastTransition={snapshot.lastTransition}
             lastActionSelection={snapshot.lastActionSelection}
             lastTdInfo={snapshot.lastTdInfo}
+            t={t}
+            locale={locale}
           />
-          <QValueBars selectedState={selectedState} agentSnapshot={snapshot.agentSnapshot} />
-          <StatsPanel episode={snapshot.episode} stats={snapshot.stats} />
-          <RewardChart rewardHistory={snapshot.stats.rewardHistory} />
+          <QValueBars selectedState={selectedState} agentSnapshot={snapshot.agentSnapshot} t={t} locale={locale} />
+          <StatsPanel episode={snapshot.episode} stats={snapshot.stats} t={t} />
+          <RewardChart rewardHistory={snapshot.stats.rewardHistory} t={t} />
         </div>
       </div>
     </main>

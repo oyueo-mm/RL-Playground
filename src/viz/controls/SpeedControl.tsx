@@ -4,14 +4,19 @@
 // The caller (App.tsx) is the one that calls engine.setSpeed(...).
 
 import type { SpeedSetting } from '../../core/engine/Scheduler'
+import { translations, type Dictionary } from '../../ui/i18n'
 
 export interface SpeedControlProps {
   speed: SpeedSetting
   onChange: (speed: SpeedSetting) => void
+  /** Phase 13 — defaults to English so every pre-existing caller/test is unaffected. */
+  t?: Dictionary
 }
 
 interface SpeedPreset {
-  label: string
+  // Canonical (untranslated) id — used only to look up the testId and the translated
+  // label; never rendered directly.
+  id: 'slow' | 'normal' | 'fast' | 'veryFast'
   testId: string
   speed: SpeedSetting
 }
@@ -21,10 +26,10 @@ interface SpeedPreset {
 // (many steps per animation frame, for fast/bulk training), matching ARCHITECTURE.md
 // §5.4's two modes exactly.
 const SPEED_PRESETS: SpeedPreset[] = [
-  { label: 'Slow', testId: 'speed-slow', speed: { mode: 'interval', intervalMs: 500 } },
-  { label: 'Normal', testId: 'speed-normal', speed: { mode: 'interval', intervalMs: 150 } },
-  { label: 'Fast', testId: 'speed-fast', speed: { mode: 'batch', stepsPerFrame: 10 } },
-  { label: 'Very Fast', testId: 'speed-very-fast', speed: { mode: 'batch', stepsPerFrame: 100 } },
+  { id: 'slow', testId: 'speed-slow', speed: { mode: 'interval', intervalMs: 500 } },
+  { id: 'normal', testId: 'speed-normal', speed: { mode: 'interval', intervalMs: 150 } },
+  { id: 'fast', testId: 'speed-fast', speed: { mode: 'batch', stepsPerFrame: 10 } },
+  { id: 'veryFast', testId: 'speed-very-fast', speed: { mode: 'batch', stepsPerFrame: 100 } },
 ]
 
 function isSameSpeed(a: SpeedSetting, b: SpeedSetting): boolean {
@@ -33,15 +38,15 @@ function isSameSpeed(a: SpeedSetting, b: SpeedSetting): boolean {
   return false
 }
 
-export function SpeedControl({ speed, onChange }: SpeedControlProps) {
+export function SpeedControl({ speed, onChange, t = translations.en }: SpeedControlProps) {
   return (
     <div className="flex flex-wrap items-center gap-2" data-testid="speed-control">
-      <span className="text-sm text-gray-600">Speed:</span>
+      <span className="text-sm text-gray-600">{t.speed.label}</span>
       {SPEED_PRESETS.map((preset) => {
         const active = isSameSpeed(speed, preset.speed)
         return (
           <button
-            key={preset.label}
+            key={preset.id}
             type="button"
             aria-pressed={active}
             data-testid={preset.testId}
@@ -50,7 +55,7 @@ export function SpeedControl({ speed, onChange }: SpeedControlProps) {
               active ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
             }`}
           >
-            {preset.label}
+            {t.speed[preset.id]}
           </button>
         )
       })}

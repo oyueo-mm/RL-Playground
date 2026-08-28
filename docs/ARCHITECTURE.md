@@ -540,18 +540,22 @@ interface EngineSnapshot {
         -> emit(snapshot)
 ```
 
-### 6.4 Run(다중 Episode, 고속) 흐름
+### 6.4 Run Episode(다중 Episode, 고속) 흐름
+
+Run은 Phase 12에서 "현재 Episode 1개만 실행"으로 의미가 확정되었다(`engine.run({ episodes: 1 })`
+고정). 아래의 다중 Episode 고속 실행 흐름은 Phase 15에서 UI가 추가된 **Run Episode**(Episode
+수 입력, 기본값 1, 정수, [1, 200])에 해당한다.
 
 ```
-[UI: Run 클릭, episodes=500, speed=max]
-   -> engine.run({ episodes: 500 })
+[UI: Run Episode 클릭, episodes=100(사용자 입력), speed=max]
+   -> engine.run({ episodes: 100 })
    -> Scheduler가 speed 설정에 따라 performStep()을 반복 실행 (§5.4)
         - 저속: setTimeout(performStep, interval), 매 스텝 emit
         - 고속: 프레임당 여러 performStep()을 동기 실행 후 requestAnimationFrame으로 양보,
           M 스텝마다 한 번만 emit(snapshot) (§5.3 불변식: performStep() 자체는 매 스텝 실행,
           emit만 배치)
         - Speed 전환 시 generation token으로 이전 스케줄의 지연 콜백을 무효화 (§5.4)
-   -> 매 Episode 종료 시 stats 갱신, episode==500 도달 또는 pause() 호출 시 정지
+   -> 매 Episode 종료 시 stats 갱신, episode==100 도달 또는 pause() 호출 시 정지
 ```
 
 ---

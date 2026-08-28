@@ -14,6 +14,7 @@ import type { EnvRenderModel } from '../../core/types/render'
 import type { StateKey } from '../../core/types/rl'
 import { GridSvg } from '../grid/GridSvg'
 import { parseStateKey } from '../grid/stateKey'
+import { translations, translateValidationError, type Dictionary, type Locale } from '../../ui/i18n'
 import {
   draftFromRenderModel,
   draftToGridWorldConfig,
@@ -33,15 +34,23 @@ export interface EnvEditorProps {
   onApply: (config: GridWorldConfig) => void
   /** Defaults to window.confirm (Phase 7 §9 explicitly allows the plain browser dialog). */
   confirmApply?: (message: string) => boolean
+  /** Phase 13 — defaults to English so every pre-existing caller/test is unaffected. */
+  t?: Dictionary
+  locale?: Locale
 }
 
-const APPLY_CONFIRM_MESSAGE =
-  'Applying this environment will reset the current Q-table, episode count, and statistics. Continue?'
-
-export function EnvEditor({ currentRenderModel, onApply, confirmApply = window.confirm }: EnvEditorProps) {
+export function EnvEditor({
+  currentRenderModel,
+  onApply,
+  confirmApply = window.confirm,
+  t = translations.en,
+  locale = 'en',
+}: EnvEditorProps) {
   const [draft, setDraft] = useState<GridEditorDraft>(() => draftFromRenderModel(currentRenderModel))
   const [mode, setMode] = useState<EditMode>('wall')
 
+  // validateDraft() itself always returns plain English messages (its own pure-function
+  // tests assert those exact strings) — translated only for display here.
   const errors = validateDraft(draft)
   const isValid = errors.length === 0
 
@@ -77,17 +86,25 @@ export function EnvEditor({ currentRenderModel, onApply, confirmApply = window.c
 
   function handleApply() {
     if (!isValid) return // defense in depth — the button is already disabled in this case
-    if (!confirmApply(APPLY_CONFIRM_MESSAGE)) return
+    if (!confirmApply(t.envEditor.applyConfirm)) return
     onApply(draftToGridWorldConfig(draft))
+  }
+
+  // Canonical mode ids ('wall'/'start'/'goal') drive data-testid/aria-pressed unchanged;
+  // only the visible button text is looked up per-locale.
+  const modeLabel: Record<EditMode, string> = {
+    wall: t.envEditor.modeWall,
+    start: t.envEditor.modeStart,
+    goal: t.envEditor.modeGoal,
   }
 
   return (
     <div className="w-full max-w-md space-y-3 rounded border border-gray-200 p-4 text-sm" data-testid="env-editor">
-      <h2 className="font-semibold text-gray-700">Environment Editor</h2>
+      <h2 className="font-semibold text-gray-700">{t.envEditor.heading}</h2>
 
       <div className="flex items-center gap-3">
         <label className="flex items-center gap-1">
-          Width
+          {t.envEditor.width}
           <input
             type="number"
             min={MIN_SIZE}
@@ -99,7 +116,7 @@ export function EnvEditor({ currentRenderModel, onApply, confirmApply = window.c
           />
         </label>
         <label className="flex items-center gap-1">
-          Height
+          {t.envEditor.height}
           <input
             type="number"
             min={MIN_SIZE}
@@ -124,20 +141,20 @@ export function EnvEditor({ currentRenderModel, onApply, confirmApply = window.c
               mode === m ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
             }`}
           >
-            {m}
+            {modeLabel[m]}
           </button>
         ))}
       </div>
 
       <div data-testid="env-editor-grid">
-        <p className="mb-1 text-xs text-gray-500">Draft preview (not applied yet)</p>
+        <p className="mb-1 text-xs text-gray-500">{t.envEditor.draftPreview}</p>
         <GridSvg renderModel={draftToRenderModel(draft)} cellSize={32} onStateSelect={handleCellClick} />
       </div>
 
       {errors.length > 0 && (
         <ul className="list-disc space-y-0.5 pl-4 text-xs text-red-600" data-testid="env-editor-errors">
           {errors.map((message) => (
-            <li key={message}>{message}</li>
+            <li key={message}>{translateValidationError(message, locale)}</li>
           ))}
         </ul>
       )}
@@ -149,7 +166,7 @@ export function EnvEditor({ currentRenderModel, onApply, confirmApply = window.c
         data-testid="env-editor-apply"
         className="rounded bg-purple-600 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
       >
-        Apply Environment
+        {t.envEditor.apply}
       </button>
     </div>
   )

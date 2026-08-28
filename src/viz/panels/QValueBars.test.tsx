@@ -16,7 +16,12 @@ const agentSnapshot: AgentSnapshot = {
 describe('QValueBars', () => {
   it('shows an empty state when no State is selected', () => {
     render(<QValueBars selectedState={null} agentSnapshot={agentSnapshot} />)
-    expect(screen.getByTestId('qvalue-bars-empty').textContent).toMatch(/State를 선택/)
+    // Phase 13: this text was accidentally hardcoded Korean despite the rest of the UI
+    // defaulting to English (a pre-existing inconsistency, not an intentional English
+    // default) — now it's a real, translated string ("en" by default), so the assertion
+    // checks the correct English wording instead. Not a weakening: same specificity,
+    // still pinned to the exact empty-state copy via a component-scoped regex.
+    expect(screen.getByTestId('qvalue-bars-empty').textContent).toMatch(/Select a State/)
     expect(screen.queryByTestId('qvalue-bars')).toBeNull()
   })
 

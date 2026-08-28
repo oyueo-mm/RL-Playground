@@ -6,18 +6,28 @@
 import type { ActionSelection, TDInfo, Transition } from '../../core/types/rl'
 import { actionLabel } from '../grid/actionLabels'
 import { useHighlightOnChange } from '../hooks/useHighlightOnChange'
+import { translations, translateActionLabel, type Dictionary } from '../../ui/i18n'
 
 export interface InspectorPanelProps {
   lastTransition: Transition | null
   lastActionSelection: ActionSelection | null
   lastTdInfo: TDInfo | null
+  /** Phase 13 — defaults to English so every pre-existing caller/test is unaffected. */
+  t?: Dictionary
+  locale?: 'en' | 'ko'
 }
 
 function formatNumber(value: number): string {
   return Number.isFinite(value) ? value.toFixed(3) : String(value)
 }
 
-export function InspectorPanel({ lastTransition, lastActionSelection, lastTdInfo }: InspectorPanelProps) {
+export function InspectorPanel({
+  lastTransition,
+  lastActionSelection,
+  lastTdInfo,
+  t = translations.en,
+  locale = 'en',
+}: InspectorPanelProps) {
   // Called unconditionally (before the empty-state early return) to respect the Rules
   // of Hooks; a null lastTdInfo just means "nothing to highlight yet".
   const highlightEstimate = useHighlightOnChange(lastTdInfo?.updatedEstimate ?? 0)
@@ -28,7 +38,7 @@ export function InspectorPanel({ lastTransition, lastActionSelection, lastTdInfo
         className="w-full max-w-md rounded border border-gray-200 p-4 text-sm text-gray-500"
         data-testid="inspector-empty"
       >
-        Step을 실행하면 업데이트 정보가 표시됩니다.
+        {t.inspector.empty}
       </div>
     )
   }
@@ -36,7 +46,7 @@ export function InspectorPanel({ lastTransition, lastActionSelection, lastTdInfo
   return (
     <div className="w-full max-w-md space-y-3 rounded border border-gray-200 p-4 text-sm" data-testid="inspector-panel">
       <section>
-        <h2 className="font-semibold text-gray-700">State</h2>
+        <h2 className="font-semibold text-gray-700">{t.inspector.state}</h2>
         <p data-testid="inspector-state">
           {lastTransition.state} <span aria-hidden>→</span>{' '}
           <span className="font-medium">{lastTransition.nextState}</span>
@@ -44,27 +54,27 @@ export function InspectorPanel({ lastTransition, lastActionSelection, lastTdInfo
       </section>
 
       <section>
-        <h2 className="font-semibold text-gray-700">Action</h2>
+        <h2 className="font-semibold text-gray-700">{t.inspector.action}</h2>
         <p data-testid="inspector-action">
-          {actionLabel(lastTransition.action)}{' '}
+          {translateActionLabel(actionLabel(lastTransition.action), locale)}{' '}
           <span className="text-gray-500">
-            ({lastActionSelection.wasExploration ? 'exploration' : 'exploitation'})
+            ({lastActionSelection.wasExploration ? t.inspector.exploration : t.inspector.exploitation})
           </span>
         </p>
         {lastActionSelection.candidateValues.length > 0 && (
           <p className="text-gray-500" data-testid="inspector-candidates">
-            candidates: {lastActionSelection.candidateValues.map((v) => formatNumber(v)).join(', ')}
+            {t.inspector.candidates} {lastActionSelection.candidateValues.map((v) => formatNumber(v)).join(', ')}
           </p>
         )}
       </section>
 
       <section>
-        <h2 className="font-semibold text-gray-700">Reward</h2>
+        <h2 className="font-semibold text-gray-700">{t.inspector.reward}</h2>
         <p data-testid="inspector-reward">{formatNumber(lastTransition.reward)}</p>
       </section>
 
       <section>
-        <h2 className="font-semibold text-gray-700">TD Target</h2>
+        <h2 className="font-semibold text-gray-700">{t.inspector.tdTarget}</h2>
         <p data-testid="inspector-target">{formatNumber(lastTdInfo.target)}</p>
         <p className="break-words text-xs text-gray-500" data-testid="inspector-target-formula">
           {lastTdInfo.targetFormula}
@@ -72,12 +82,12 @@ export function InspectorPanel({ lastTransition, lastActionSelection, lastTdInfo
       </section>
 
       <section>
-        <h2 className="font-semibold text-gray-700">TD Error</h2>
+        <h2 className="font-semibold text-gray-700">{t.inspector.tdError}</h2>
         <p data-testid="inspector-error">{formatNumber(lastTdInfo.error)}</p>
       </section>
 
       <section>
-        <h2 className="font-semibold text-gray-700">Estimate</h2>
+        <h2 className="font-semibold text-gray-700">{t.inspector.estimate}</h2>
         <p
           data-testid="inspector-estimate"
           className={`inline-block rounded px-1 transition-colors duration-500 ${
