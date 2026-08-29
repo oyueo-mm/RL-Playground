@@ -15,6 +15,12 @@ export interface GridSvgProps {
   selectedState?: StateKey | null
   /** Called with a cell's StateKey when it's clicked. Omit to keep the grid non-interactive. */
   onStateSelect?: (state: StateKey) => void
+  /**
+   * Phase 37 — forwarded to the root <svg>. Only the live App.tsx grid passes a value
+   * here (CSS-responsive sizing, see App.tsx's `grid-stack`); EnvEditor.tsx's Draft
+   * preview omits it, so its fixed cellSize=32 rendering is completely unaffected.
+   */
+  className?: string
 }
 
 /**
@@ -29,7 +35,7 @@ function parsePosition(stateKey: string): { x: number; y: number } {
 
 type CellKind = 'empty' | 'wall' | 'start' | 'goal' | 'bomb'
 
-export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onStateSelect }: GridSvgProps) {
+export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onStateSelect, className }: GridSvgProps) {
   const { width, height, walls, bombs, start, goals, agentPos } = renderModel
   const wallSet = new Set(walls)
   const bombSet = new Set(bombs)
@@ -67,6 +73,7 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
       width={svgWidth}
       height={svgHeight}
       viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+      className={className}
       role="img"
       aria-label="GridWorld"
       data-testid="grid-svg"
@@ -125,11 +132,22 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
           data-testid="selected-cell-outline"
         />
       ) : null}
+      {/*
+        Phase 37 — pointerEvents="none", matching the exact pattern this file already
+        uses for the bomb glyph and the selected-cell outline above: without it, a real
+        browser's hit-test resolves the marker (the topmost element visually covering the
+        cell) as the click target instead of the cell <rect> beneath it, silently
+        swallowing clicks on whichever cell the Agent currently occupies. "none" makes the
+        marker fully transparent to pointer events, so a click always lands on the cell
+        underneath regardless of whether the Agent is standing there — the marker itself
+        has no click handler to lose by this (it's purely visual).
+      */}
       <circle
         cx={agent.x * cellSize + cellSize / 2}
         cy={agent.y * cellSize + cellSize / 2}
         r={cellSize / 3}
         fill="#ef4444"
+        pointerEvents="none"
         data-testid="agent-marker"
       />
     </svg>

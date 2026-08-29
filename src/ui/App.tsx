@@ -130,14 +130,48 @@ function App() {
         is unaffected — nothing here varies with `status`.
       */}
       <div className="flex w-full flex-col items-center gap-4 md:flex-row md:items-start md:justify-start">
-        <div className="flex flex-none flex-col items-center gap-4">
+        {/*
+          Phase 37: `flex-none` (shrink:0) is what let a large Grid (e.g. 20x20 @ 48px =
+          960px) force this whole row past the viewport width once md:flex-row puts it
+          side by side with the right column — the item simply refused to ever shrink
+          below its natural content width, so the row (and <main>/<body> with it) grew
+          wider than the viewport instead. Dropping it (default flex is `0 1 auto`: still
+          won't grow, but can now shrink) plus `min-w-0` (overrides the flex item's
+          default `min-width:auto`, the same fix already applied to the right column
+          below for the identical reason) lets the browser actually shrink this column
+          when space is tight. This alone changes nothing for any grid/viewport
+          combination that already fit (there's no pressure to shrink into), so every
+          previously-verified breakpoint behavior (Phase 14/16/28) is unaffected — see
+          `grid-stack` below for the half of the fix that makes the shrink visually
+          correct (a CSS-responsive SVG) rather than just clipped.
+        */}
+        <div className="flex min-w-0 flex-col items-center gap-4">
           {snapshot.envRenderModel.kind === 'grid' ? (
-            <div className="relative" data-testid="grid-stack">
+            <div
+              className="relative w-full"
+              // Phase 37: caps the grid at its natural full-size pixel dimensions (so
+              // wide viewports render exactly as before) while `w-full` lets it shrink
+              // below that cap on narrow viewports instead of overflowing. All three
+              // overlay layers below are `absolute inset-0`, so they automatically track
+              // whatever size this container actually ends up rendering at — no changes
+              // needed there.
+              style={{ maxWidth: snapshot.envRenderModel.width * CELL_SIZE }}
+              data-testid="grid-stack"
+            >
               <GridSvg
                 renderModel={snapshot.envRenderModel}
                 cellSize={CELL_SIZE}
                 selectedState={selectedState}
                 onStateSelect={handleStateSelect}
+                // Phase 37: `viewBox` (already set, matching the intrinsic pixel size)
+                // plus `w-full h-auto` is the standard responsive-SVG technique — the
+                // browser scales the whole coordinate space uniformly to fit the
+                // container's actual width while preserving the aspect ratio, so cells/
+                // text/markers all shrink together proportionally rather than clipping.
+                // `block` avoids the few px of inline-baseline whitespace an `<svg>`
+                // otherwise leaves beneath itself. EnvEditor.tsx's Draft preview passes
+                // no className, so its fixed cellSize=32 rendering is untouched.
+                className="block h-auto w-full"
               />
               {showValue && (
                 <ValueHeatmap
@@ -145,7 +179,16 @@ function App() {
                   agentSnapshot={snapshot.agentSnapshot}
                   currentState={snapshot.currentState}
                   cellSize={CELL_SIZE}
-                  className="absolute inset-0"
+                  // Phase 37: `absolute inset-0` alone only POSITIONS this SVG at the
+                  // container's top-left corner — verified via real-browser measurement
+                  // that it does NOT stretch a replaced element (an SVG with explicit
+                  // width/height attributes) to fill the container the way it would a
+                  // plain <div>, so this overlay kept rendering at its own unshrunk
+                  // intrinsic pixel size and visibly spilled past the (now-responsive)
+                  // Grid underneath it. Adding the same `h-auto w-full` responsive-SVG
+                  // sizing GridSvg's own <svg> already uses fixes that — see App.tsx's
+                  // grid-stack/GridSvg comments above for the full explanation.
+                  className="absolute inset-0 h-auto w-full"
                 />
               )}
               {showPolicy && (
@@ -154,7 +197,7 @@ function App() {
                   agentSnapshot={snapshot.agentSnapshot}
                   currentState={snapshot.currentState}
                   cellSize={CELL_SIZE}
-                  className="absolute inset-0"
+                  className="absolute inset-0 h-auto w-full"
                 />
               )}
               {/*
@@ -171,7 +214,7 @@ function App() {
                   episodeStatsHistory={snapshot.stats.episodeStatsHistory}
                   selectedEpisode={selectedEpisode}
                   cellSize={CELL_SIZE}
-                  className="absolute inset-0"
+                  className="absolute inset-0 h-auto w-full"
                   ariaLabel={`${t.episodeTrajectory.ariaLabelPrefix} ${selectedEpisode ?? ''}`}
                 />
               )}
@@ -349,7 +392,27 @@ function App() {
           EnvEditor), so the extra column width actually reaches the panels themselves
           instead of becoming unused padding around still-448px-capped children.
         */}
-        <div className="flex min-w-0 flex-col gap-4 md:flex-1 md:max-w-lg">
+        {/*
+          Phase 37: `md:flex-1` is shorthand for `flex: 1 1 0%` — a **zero** flex-basis.
+          In a genuine space deficit (not enough room for both columns, e.g. a large Grid
+          at a narrow viewport), the browser's flex-shrink distribution is weighted by
+          each item's flex-basis; with this column's basis pinned at 0, it contributed
+          ~0 to the shrink calculation and simply never grew back (flex-grow only
+          activates when there's a *surplus*, not a deficit) — so it collapsed to a
+          literal 0px box while its own children (charts/tables, not all internally
+          shrinkable) still rendered at their natural size and stuck out past that 0px
+          box, which is what actually produced the horizontal overflow (verified via
+          real-browser measurement: rightColWidth was 0 in every failing case).
+          `md:basis-auto` (this column's real content-based size, e.g. ~450px) instead of
+          `md:basis-0` fixes this: during a deficit, both columns now shrink
+          *proportionally* from their real sizes, so this column ends up meaningfully
+          smaller but never zero. `md:grow` is kept so it still fills leftover space up to
+          `md:max-w-lg` exactly as before whenever there IS a surplus (every viewport/grid
+          combination that already worked). `md:shrink` (shrink:1) is the same value the
+          old `md:flex-1` shorthand already implied — spelled out explicitly here now that
+          the shorthand is gone.
+        */}
+        <div className="flex min-w-0 flex-col gap-4 md:grow md:shrink md:basis-auto md:max-w-lg">
           <InspectorPanel
             lastTransition={snapshot.lastTransition}
             lastActionSelection={snapshot.lastActionSelection}

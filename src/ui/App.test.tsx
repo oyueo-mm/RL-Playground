@@ -761,7 +761,16 @@ describe('App (integration — Phase 16: layout stability, structural)', () => {
   // as part of that Phase's layout-width improvement — the underlying stabilizing
   // mechanism (a fixed, viewport-driven cap, not shrink-to-fit) is what this test
   // actually guards, so only the specific class name needed updating.
-  it('the two-column row and the right column carry the width-stabilizing classes the Phase 16 fix depends on', () => {
+  //
+  // Phase 37: `md:flex-1` (shorthand for `flex: 1 1 0%`) was replaced with the explicit
+  // longhand `md:grow md:shrink md:basis-auto` — real-browser measurement showed the
+  // zero flex-basis made this column collapse to a literal 0px box under a genuine
+  // space deficit (a large Grid on a narrow viewport), while its own children still
+  // rendered at their natural size and stuck out past that 0px box, which is what
+  // actually produced Phase 37's horizontal-overflow bug. `basis-auto` (content-based)
+  // makes it shrink proportionally alongside the Grid column instead of collapsing to
+  // zero. This test's role is unchanged: guard the specific classes this fix depends on.
+  it('the two-column row and the right column carry the width-stabilizing classes the Phase 16/37 fixes depend on', () => {
     render(<App />)
 
     const twoColRow = screen.getByTestId('grid-stack').closest('.md\\:flex-row')
@@ -769,8 +778,96 @@ describe('App (integration — Phase 16: layout stability, structural)', () => {
     expect(twoColRow!.className).toContain('w-full')
 
     const rightColumn = screen.getByTestId('stats-panel').parentElement!
-    expect(rightColumn.className).toContain('md:flex-1')
+    expect(rightColumn.className).toContain('md:grow')
+    expect(rightColumn.className).toContain('md:shrink')
+    expect(rightColumn.className).toContain('md:basis-auto')
     expect(rightColumn.className).toContain('md:max-w-lg')
+  })
+})
+
+describe('App (integration — Phase 37: responsive Grid, structural)', () => {
+  // Same rationale as the Phase 16 suite above: jsdom has no real CSS box model, so the
+  // actual "does 20x20 @ 768px overflow" question can only be answered by a real browser
+  // (done via Playwright — see the Phase 37 report). What's guarded here is the specific
+  // CSS mechanism the fix depends on, so a future change can't silently regress it.
+  it('the grid column can shrink (no flex-none, min-w-0) — the mechanism that lets a large Grid fit a narrow viewport', () => {
+    render(<App />)
+
+    const gridColumn = screen.getByTestId('grid-stack').parentElement!
+    expect(gridColumn.className).not.toContain('flex-none')
+    expect(gridColumn.className).toContain('min-w-0')
+  })
+
+  it('grid-stack is capped at the Grid\'s natural full-size pixel width, but can shrink below it (w-full)', () => {
+    engine.reset({ envConfig: createDefaultGridWorldConfig() })
+    render(<App />)
+
+    const gridStack = screen.getByTestId('grid-stack')
+    expect(gridStack.className).toContain('w-full')
+    const renderModel = engine.getSnapshot().envRenderModel
+    const width = renderModel.kind === 'grid' ? renderModel.width : 0
+    expect(gridStack.style.maxWidth).toBe(`${width * 48}px`)
+  })
+
+  it('the live GridSvg is CSS-responsive (block, w-full, h-auto) — the standard responsive-SVG technique paired with its unchanged viewBox', () => {
+    render(<App />)
+
+    const svg = screen.getByTestId('grid-svg')
+    expect(svg.getAttribute('class')).toBe('block h-auto w-full')
+    // viewBox must still exactly match the intrinsic pixel size for the aspect ratio
+    // that CSS `height: auto` scales against to stay correct.
+    const width = svg.getAttribute('width')
+    const height = svg.getAttribute('height')
+    expect(svg.getAttribute('viewBox')).toBe(`0 0 ${width} ${height}`)
+  })
+
+  it('a large (20x20) Grid renders with the same responsive mechanism as the default Grid (not a special-cased path)', () => {
+    engine.reset({
+      envConfig: {
+        width: 20,
+        height: 20,
+        start: { x: 0, y: 0 },
+        goal: { x: 19, y: 19 },
+        walls: [],
+        stepReward: -0.1,
+        goalReward: 10,
+        terminalCells: [],
+        bombs: [],
+        bombPenalty: -10,
+      },
+    })
+    render(<App />)
+
+    const gridStack = screen.getByTestId('grid-stack')
+    expect(gridStack.style.maxWidth).toBe('960px') // 20 * CELL_SIZE(48)
+    const svg = screen.getByTestId('grid-svg')
+    expect(svg.getAttribute('width')).toBe('960')
+    expect(svg.getAttribute('height')).toBe('960')
+  })
+
+  // `absolute inset-0` alone only positions these overlay SVGs at the container's
+  // top-left corner — it does NOT stretch a replaced element (an SVG with explicit
+  // width/height attributes) to fill the container, verified via real-browser
+  // measurement that Value/Policy overlays kept rendering at their own unshrunk
+  // intrinsic size and spilled past the (now-responsive) Grid underneath them without
+  // this. `h-auto w-full` makes them track whatever size grid-stack actually renders at.
+  it('Value/Policy/Trajectory overlays carry the same responsive sizing classes as the live GridSvg', () => {
+    engine.reset({ envConfig: createDefaultGridWorldConfig() })
+    render(<App />)
+    fireEvent.click(screen.getByTestId('toggle-policy'))
+    fireEvent.click(screen.getByTestId('toggle-value'))
+
+    expect(screen.getByTestId('value-heatmap').getAttribute('class')).toBe('absolute inset-0 h-auto w-full')
+    expect(screen.getByTestId('policy-overlay').getAttribute('class')).toBe('absolute inset-0 h-auto w-full')
+  })
+
+  it('EnvEditor\'s Draft preview GridSvg is unaffected (no className, fixed cellSize=32, unrelated to the live Grid\'s responsive sizing)', () => {
+    render(<App />)
+    fireEvent.click(screen.getByTestId('toggle-env-editor'))
+
+    const draftSvg = within(screen.getByTestId('env-editor-grid')).getByTestId('grid-svg')
+    expect(draftSvg.getAttribute('class')).toBeNull()
+    expect(draftSvg.getAttribute('width')).toBe(String(createDefaultGridWorldConfig().width * 32))
   })
 })
 
