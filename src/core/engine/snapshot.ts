@@ -26,6 +26,7 @@ export interface SnapshotInput {
     episodeStatsHistory: EpisodeStats[]
   }
   hyperparams: Hyperparams
+  isGreedyRun: boolean
 }
 
 function movingAverage(history: number[], window = DEFAULT_MOVING_WINDOW): number {
@@ -59,5 +60,6 @@ export function buildSnapshot(input: SnapshotInput): EngineSnapshot {
       latestEpisodeStats: input.stats.episodeStatsHistory.at(-1) ?? null,
     },
     hyperparams: { ...input.hyperparams },
+    isGreedyRun: input.isGreedyRun,
   }
 }

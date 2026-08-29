@@ -300,4 +300,62 @@ describe('PlaybackControls — Phase 15: Episode count input', () => {
     // The episode count input is a sibling of the button row, not inside it.
     expect(within(buttonRow).queryByTestId('episode-count-input')).toBeNull()
   })
+
+  // Phase 28 §4 — the old MAX=200 (tied to SimulationEngine's now-removed
+  // REWARD_HISTORY_LIMIT) is gone; any positive integer is accepted.
+  it.each(['201', '500', '1000'])('Phase 28: accepts %s (no more 200 upper bound)', (value) => {
+    const onEpisodeCountChange = vi.fn()
+    renderControls({ status: 'idle', episodeCount: 1, onEpisodeCountChange })
+
+    fireEvent.change(countInput(), { target: { value } })
+
+    expect(onEpisodeCountChange).toHaveBeenCalledWith(Number(value))
+  })
+
+  it('Phase 28: the input no longer declares a max attribute', () => {
+    renderControls({ status: 'idle' })
+    expect(countInput().getAttribute('max')).toBeNull()
+  })
+})
+
+describe('PlaybackControls — Phase 28: Run Greedy Policy', () => {
+  it('is not rendered at all when onRunGreedy is omitted (pre-Phase-28 callers/tests unaffected)', () => {
+    renderControls({ status: 'idle' })
+    expect(screen.queryByTestId('playback-run-greedy')).toBeNull()
+  })
+
+  it('IDLE: renders enabled and calls onRunGreedy when clicked', () => {
+    const onRunGreedy = vi.fn()
+    renderControls({ status: 'idle', onRunGreedy })
+
+    const button = screen.getByTestId('playback-run-greedy')
+    expect(isDisabled(button)).toBe(false)
+    fireEvent.click(button)
+    expect(onRunGreedy).toHaveBeenCalledTimes(1)
+  })
+
+  it('RUNNING: is disabled, same as Step/Run/Run Episode', () => {
+    renderControls({ status: 'running', onRunGreedy: vi.fn() })
+    expect(isDisabled(screen.getByTestId('playback-run-greedy'))).toBe(true)
+  })
+
+  it('PAUSED: is disabled', () => {
+    renderControls({ status: 'paused', onRunGreedy: vi.fn() })
+    expect(isDisabled(screen.getByTestId('playback-run-greedy'))).toBe(true)
+  })
+
+  it('does not add another item to the Phase 14 button row (own isolated row, like Episode count)', () => {
+    renderControls({ status: 'idle', onRunGreedy: vi.fn() })
+    const buttonRow = screen.getByTestId('playback-reset').parentElement!
+    expect(buttonRow.children).toHaveLength(5)
+    expect(within(buttonRow).queryByTestId('playback-run-greedy')).toBeNull()
+  })
+
+  it('shows the translated label in English (default) and Korean', () => {
+    const { rerender, ...props } = renderControls({ status: 'idle', onRunGreedy: vi.fn() })
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('Run Greedy Policy')
+
+    rerender(<PlaybackControls {...props} onRunGreedy={vi.fn()} t={translations.ko} />)
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('탐욕 정책 실행')
+  })
 })

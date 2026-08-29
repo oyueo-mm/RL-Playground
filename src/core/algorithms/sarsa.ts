@@ -24,7 +24,8 @@ const ALGORITHM_ID = 'sarsa'
 export const SARSA_HYPERPARAM_SCHEMA: HyperparamSchema = [
   { key: 'alpha', label: 'Learning rate (α)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.1 },
   { key: 'gamma', label: 'Discount factor (γ)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.9 },
-  { key: 'epsilon', label: 'Exploration rate (ε)', type: 'range', min: 0, max: 1, step: 0.01, default: 1.0 },
+  // Phase 28 — default lowered from 1.0 to 0.2, same reasoning as qLearning.ts.
+  { key: 'epsilon', label: 'Exploration rate (ε)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.2 },
 ]
 
 function assertActionValueAgent(agent: Agent): asserts agent is ActionValueAgent {

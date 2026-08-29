@@ -35,7 +35,7 @@ export function InspectorPanel({
   if (!lastTransition || !lastActionSelection || !lastTdInfo) {
     return (
       <div
-        className="w-full max-w-md rounded border border-gray-200 p-4 text-sm text-gray-500"
+        className="w-full max-w-lg rounded border border-gray-200 p-4 text-sm text-gray-500"
         data-testid="inspector-empty"
       >
         {t.inspector.empty}
@@ -44,7 +44,7 @@ export function InspectorPanel({
   }
 
   return (
-    <div className="w-full max-w-md space-y-3 rounded border border-gray-200 p-4 text-sm" data-testid="inspector-panel">
+    <div className="w-full max-w-lg space-y-3 rounded border border-gray-200 p-4 text-sm" data-testid="inspector-panel">
       <section>
         <h2 className="font-semibold text-gray-700">{t.inspector.state}</h2>
         <p data-testid="inspector-state">

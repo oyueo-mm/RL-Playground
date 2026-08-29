@@ -15,7 +15,10 @@ const ALGORITHM_ID = 'q-learning'
 export const QLEARNING_HYPERPARAM_SCHEMA: HyperparamSchema = [
   { key: 'alpha', label: 'Learning rate (α)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.1 },
   { key: 'gamma', label: 'Discount factor (γ)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.9 },
-  { key: 'epsilon', label: 'Exploration rate (ε)', type: 'range', min: 0, max: 1, step: 0.01, default: 1.0 },
+  // Phase 28 — default lowered from 1.0 (always explore) to 0.2 (~20% exploration / ~80%
+  // exploitation), matching describeEpsilon()'s existing wording so a fresh session's
+  // default value and its own on-screen description agree from the very first render.
+  { key: 'epsilon', label: 'Exploration rate (ε)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.2 },
 ]
 
 function assertActionValueAgent(agent: Agent): asserts agent is ActionValueAgent {

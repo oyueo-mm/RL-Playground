@@ -24,6 +24,8 @@ export interface Dictionary {
     reset: string
     /** Phase 15 — label for the Episode count input, next to Run Episode. */
     episodeCount: string
+    /** Phase 28 — "Run Greedy Policy" button label. */
+    runGreedy: string
   }
   overlay: {
     policy: string
@@ -114,6 +116,12 @@ export interface Dictionary {
     /** Phase 24 — detail card for whichever Episode History row is selected. */
     episodeDetailHeading: string
     episodeDetailEmpty: string
+    /** Phase 28 §10 — bar chart of Goal/Bomb/Other termination counts, aggregated (in
+     * TerminationChart.tsx) from the same episodeStatsHistory/terminationReason Phase 21
+     * already provides. No new Core data. */
+    terminationChartHeading: string
+    terminationChartAriaLabel: string
+    terminationChartEmpty: string
   }
   rewardChart: {
     empty: string
@@ -129,11 +137,13 @@ export interface Dictionary {
     selectedEpisodeLabel: string
   }
   /**
-   * Phase 25 — three small trend charts (Total Reward / Steps / Exploration Rate) over
-   * `episodeStatsHistory`, complementing (not replacing) the single Reward Chart above.
-   * `xAxisLabel`/`totalRewardYAxisLabel`/`stepsYAxisLabel`/`explorationRateYAxisLabel`
-   * intentionally reuse existing strings (rewardChart.xAxisLabel/yAxisLabel, stats.steps,
-   * stats.explorationRate) rather than duplicating them — see LearningProgress.tsx.
+   * Phase 25 — two small trend charts (Total Reward / Steps) over `episodeStatsHistory`,
+   * complementing (not replacing) the single Reward Chart above. `xAxisLabel`/
+   * `totalRewardYAxisLabel`/`stepsYAxisLabel` intentionally reuse existing strings
+   * (rewardChart.xAxisLabel/yAxisLabel, stats.steps) rather than duplicating them — see
+   * LearningProgress.tsx. Phase 28 removed the third (Exploration Rate) chart — the
+   * underlying `stats.explorationRate` data/label itself is untouched, still used by
+   * StatsPanel's Episode Detail; only this Learning Progress chart was removed.
    */
   learningProgress: {
     heading: string
@@ -142,8 +152,6 @@ export interface Dictionary {
     totalRewardAriaLabel: string
     stepsDescription: string
     stepsAriaLabel: string
-    explorationRateDescription: string
-    explorationRateAriaLabel: string
   }
   /**
    * Phase 26 — the selected Episode's full step-by-step trajectory (state → action →
@@ -189,6 +197,7 @@ const en: Dictionary = {
     resume: 'Resume',
     reset: 'Reset',
     episodeCount: 'Episodes',
+    runGreedy: 'Run Greedy Policy',
   },
   overlay: { policy: 'Policy', value: 'Value' },
   envToggle: { show: 'Edit Environment', hide: 'Hide Environment Editor' },
@@ -242,6 +251,9 @@ const en: Dictionary = {
     uniqueStates: 'Unique States',
     episodeDetailHeading: 'Episode Detail',
     episodeDetailEmpty: 'Select an Episode from the History to see details.',
+    terminationChartHeading: 'Termination Reasons',
+    terminationChartAriaLabel: 'Episode termination reason counts chart',
+    terminationChartEmpty: 'No Episode completed yet.',
   },
   rewardChart: {
     empty: 'No reward history yet.',
@@ -259,9 +271,6 @@ const en: Dictionary = {
     totalRewardAriaLabel: 'Total Reward per Episode chart',
     stepsDescription: 'Each point is the number of Steps taken in one completed Episode.',
     stepsAriaLabel: 'Steps per Episode chart',
-    explorationRateDescription:
-      'Each point is the fraction of Steps that were Exploration in one completed Episode.',
-    explorationRateAriaLabel: 'Exploration Rate per Episode chart',
   },
   episodeTrajectory: {
     heading: 'Episode Trajectory',
@@ -298,6 +307,7 @@ const ko: Dictionary = {
     resume: '재개',
     reset: '초기화',
     episodeCount: '에피소드 수',
+    runGreedy: '탐욕 정책 실행',
   },
   overlay: { policy: '정책', value: '가치' },
   envToggle: { show: '환경 편집', hide: '환경 편집기 닫기' },
@@ -353,6 +363,9 @@ const ko: Dictionary = {
     uniqueStates: '고유 State 수',
     episodeDetailHeading: 'Episode 상세',
     episodeDetailEmpty: 'History에서 Episode를 선택하면 상세 정보가 표시됩니다.',
+    terminationChartHeading: '종료 원인 분포',
+    terminationChartAriaLabel: 'Episode 종료 원인별 개수 차트',
+    terminationChartEmpty: '아직 완료된 Episode가 없습니다.',
   },
   rewardChart: {
     empty: '보상 기록이 아직 없습니다.',
@@ -370,8 +383,6 @@ const ko: Dictionary = {
     totalRewardAriaLabel: 'Episode별 총 보상 차트',
     stepsDescription: '각 점은 완료된 한 Episode에서 진행된 Step 수를 나타냅니다.',
     stepsAriaLabel: 'Episode별 Step 수 차트',
-    explorationRateDescription: '각 점은 완료된 한 Episode에서 탐험(Exploration)이 차지한 Step 비율을 나타냅니다.',
-    explorationRateAriaLabel: 'Episode별 탐험 비율 차트',
   },
   episodeTrajectory: {
     heading: 'Episode 경로',

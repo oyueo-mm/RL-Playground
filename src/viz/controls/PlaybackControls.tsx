@@ -26,18 +26,23 @@ export interface PlaybackControlsProps {
    */
   episodeCount?: number
   onEpisodeCountChange?: (count: number) => void
+  /**
+   * Phase 28 — "Run Greedy Policy": runs exactly the current Episode (Phase 12's "Run"
+   * semantics) using pure argmax action selection instead of the user's real epsilon.
+   * Optional/omitted preserves every pre-Phase-28 caller/test (button simply doesn't
+   * render — see below).
+   */
+  onRunGreedy?: () => void
 }
 
 const baseButtonClass = 'rounded px-4 py-2 font-medium disabled:cursor-not-allowed disabled:opacity-40'
 
 // Episode count bounds. MIN=1 matches "at least the current episode" (PRODUCT_SPEC.md
-// FR-4-adjacent convention of small integer minimums). MAX=200 is not an arbitrary UI
-// limit — it matches SimulationEngine's own `REWARD_HISTORY_LIMIT` (src/core/engine/
-// SimulationEngine.ts): the Engine already only retains the most recent 200 episodes'
-// rewards, so requesting more than 200 in one Run Episode call wouldn't let the Reward
-// Chart show any more history than 200 already would anyway.
+// FR-4-adjacent convention of small integer minimums). Phase 28 removed the previous
+// MAX=200 — it existed only because SimulationEngine.ts's own REWARD_HISTORY_LIMIT
+// capped retention at 200 (also removed this Phase), not because of any real constraint
+// on how many Episodes can be requested in one Run Episode call.
 const EPISODE_COUNT_MIN = 1
-const EPISODE_COUNT_MAX = 200
 
 export function PlaybackControls({
   status,
@@ -50,6 +55,7 @@ export function PlaybackControls({
   t = translations.en,
   episodeCount = 1,
   onEpisodeCountChange = () => {},
+  onRunGreedy,
 }: PlaybackControlsProps) {
   const isIdle = status === 'idle'
   const isRunning = status === 'running'
@@ -61,7 +67,8 @@ export function PlaybackControls({
     // Reject (ignore the keystroke, input snaps back to the last valid value) rather
     // than accept-then-flag: empty/non-integer/out-of-range input never becomes the
     // committed value, so there is never an "invalid" state to separately display.
-    if (raw === '' || !Number.isInteger(parsed) || parsed < EPISODE_COUNT_MIN || parsed > EPISODE_COUNT_MAX) return
+    // Phase 28: no upper bound any more — see EPISODE_COUNT_MIN's comment.
+    if (raw === '' || !Number.isInteger(parsed) || parsed < EPISODE_COUNT_MIN) return
     onEpisodeCountChange(parsed)
   }
 
@@ -152,15 +159,32 @@ export function PlaybackControls({
           type="number"
           inputMode="numeric"
           min={EPISODE_COUNT_MIN}
-          max={EPISODE_COUNT_MAX}
           step={1}
           value={episodeCount}
           onChange={handleEpisodeCountChange}
           disabled={!isIdle}
           data-testid="episode-count-input"
-          className="w-16 rounded border border-gray-300 px-1 py-0.5 disabled:cursor-not-allowed disabled:opacity-40"
+          className="w-20 rounded border border-gray-300 px-1 py-0.5 disabled:cursor-not-allowed disabled:opacity-40"
         />
       </label>
+
+      {/*
+        Phase 28 — same isolation reasoning as the Episode count row above: a separate
+        row, never added to the Phase 14 button row, so this can never affect that row's
+        own carefully-tuned wrap breakpoint. Omitted entirely (renders nothing) when the
+        caller doesn't pass `onRunGreedy`, so every pre-Phase-28 caller/test is unaffected.
+      */}
+      {onRunGreedy && (
+        <button
+          type="button"
+          onClick={onRunGreedy}
+          disabled={!isIdle}
+          data-testid="playback-run-greedy"
+          className={`${baseButtonClass} self-start bg-teal-600 text-white hover:bg-teal-700`}
+        >
+          {t.playback.runGreedy}
+        </button>
+      )}
     </div>
   )
 }

@@ -15,6 +15,7 @@ import { LanguageSelector } from '../viz/controls/LanguageSelector'
 import { InspectorPanel } from '../viz/panels/InspectorPanel'
 import { QValueBars } from '../viz/panels/QValueBars'
 import { StatsPanel } from '../viz/panels/StatsPanel'
+import { TerminationChart } from '../viz/panels/TerminationChart'
 import { RewardChart } from '../viz/panels/RewardChart'
 import { LearningProgress } from '../viz/panels/LearningProgress'
 import { EpisodeTrajectory } from '../viz/panels/EpisodeTrajectory'
@@ -57,8 +58,11 @@ function App() {
   const [episodeCount, setEpisodeCount] = useState(1)
   // Phase 13: locale is pure UI state, entirely separate from the Engine — it never
   // reads from or writes to `engine`, so changing it can never reset/affect Episode,
-  // Q-table, Environment, or reward history (no localStorage either, per Phase 13 §6).
-  const [locale, setLocale] = useState<Locale>('en')
+  // Q-table, Environment, or reward history (no localStorage either, per Phase 13 §6 —
+  // still no persistence added in Phase 28, only the initial default below changed).
+  // Phase 28 §9: default changed from 'en' to 'ko' — English remains fully available via
+  // the existing LanguageSelector, this only changes what a first-ever visit starts on.
+  const [locale, setLocale] = useState<Locale>('ko')
   const t = translations[locale]
 
   const handleSpeedChange = (next: SpeedSetting) => {
@@ -78,8 +82,14 @@ function App() {
   }
 
   return (
-    <main className="mx-auto flex max-w-4xl flex-col items-center gap-6 p-8">
-      <div className="flex w-full max-w-4xl items-center justify-between">
+    // Phase 28 §2: max-width raised from max-w-4xl (56rem/896px) to max-w-7xl
+    // (80rem/1280px) — the previous width left large unused margins on common wide
+    // viewports (1440/1280) and, more importantly, was already narrower than a single
+    // large GridWorld could need (MAX_SIZE=20 cells × 48px = 960px alone, i.e. wider
+    // than the entire old container). p-8 keeps the same reasonable minimum gutter this
+    // always had — content is never flush against the viewport edge.
+    <main className="mx-auto flex max-w-7xl flex-col items-center gap-6 p-8">
+      <div className="flex w-full max-w-7xl items-center justify-between">
         <h1 className="text-3xl font-semibold">RL Playground</h1>
         <LanguageSelector locale={locale} onChange={setLocale} t={t} />
       </div>
@@ -95,12 +105,23 @@ function App() {
         Fix: `w-full` makes this row's own width stable (matches <main>'s available
         width, same pattern the h1/language-selector row above already uses), which
         removes it from `items-center`'s content-driven re-centering. The right column
-        below gets `md:flex-1 md:max-w-md` instead of being shrink-to-fit — its box width
+        below gets `md:flex-1 md:max-w-lg` instead of being shrink-to-fit — its box width
         is now determined by leftover flex space (stable, viewport-driven), capped at the
-        same 28rem/max-w-md every child already used, so switching between InspectorPanel's
+        same max-w-lg every child already used, so switching between InspectorPanel's
         empty/populated content changes what's inside that box, never the box itself.
+
+        Phase 28 §2: `md:justify-center` changed to `md:justify-start` — with a
+        symmetric-centered row inside a symmetric-centered <main>, widening <main> alone
+        does not actually reduce the empty space around the (narrower) actual content —
+        centering nests losslessly, so the slop just moves from outside <main> to inside
+        it. Left-aligning this row instead anchors the Grid near the actual left margin,
+        so a wider <main> visibly translates into less empty space on the left, with any
+        remaining slop pushed to a single block on the right rather than split evenly
+        around content that isn't using it. Phase 14/16's own layout-stability guarantee
+        (playback-reset/playback-pause-resume-slot never moving BETWEEN engine statuses)
+        is unaffected — nothing here varies with `status`.
       */}
-      <div className="flex w-full flex-col items-center gap-4 md:flex-row md:items-start md:justify-center">
+      <div className="flex w-full flex-col items-center gap-4 md:flex-row md:items-start md:justify-start">
         <div className="flex flex-none flex-col items-center gap-4">
           {snapshot.envRenderModel.kind === 'grid' ? (
             <div className="relative" data-testid="grid-stack">
@@ -185,6 +206,12 @@ function App() {
               engine.reset()
               setSelectedEpisode(null)
             }}
+            // Phase 28 §8: "Run Greedy Policy" — exactly the current Episode (same
+            // "always 1 Episode" semantics Run already has, Phase 12), but with pure
+            // argmax action selection and no Q-table update (see SimulationEngine.ts's
+            // run({ greedy: true }) comment). The user's real epsilon/alpha/gamma are
+            // never read from or written to for this — nothing to "restore" afterward.
+            onRunGreedy={() => engine.run({ episodes: 1, greedy: true })}
             t={t}
             episodeCount={episodeCount}
             onEpisodeCountChange={setEpisodeCount}
@@ -278,15 +305,22 @@ function App() {
         {/*
           `min-w-0` overrides the flex item's default `min-width:auto` — without it, a
           child with a large fixed-pixel intrinsic size (RewardChart's SVG is a fixed
-          320px wide, not responsive) can force this column wider than its flex-computed
-          share once it appears, which is otherwise invisible until content actually
-          exceeds the available width (only reproduces at the tightest tested viewport,
-          768px, and only once the Reward Chart replaces its empty-state placeholder —
-          see the Phase 16 report). RewardChart.tsx itself also gets `overflow-x-auto` as
-          a defensive fallback so if a chart still doesn't fit, it scrolls inside its own
-          card instead of pushing the surrounding layout.
+          384px wide, not responsive — widened from 320px in Phase 28 §2/§3 to make use
+          of the extra space freed up by the wider `<main>`) can force this column wider
+          than its flex-computed share once it appears, which is otherwise invisible
+          until content actually exceeds the available width (only reproduces at the
+          tightest tested viewport, 768px, and only once the Reward Chart replaces its
+          empty-state placeholder — see the Phase 16 report). RewardChart.tsx itself also
+          gets `overflow-x-auto` as a defensive fallback so if a chart still doesn't fit,
+          it scrolls inside its own card instead of pushing the surrounding layout.
+
+          Phase 28 §2/§3: max-w-md (28rem/448px) raised to max-w-lg (32rem/512px) — same
+          bump applied to every individual panel's own `w-full max-w-lg` (StatsPanel,
+          RewardChart, LearningProgress, EpisodeTrajectory, InspectorPanel, QValueBars,
+          EnvEditor), so the extra column width actually reaches the panels themselves
+          instead of becoming unused padding around still-448px-capped children.
         */}
-        <div className="flex min-w-0 flex-col gap-4 md:flex-1 md:max-w-md">
+        <div className="flex min-w-0 flex-col gap-4 md:flex-1 md:max-w-lg">
           <InspectorPanel
             lastTransition={snapshot.lastTransition}
             lastActionSelection={snapshot.lastActionSelection}
@@ -302,6 +336,11 @@ function App() {
             selectedEpisode={selectedEpisode}
             onSelectEpisode={setSelectedEpisode}
           />
+          {/* Phase 28 §10/§11 — grouped directly with Statistics (its data source),
+              showing the Goal/Bomb/Other distribution across all of episodeStatsHistory,
+              independent of any selected Episode (Episode Detail already covers that
+              single Episode's own termination reason). */}
+          <TerminationChart episodeStatsHistory={snapshot.stats.episodeStatsHistory} t={t} />
           <RewardChart
             rewardHistory={snapshot.stats.rewardHistory}
             episodeNumbers={snapshot.stats.episodeStatsHistory.map((row) => row.episode)}

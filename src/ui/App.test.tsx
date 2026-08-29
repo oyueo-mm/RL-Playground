@@ -1,11 +1,29 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render as rtlRender, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDefaultGridWorldConfig } from '../core/environments/gridworld/GridWorldEnv'
 import App from './App'
 import { engine } from './engine'
 
 afterEach(cleanup)
+
+// Phase 28 §9 changed App's own initial `locale` state from 'en' to 'ko' — every test in
+// this file (bar the language-selector tests, which explicitly drive locale switches of
+// their own and use `rtlRender` directly to observe the raw, un-forced default) was
+// written assuming an English-by-default render, per the Phase 13 convention this file
+// has followed since. Rather than rewrite scores of unrelated tests' text assertions to
+// Korean, this thin wrapper renders <App/> and immediately switches it to English via the
+// same real LanguageSelector UI a user would use — preserving each test's actual intent
+// (Bomb/Statistics/Trajectory/etc., not language) while still exercising the real Korean
+// default once, in the dedicated Phase 28 test below that uses `rtlRender` directly.
+function render(ui: Parameters<typeof rtlRender>[0]) {
+  const result = rtlRender(ui)
+  const languageSelector = screen.queryByTestId('language-selector')
+  if (languageSelector) {
+    fireEvent.change(languageSelector, { target: { value: 'en' } })
+  }
+  return result
+}
 
 // `engine` is the app's single shared instance (src/ui/engine.ts) — reset it before
 // each test so tests don't leak state into one another through it. reset() does not
@@ -459,8 +477,21 @@ describe('App (integration, real Engine — Phase 13: language selector)', () =>
     fireEvent.change(langSelect(), { target: { value: 'en' } })
   }
 
-  it('defaults to English', () => {
-    render(<App />)
+  // Phase 28 §9 — the real, un-forced default changed from English to Korean. This is
+  // the one test in this describe block that must observe App's raw initial render, so
+  // it uses `rtlRender` directly rather than this file's English-forcing `render`
+  // wrapper (see that wrapper's comment for why every other test here still uses it).
+  it('Phase 28: defaults to Korean on first render (no language selector interaction)', () => {
+    rtlRender(<App />)
+    expect(langSelect().value).toBe('ko')
+    expect(screen.getByTestId('playback-run').textContent).toBe('실행')
+    expect(screen.getByTestId('playback-step').textContent).toBe('스텝')
+    expect(screen.getByTestId('stats-panel').textContent).toContain('통계')
+  })
+
+  it('switching to English from the real Korean default shows correct English text', () => {
+    rtlRender(<App />)
+    selectEnglish()
     expect(langSelect().value).toBe('en')
     expect(screen.getByTestId('playback-run').textContent).toBe('Run')
     expect(screen.getByTestId('playback-step').textContent).toBe('Step')
@@ -711,9 +742,14 @@ describe('App (integration — Phase 16: layout stability, structural)', () => {
   // proven in an actual browser (done for this Phase via Playwright — see the Phase 16
   // report's measured before/after coordinates). What CAN be guarded here, cheaply and
   // durably, is the specific CSS mechanism the fix depends on: if a future change
-  // silently drops `w-full` from the two-column row or `flex-1`/`max-w-md` from the
+  // silently drops `w-full` from the two-column row or `flex-1`/`max-w-lg` from the
   // right column, the shrink-to-fit + `items-center` re-centering bug this Phase fixed
   // would silently come back. This test fails loudly if that happens.
+  //
+  // Phase 28 §2: the right column's cap moved from max-w-md (28rem) to max-w-lg (32rem)
+  // as part of that Phase's layout-width improvement — the underlying stabilizing
+  // mechanism (a fixed, viewport-driven cap, not shrink-to-fit) is what this test
+  // actually guards, so only the specific class name needed updating.
   it('the two-column row and the right column carry the width-stabilizing classes the Phase 16 fix depends on', () => {
     render(<App />)
 
@@ -723,7 +759,7 @@ describe('App (integration — Phase 16: layout stability, structural)', () => {
 
     const rightColumn = screen.getByTestId('stats-panel').parentElement!
     expect(rightColumn.className).toContain('md:flex-1')
-    expect(rightColumn.className).toContain('md:max-w-md')
+    expect(rightColumn.className).toContain('md:max-w-lg')
   })
 })
 
@@ -732,10 +768,10 @@ describe('App (integration, real Engine — Phase 18: Epsilon control)', () => {
     return screen.getByTestId('epsilon-number') as HTMLInputElement
   }
 
-  it('shows the default epsilon (1.0, the Algorithm schema default) on first render', () => {
+  it('shows the default epsilon (0.2, the Algorithm schema default, Phase 28) on first render', () => {
     render(<App />)
-    expect(epsilonNumberInput().value).toBe('1')
-    expect(engine.getSnapshot().hyperparams.epsilon).toBe(1)
+    expect(epsilonNumberInput().value).toBe('0.2')
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.2)
   })
 
   it('changing epsilon in the UI calls through to the Engine and is reflected back in the snapshot', () => {
@@ -761,8 +797,8 @@ describe('App (integration, real Engine — Phase 18: Epsilon control)', () => {
 
     fireEvent.click(screen.getByTestId('playback-reset'))
 
-    expect(engine.getSnapshot().hyperparams.epsilon).toBe(1)
-    expect(epsilonNumberInput().value).toBe('1')
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.2)
+    expect(epsilonNumberInput().value).toBe('0.2')
   })
 
   it('epsilon can be changed while an Episode is in progress (RUNNING) without resetting Engine state', () => {
@@ -1230,7 +1266,7 @@ describe('App (integration, real Engine — Phase 22: Alpha/Gamma controls)', ()
     render(<App />)
     expect(alphaNumberInput().value).toBe('0.1')
     expect(gammaNumberInput().value).toBe('0.9')
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 1 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.2 })
   })
 
   it('changing alpha in the UI calls through to the Engine and is reflected back in the snapshot', () => {
@@ -1251,11 +1287,11 @@ describe('App (integration, real Engine — Phase 22: Alpha/Gamma controls)', ()
     render(<App />)
     fireEvent.change(alphaNumberInput(), { target: { value: '0.9' } })
     fireEvent.change(gammaNumberInput(), { target: { value: '0.1' } })
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.9, gamma: 0.1, epsilon: 1 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.9, gamma: 0.1, epsilon: 0.2 })
 
     fireEvent.click(screen.getByTestId('playback-reset'))
 
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 1 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.2 })
     expect(alphaNumberInput().value).toBe('0.1')
     expect(gammaNumberInput().value).toBe('0.9')
   })
@@ -1464,10 +1500,10 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
 
     fireEvent.change(algorithmSelect(), { target: { value: 'sarsa' } })
 
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 1 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.2 })
     expect((screen.getByTestId('alpha-number') as HTMLInputElement).value).toBe('0.1')
     expect((screen.getByTestId('gamma-number') as HTMLInputElement).value).toBe('0.9')
-    expect((screen.getByTestId('epsilon-number') as HTMLInputElement).value).toBe('1')
+    expect((screen.getByTestId('epsilon-number') as HTMLInputElement).value).toBe('0.2')
   })
 
   it('Bomb termination still works after switching from Q-Learning to SARSA on the same Environment', () => {
@@ -1758,7 +1794,7 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     expect(screen.queryByTestId('learning-progress')).toBeNull()
   })
 
-  it('A/B. after Episodes complete, Learning Progress renders all three charts matching the real episodeStatsHistory', () => {
+  it('A/B. after Episodes complete, Learning Progress renders both charts (Total Reward / Steps, no Exploration Rate — Phase 28) matching the real episodeStatsHistory', () => {
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
@@ -1768,13 +1804,13 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     expect(screen.getByTestId('learning-progress')).toBeTruthy()
     expect(screen.getByTestId('learning-progress-total-reward-chart')).toBeTruthy()
     expect(screen.getByTestId('learning-progress-steps-chart')).toBeTruthy()
-    expect(screen.getByTestId('learning-progress-exploration-rate-chart')).toBeTruthy()
+    expect(screen.queryByTestId('learning-progress-exploration-rate-chart')).toBeNull()
     // 3 completed Episodes -> 1 M + 2 L in each mini-chart's path.
     const d = screen.getByTestId('learning-progress-total-reward-path').getAttribute('d') ?? ''
     expect((d.match(/L/g) ?? []).length).toBe(2)
   })
 
-  it('C/D. selecting an Episode in the History highlights it in the Reward Chart AND all three Learning Progress charts', () => {
+  it('C/D. selecting an Episode in the History highlights it in the Reward Chart AND both remaining Learning Progress charts', () => {
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
@@ -1786,7 +1822,6 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     expect(screen.getByTestId('reward-chart-selected-point')).toBeTruthy()
     expect(screen.getByTestId('learning-progress-total-reward-selected-point')).toBeTruthy()
     expect(screen.getByTestId('learning-progress-steps-selected-point')).toBeTruthy()
-    expect(screen.getByTestId('learning-progress-exploration-rate-selected-point')).toBeTruthy()
   })
 
   it('E/F. changing epsilon/alpha/gamma does not affect Learning Progress rendering (regression)', () => {
@@ -2161,5 +2196,277 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     expect(screen.getByTestId('trajectory-overlay')).toBeTruthy()
     expect(screen.getByTestId('reward-chart-selected-point')).toBeTruthy()
     expect(screen.getByTestId('learning-progress-total-reward-selected-point')).toBeTruthy()
+  })
+})
+
+describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scale / Greedy Policy / Korean default)', () => {
+  const tinyGridConfig = {
+    width: 2,
+    height: 1,
+    start: { x: 0, y: 0 },
+    goal: { x: 1, y: 0 },
+    walls: [],
+    stepReward: -0.1,
+    goalReward: 10,
+    terminalCells: [],
+    bombs: [],
+    bombPenalty: -10,
+  }
+  const corridorConfig = {
+    width: 1,
+    height: 4,
+    start: { x: 0, y: 3 },
+    goal: { x: 0, y: 0 },
+    walls: [],
+    stepReward: -1,
+    goalReward: 10,
+    terminalCells: [],
+    bombs: [],
+    bombPenalty: -9,
+  }
+
+  it('E. shows the default epsilon (0.2) and hyperparams on first render', () => {
+    render(<App />)
+    expect((screen.getByTestId('epsilon-number') as HTMLInputElement).value).toBe('0.2')
+    expect((screen.getByTestId('alpha-number') as HTMLInputElement).value).toBe('0.1')
+    expect((screen.getByTestId('gamma-number') as HTMLInputElement).value).toBe('0.9')
+  })
+
+  it('Learning Progress shows Total Reward and Steps, but no Exploration Rate chart', () => {
+    engine.reset({ envConfig: tinyGridConfig })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+    fireEvent.click(screen.getByTestId('playback-run'))
+
+    expect(screen.getByTestId('learning-progress-total-reward-chart')).toBeTruthy()
+    expect(screen.getByTestId('learning-progress-steps-chart')).toBeTruthy()
+    expect(screen.queryByTestId('learning-progress-exploration-rate-chart')).toBeNull()
+  })
+
+  it('F. Reward Chart and Learning Progress render numeric axis tick labels', () => {
+    engine.reset({ envConfig: tinyGridConfig })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+    fireEvent.click(screen.getByTestId('playback-run'))
+
+    expect(screen.getByTestId('reward-chart-x-tick-1')).toBeTruthy()
+    expect(screen.getByTestId('learning-progress-total-reward-x-tick-1')).toBeTruthy()
+  })
+
+  it('D. runs past the old 200-Episode cap (201) and all Episodes remain in Reward Chart/Episode History data', () => {
+    engine.reset({ envConfig: corridorConfig, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 100_000 })
+    render(<App />)
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '201' } })
+
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+
+    expect(engine.getSnapshot().episode).toBe(201)
+    expect(engine.getSnapshot().stats.rewardHistory.length).toBe(201)
+    expect(engine.getSnapshot().stats.episodeStatsHistory.length).toBe(201)
+    expect(engine.getSnapshot().stats.episodeStatsHistory[0].episode).toBe(1) // not evicted
+  })
+
+  it('G. Run Greedy Policy: epsilon=1.0 set, but the run is still fully greedy (no exploration), and epsilon stays 1.0 afterward', () => {
+    engine.reset({ envConfig: corridorConfig })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+    fireEvent.change(screen.getByTestId('epsilon-number'), { target: { value: '1' } })
+
+    fireEvent.click(screen.getByTestId('playback-run-greedy'))
+
+    expect(engine.getSnapshot().status).toBe('idle')
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.explorationCount).toBe(0)
+    expect(ep.terminationReason).toBe('goal')
+    expect((screen.getByTestId('epsilon-number') as HTMLInputElement).value).toBe('1')
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(1)
+  })
+
+  it('Run Greedy Policy does not modify the Q-table (values stay 0, verified via Q-value bars after a State select)', () => {
+    engine.reset({ envConfig: corridorConfig, hyperparams: { alpha: 0.5, gamma: 0.9, epsilon: 1 } })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('playback-run-greedy'))
+
+    const snapshot = engine.getSnapshot().agentSnapshot
+    expect(snapshot.kind).toBe('Q')
+    if (snapshot.kind === 'Q') {
+      const values = Object.values(snapshot.qTable).flat()
+      expect(values.every((v) => v === 0)).toBe(true)
+    }
+  })
+
+  it('H. Bomb: Run Greedy Policy still terminates on Bomb entry normally', () => {
+    // A fresh (untrained, all-zero) Q-table's argmax is always action 0 ("up") — a
+    // Greedy run never learns (by design, see SimulationEngine.ts's Phase 28 comment),
+    // so a shape where "up" bounces at a boundary (e.g. a 2x1 grid) would loop forever
+    // and never reach any terminal cell. This corridor instead puts the Bomb directly on
+    // the fixed "always up" path, so a fresh Q-table's Greedy policy reaches it directly.
+    engine.reset({
+      envConfig: {
+        width: 1,
+        height: 3,
+        start: { x: 0, y: 2 },
+        goal: { x: 0, y: 0 }, // valid, in-bounds, but never reached — the Bomb intercepts first
+        walls: [],
+        stepReward: -0.1,
+        goalReward: 10,
+        terminalCells: [],
+        bombs: [{ x: 0, y: 1 }],
+        bombPenalty: -10,
+      },
+      hyperparams: { alpha: 0.1, gamma: 0.9, epsilon: 0 },
+    })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('playback-run-greedy'))
+
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(engine.getSnapshot().stats.latestEpisodeStats!.terminationReason).toBe('bomb')
+  })
+
+  it('Run Greedy Policy is disabled while RUNNING/PAUSED, same as Step/Run/Run Episode', () => {
+    // A deterministic multi-step corridor, not tinyGridConfig — with the default
+    // epsilon=0.2 (Phase 28), a 1-step-to-Goal grid could legitimately finish on Run()'s
+    // own synchronous first step (a known Scheduler.start() behavior), making "still
+    // running right after the click" an unreliable assumption to test against.
+    engine.reset({ envConfig: corridorConfig, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
+    engine.setSpeed({ mode: 'interval', intervalMs: 500 })
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('playback-run'))
+    expect((screen.getByTestId('playback-run-greedy') as HTMLButtonElement).disabled).toBe(true)
+
+    fireEvent.click(screen.getByTestId('playback-pause'))
+    expect((screen.getByTestId('playback-run-greedy') as HTMLButtonElement).disabled).toBe(true)
+
+    engine.pause() // don't leave a scheduled callback dangling past the test
+  })
+
+  it('J/I. Run Greedy Policy label translates to Korean and back to English', () => {
+    render(<App />)
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('Run Greedy Policy')
+
+    fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('탐욕 정책 실행')
+
+    fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'en' } })
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('Run Greedy Policy')
+  })
+
+  it('Phase 28 §9: the real default locale (no forced switch) is Korean', () => {
+    rtlRender(<App />)
+    expect((screen.getByTestId('language-selector') as HTMLSelectElement).value).toBe('ko')
+    expect(screen.getByTestId('playback-run').textContent).toBe('실행')
+  })
+
+  it('§2: <main> uses the wider Phase 28 layout width classes', () => {
+    render(<App />)
+    const main = screen.getByText('RL Playground').closest('main')!
+    expect(main.className).toContain('max-w-7xl')
+  })
+
+  it('B/C/J. regression: Run/Run Episode/Pause/Resume/Reset/Algorithm Selector/Bomb/Episode Selection/Trajectory all still work after this Phase\'s changes', () => {
+    engine.reset({ envConfig: tinyGridConfig })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('playback-run'))
+    expect(engine.getSnapshot().episode).toBe(1)
+
+    fireEvent.click(screen.getByTestId('episode-history-row-1'))
+    expect(screen.getByTestId('episode-detail')).toBeTruthy()
+    expect(screen.getByTestId('episode-trajectory')).toBeTruthy()
+
+    fireEvent.change(screen.getByTestId('algorithm-select'), { target: { value: 'sarsa' } })
+    expect(engine.getSnapshot().algorithmId).toBe('sarsa')
+
+    fireEvent.click(screen.getByTestId('playback-reset'))
+    expect(engine.getSnapshot().episode).toBe(0)
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.2)
+  })
+
+  it('I. Termination Chart: shows the empty state before any Episode, then real Goal/Bomb counts as Episodes complete', () => {
+    render(<App />)
+    expect(screen.getByTestId('termination-chart-empty')).toBeTruthy()
+
+    engine.reset({ envConfig: tinyGridConfig })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '5' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+
+    const history = engine.getSnapshot().stats.episodeStatsHistory
+    const goalCount = history.filter((e) => e.terminationReason === 'goal').length
+    expect(screen.getByTestId('termination-chart-count-goal').textContent).toBe(String(goalCount))
+    expect(screen.getByTestId('termination-chart-count-bomb').textContent).toBe('0')
+  })
+
+  it('F. Bomb: the Termination Chart Bomb count increases after a Bomb-ended Episode', () => {
+    engine.reset({
+      envConfig: {
+        width: 2,
+        height: 1,
+        start: { x: 0, y: 0 },
+        goal: { x: 1, y: 1 }, // unreachable — only the Bomb can end the episode
+        walls: [],
+        stepReward: -0.1,
+        goalReward: 10,
+        terminalCells: [],
+        bombs: [{ x: 1, y: 0 }],
+        bombPenalty: -10,
+      },
+    })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('playback-run'))
+
+    expect(screen.getByTestId('termination-chart-count-bomb').textContent).toBe('1')
+    expect(screen.getByTestId('termination-chart-count-goal').textContent).toBe('0')
+  })
+
+  it('Termination Chart shows the full distribution regardless of Episode selection (independent of Episode Detail)', () => {
+    engine.reset({ envConfig: tinyGridConfig })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '3' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+    const countBeforeSelection = screen.getByTestId('termination-chart-count-goal').textContent
+
+    fireEvent.click(screen.getByTestId('episode-history-row-2'))
+
+    expect(screen.getByTestId('termination-chart-count-goal').textContent).toBe(countBeforeSelection)
+  })
+
+  it('D. Episode scale: Termination Chart handles 201+ Episodes correctly (counts sum to the real total)', () => {
+    engine.reset({ envConfig: corridorConfig, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 100_000 })
+    render(<App />)
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '201' } })
+
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+
+    const goalCount = Number(screen.getByTestId('termination-chart-count-goal').textContent)
+    const bombCount = Number(screen.getByTestId('termination-chart-count-bomb').textContent)
+    const otherCount = Number(screen.getByTestId('termination-chart-count-other').textContent)
+    expect(goalCount + bombCount + otherCount).toBe(201)
+    expect(goalCount).toBe(201) // deterministic corridor always reaches Goal
+  })
+
+  it('G. i18n: Termination Chart heading/labels translate English -> Korean -> English', () => {
+    engine.reset({ envConfig: tinyGridConfig })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+    fireEvent.click(screen.getByTestId('playback-run'))
+    expect(screen.getByText('Termination Reasons')).toBeTruthy()
+
+    fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
+    expect(screen.getByText('종료 원인 분포')).toBeTruthy()
+
+    fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'en' } })
+    expect(screen.getByText('Termination Reasons')).toBeTruthy()
   })
 })

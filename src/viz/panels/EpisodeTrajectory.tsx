@@ -43,7 +43,7 @@ export function EpisodeTrajectory({
   if (episode === null) {
     return (
       <div
-        className="w-full max-w-md rounded border border-gray-200 p-4 text-sm text-gray-500"
+        className="w-full max-w-lg rounded border border-gray-200 p-4 text-sm text-gray-500"
         data-testid="episode-trajectory-empty"
       >
         {t.episodeTrajectory.empty}
@@ -64,7 +64,7 @@ export function EpisodeTrajectory({
 
   return (
     <div
-      className="w-full max-w-md overflow-x-auto rounded border border-gray-200 p-4 text-sm"
+      className="w-full max-w-lg overflow-x-auto rounded border border-gray-200 p-4 text-sm"
       data-testid="episode-trajectory"
     >
       <h2 className="mb-2 font-semibold text-gray-700">

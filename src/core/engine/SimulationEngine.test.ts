@@ -594,10 +594,10 @@ describe('SimulationEngine — 500 episode smoke test', () => {
 })
 
 describe('SimulationEngine — Phase 18: setHyperparams() / epsilon control', () => {
-  it('EngineSnapshot exposes the current hyperparameters, defaulting to the Algorithm schema defaults (epsilon=1.0)', () => {
+  it('EngineSnapshot exposes the current hyperparameters, defaulting to the Algorithm schema defaults (epsilon=0.2, Phase 28)', () => {
     const { source } = createManualTimerSource()
     const engine = new SimulationEngine({ timerSource: source })
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 1.0 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.2 })
   })
 
   it('setHyperparams({ epsilon: 0 }) is reflected in the snapshot and makes action selection fully greedy (no exploration)', () => {
@@ -691,7 +691,7 @@ describe('SimulationEngine — Phase 18: setHyperparams() / epsilon control', ()
     expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.05)
 
     engine.reset()
-    expect(engine.getSnapshot().hyperparams.epsilon).toBe(1.0)
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.2)
   })
 })
 
@@ -1153,10 +1153,10 @@ describe('SimulationEngine — Phase 22: setHyperparams({ alpha }) / setHyperpar
     const engine = new SimulationEngine({ timerSource: source })
 
     engine.setHyperparams({ alpha: 0.99, gamma: 0.01 })
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.99, gamma: 0.01, epsilon: 1.0 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.99, gamma: 0.01, epsilon: 0.2 })
 
     engine.reset()
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 1.0 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.2 })
   })
 
   it('works identically under SARSA (same generic hyperparams pass-through, no algorithm-specific handling)', () => {
@@ -1246,9 +1246,9 @@ describe('SimulationEngine — Phase 23: Algorithm selection', () => {
     engine.reset({ algorithmId: 'sarsa' })
 
     // qLearning.ts and sarsa.ts declare an identical schema (alpha=0.1/gamma=0.9/
-    // epsilon=1.0 defaults) — confirmed by reading both files — so this also proves the
-    // old engine's customized 0.77/0.11/0.33 values were NOT carried over.
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 1.0 })
+    // epsilon=0.2 defaults, Phase 28) — confirmed by reading both files — so this also
+    // proves the old engine's customized 0.77/0.11/0.33 values were NOT carried over.
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.2 })
   })
 
   it('switching algorithm preserves the current Environment config (Bomb/Start/Goal untouched)', () => {
@@ -1488,5 +1488,283 @@ describe('SimulationEngine — Phase 26: Episode trajectory', () => {
     engine.reset({ envConfig: corridorConfig })
 
     expect(engine.getSnapshot().stats.episodeStatsHistory).toEqual([])
+  })
+})
+
+describe('SimulationEngine — Phase 28: Episode scale (no 200-episode cap)', () => {
+  // Same deterministic corridor as the Phase 21/23/26 tests above — 3 steps/Episode,
+  // fast enough to run hundreds of times in a unit test.
+  const corridorConfig = {
+    width: 1,
+    height: 4,
+    start: { x: 0, y: 3 },
+    goal: { x: 0, y: 0 },
+    walls: [],
+    stepReward: -1,
+    goalReward: 10,
+    terminalCells: [],
+    bombs: [],
+    bombPenalty: -9,
+  }
+  const deterministicHyperparams = { alpha: 0, gamma: 0.9, epsilon: 0 }
+
+  function runEpisodesManually(engine: SimulationEngine, count: number): void {
+    for (let target = 1; target <= count; target++) {
+      while (engine.getSnapshot().episode < target) engine.step()
+    }
+  }
+
+  it('retains all 200 Episodes (the boundary of the old cap) without evicting the first one', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
+
+    runEpisodesManually(engine, 200)
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.episode).toBe(200)
+    expect(snapshot.stats.rewardHistory.length).toBe(200)
+    expect(snapshot.stats.episodeStatsHistory.length).toBe(200)
+    expect(snapshot.stats.episodeStatsHistory[0].episode).toBe(1)
+    expect(snapshot.stats.episodeStatsHistory[199].episode).toBe(200)
+  })
+
+  it('retains all 201 Episodes — one past the old cap, previously evicted, now preserved', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
+
+    runEpisodesManually(engine, 201)
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.episode).toBe(201)
+    expect(snapshot.stats.rewardHistory.length).toBe(201)
+    expect(snapshot.stats.episodeStatsHistory.length).toBe(201)
+    // Episode 1 is still there — under the old REWARD_HISTORY_LIMIT=200 cap, this would
+    // have been shift()-evicted the moment Episode 201 completed.
+    expect(snapshot.stats.episodeStatsHistory[0].episode).toBe(1)
+    expect(snapshot.stats.episodeStatsHistory[200].episode).toBe(201)
+  })
+
+  it('retains all 500 Episodes, each with its own intact trajectory (Core data structures, not just the count)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
+
+    runEpisodesManually(engine, 500)
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.episode).toBe(500)
+    expect(snapshot.stats.rewardHistory.length).toBe(500)
+    expect(snapshot.stats.episodeStatsHistory.length).toBe(500)
+    expect(snapshot.stats.episodeStatsHistory[0].episode).toBe(1)
+    expect(snapshot.stats.episodeStatsHistory[0].trajectory.length).toBe(3)
+    expect(snapshot.stats.episodeStatsHistory[499].episode).toBe(500)
+    expect(snapshot.stats.episodeStatsHistory[499].trajectory.length).toBe(3)
+    // successRate uses the real cumulative successCount/episode — not a stale value
+    // frozen by the old cap's eviction of early successes.
+    expect(snapshot.stats.successRate).toBe(1) // every Episode reaches Goal deterministically
+  })
+
+  it('reset() still fully clears an Episode count well past the old 200 cap', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
+
+    runEpisodesManually(engine, 250)
+    expect(engine.getSnapshot().stats.episodeStatsHistory.length).toBe(250)
+
+    engine.reset({ envConfig: corridorConfig })
+
+    expect(engine.getSnapshot().episode).toBe(0)
+    expect(engine.getSnapshot().stats.rewardHistory).toEqual([])
+    expect(engine.getSnapshot().stats.episodeStatsHistory).toEqual([])
+  })
+})
+
+describe('SimulationEngine — Phase 28: Greedy Policy execution (run({ greedy: true }))', () => {
+  const corridorConfig = {
+    width: 1,
+    height: 4,
+    start: { x: 0, y: 3 },
+    goal: { x: 0, y: 0 },
+    walls: [],
+    stepReward: -1,
+    goalReward: 10,
+    terminalCells: [],
+    bombs: [],
+    bombPenalty: -9,
+  }
+
+  it('always selects the argmax action (wasExploration=false), even with epsilon=1 (always-explore)', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      envConfig: corridorConfig,
+      hyperparams: { alpha: 0.1, gamma: 0.9, epsilon: 1 }, // would normally force pure exploration
+    })
+
+    engine.run({ episodes: 1, greedy: true })
+    // The first step already ran synchronously (Scheduler.start()'s known behaviour).
+    expect(engine.getSnapshot().lastActionSelection!.wasExploration).toBe(false)
+    flushAll()
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.explorationCount).toBe(0)
+    expect(ep.explorationRate).toBe(0)
+  })
+
+  it('never applies an update — every Q-value stays exactly 0 (querying a State during argmax action-selection already lazily creates a zero-vector entry for it, same as any normal run; the invariant this Phase actually guarantees is that no VALUE ever changes)', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      envConfig: corridorConfig,
+      hyperparams: { alpha: 0.1, gamma: 0.9, epsilon: 1 },
+    })
+
+    engine.run({ episodes: 1, greedy: true })
+    flushAll()
+
+    const snapshot = engine.getSnapshot().agentSnapshot
+    expect(snapshot.kind).toBe('Q')
+    if (snapshot.kind === 'Q') {
+      const allValues = Object.values(snapshot.qTable).flat()
+      expect(allValues.length).toBeGreaterThan(0) // visited at least one State
+      expect(allValues.every((v) => v === 0)).toBe(true) // and none of them ever got updated
+    }
+  })
+
+  it('lastTdInfo is null during a Greedy run (no TD update happened to report)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig })
+
+    engine.run({ episodes: 1, greedy: true })
+
+    expect(engine.getSnapshot().lastTdInfo).toBeNull()
+  })
+
+  it("does not read from or write to the user's real hyperparams.epsilon — it stays exactly as set, before/during/after", () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      envConfig: corridorConfig,
+      hyperparams: { alpha: 0.1, gamma: 0.9, epsilon: 0.73 },
+    })
+
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.73)
+    engine.run({ episodes: 1, greedy: true })
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.73) // unchanged mid-run too
+    flushAll()
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.73) // unchanged after completion
+  })
+
+  it('still reaches Goal and finishes the Episode normally (Environment stepping/termination unaffected)', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig })
+
+    engine.run({ episodes: 1, greedy: true })
+    flushAll()
+
+    expect(engine.getSnapshot().status).toBe('idle')
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.terminationReason).toBe('goal')
+  })
+
+  it('records EpisodeStats/trajectory for a Greedy run identically to a normal run (same finishEpisode() pipeline)', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig })
+
+    engine.run({ episodes: 1, greedy: true })
+    flushAll()
+
+    expect(engine.getSnapshot().stats.episodeStatsHistory.length).toBe(1)
+    expect(engine.getSnapshot().stats.rewardHistory.length).toBe(1)
+    const ep = engine.getSnapshot().stats.episodeStatsHistory[0]
+    expect(ep.trajectory.length).toBeGreaterThan(0)
+    expect(ep.trajectory.every((t) => t.action !== undefined)).toBe(true)
+  })
+
+  it('a normal (non-greedy) run({ episodes }) is completely unaffected — greedy defaults to false', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      envConfig: corridorConfig,
+      hyperparams: { alpha: 1, gamma: 0.9, epsilon: 0 },
+    })
+
+    engine.run({ episodes: 1 }) // no `greedy` field at all
+    flushAll()
+
+    // alpha=1 means a real learning run leaves an exact, non-zero Q-table — proving this
+    // ordinary run still learns normally (never silently treated as greedy).
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.agentSnapshot.kind).toBe('Q')
+    if (snapshot.agentSnapshot.kind === 'Q') {
+      expect(Object.keys(snapshot.agentSnapshot.qTable).length).toBeGreaterThan(0)
+    }
+  })
+
+  it('EngineSnapshot.isGreedyRun is true only while a Greedy run is in flight, and resets to false once it stops', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig })
+
+    expect(engine.getSnapshot().isGreedyRun).toBe(false)
+    engine.run({ episodes: 1, greedy: true })
+    expect(engine.getSnapshot().isGreedyRun).toBe(true)
+    flushAll()
+    expect(engine.getSnapshot().isGreedyRun).toBe(false)
+  })
+
+  it('EngineSnapshot.isGreedyRun is false for a normal run', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig })
+
+    engine.run({ episodes: 1 })
+    expect(engine.getSnapshot().isGreedyRun).toBe(false)
+    flushAll()
+    expect(engine.getSnapshot().isGreedyRun).toBe(false)
+  })
+
+  it('works under SARSA too (pendingAction never carries over from a Greedy step — every step re-selects fresh)', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({
+      timerSource: source,
+      envConfig: corridorConfig,
+      algorithmId: 'sarsa',
+      hyperparams: { alpha: 0.1, gamma: 0.9, epsilon: 1 },
+    })
+
+    engine.run({ episodes: 1, greedy: true })
+    flushAll()
+
+    expect(engine.getSnapshot().status).toBe('idle')
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.terminationReason).toBe('goal')
+    expect(ep.explorationCount).toBe(0)
+  })
+
+  it('Bomb termination works normally during a Greedy run', () => {
+    const bombCorridorConfig = { ...corridorConfig, bombs: [{ x: 0, y: 1 }], bombPenalty: -7 }
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: bombCorridorConfig })
+
+    engine.run({ episodes: 1, greedy: true })
+    flushAll()
+
+    expect(engine.getSnapshot().status).toBe('idle')
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.terminationReason).toBe('bomb')
+  })
+
+  it('Pause/Resume works normally during a Greedy run and the run stays greedy after Resume', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig })
+
+    engine.run({ episodes: 1, greedy: true })
+    engine.pause()
+    expect(engine.getSnapshot().status).toBe('paused')
+    expect(engine.getSnapshot().isGreedyRun).toBe(true) // still greedy across the pause
+
+    engine.resume()
+    expect(engine.getSnapshot().isGreedyRun).toBe(true)
+    flushAll()
+
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(engine.getSnapshot().agentSnapshot.kind).toBe('Q')
   })
 })

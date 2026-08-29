@@ -19,7 +19,16 @@ import type { EngineSnapshot, EngineStatus, EpisodeStats, EpisodeTerminationReas
 const DEFAULT_ENV_ID = 'gridworld'
 const DEFAULT_ALGORITHM_ID = 'q-learning'
 const DEFAULT_SPEED: SpeedSetting = { mode: 'interval', intervalMs: 200 }
-const REWARD_HISTORY_LIMIT = 200
+// Phase 28 — the previous REWARD_HISTORY_LIMIT=200 cap (shift()-based eviction on both
+// rewardHistory and episodeStatsHistory, including each Episode's trajectory) has been
+// removed: the user must be able to run 201+, 500+ Episodes and see all of them in the
+// Reward Chart / Learning Progress / Episode History / Episode Trajectory. Episode count
+// itself was never capped anywhere in Core (confirmed by reading run()/schedulerTick()
+// before this Phase — only this shift()-based retention limit and a UI input max, see
+// PlaybackControls.tsx, ever bounded anything). No replacement windowing/pagination
+// strategy is introduced here per this Phase's explicit priority ("200 Episode 제한 제거를
+// 우선한다") — unbounded retention is an accepted tradeoff, noted as technical debt for a
+// very long single session in the final report, not solved by this Phase.
 
 /** Engine only ever instantiates one of these two concrete Agents (Phase 1 §4.2/§4.3). */
 type ConcreteAgent = TabularQAgent | TabularValueAgent
@@ -102,6 +111,11 @@ export class SimulationEngine {
 
   private runMode: RunMode | null = null
   private remainingEpisodes: number | null = null
+  // Phase 28 — true only while the current/most recent run was started via
+  // `run({ greedy: true })`. Read by performOneStep() to force epsilon=0 for that call's
+  // action selection ONLY (never written into `this.hyperparams` — see run()'s comment
+  // for why this is not the same as calling setHyperparams({ epsilon: 0 })).
+  private greedyRun = false
 
   private readonly emitter = new EventEmitter<EngineSnapshot>()
   private readonly scheduler: Scheduler
@@ -136,6 +150,7 @@ export class SimulationEngine {
       agentSnapshot: this.agent.toSnapshot(),
       stats: this.stats,
       hyperparams: this.hyperparams,
+      isGreedyRun: this.greedyRun,
     })
   }
 
@@ -160,17 +175,31 @@ export class SimulationEngine {
     this.startRun('single-episode', null)
   }
 
-  run(options: { episodes: number }): void {
+  /**
+   * Phase 28 — `greedy: true` runs this Episode using pure argmax action selection
+   * (epsilon forced to 0 for every step's `selectAction`/`pickNextAction` call, ONLY for
+   * that call — `this.hyperparams.epsilon` itself is never read from or written to, so
+   * the user's real epsilon setting is simply never touched at all, not "restored"
+   * afterward because it was never changed). It also skips `computeUpdate()`/
+   * `applyAgentUpdate()` entirely — a Greedy run is Policy Evaluation/exhibition of the
+   * already-learned Q-table, not a learning step, so the Q-table is never written to.
+   * Everything else (Environment stepping, Goal/Bomb termination, EpisodeStats/reward
+   * history/trajectory recording) reuses the exact same finishEpisode() pipeline a normal
+   * learning run uses — greedy Episodes are recorded identically, just with
+   * explorationRate always 0 (a true reflection of what happened, not a special case).
+   */
+  run(options: { episodes: number; greedy?: boolean }): void {
     if (!Number.isInteger(options.episodes) || options.episodes <= 0) {
       throw new Error('run({ episodes }) requires a positive integer episode count')
     }
-    this.startRun('episodes', options.episodes)
+    this.startRun('episodes', options.episodes, options.greedy ?? false)
   }
 
-  private startRun(mode: RunMode, episodes: number | null): void {
+  private startRun(mode: RunMode, episodes: number | null, greedy = false): void {
     if (this.status === 'running') return // never spin up a duplicate Scheduler loop
     this.runMode = mode
     this.remainingEpisodes = episodes
+    this.greedyRun = greedy
     this.status = 'running'
     this.scheduler.start(this.schedulerCallbacks())
   }
@@ -183,6 +212,7 @@ export class SimulationEngine {
         this.status = 'idle'
         this.runMode = null
         this.remainingEpisodes = null
+        this.greedyRun = false
         this.emitSnapshot()
       },
     }
@@ -190,7 +220,7 @@ export class SimulationEngine {
 
   /** Returns true to keep the Scheduler loop going, false to stop it (target reached). */
   private schedulerTick(): boolean {
-    this.performOneStep()
+    this.performOneStep(this.greedyRun)
     const justFinishedEpisode = this.lastTransition?.done ?? false
 
     if (this.runMode === 'single-episode') {
@@ -273,34 +303,50 @@ export class SimulationEngine {
     this.lastTdInfo = null
     this.runMode = null
     this.remainingEpisodes = null
+    this.greedyRun = false
 
     this.emitSnapshot()
   }
 
   // ---- performStep() primitive (ARCHITECTURE.md §5.1) ----
 
-  private performOneStep(): void {
+  private performOneStep(greedy = false): void {
     const state = this.environment.getState()
+
+    // Phase 28: a Greedy run forces epsilon=0 for action selection ONLY — a shallow copy
+    // passed to selectAction(), never assigned to `this.hyperparams`. Reuses the exact
+    // same epsilonGreedy()/tie-break machinery every algorithm already goes through, so
+    // no algorithm-specific greedy logic is needed here.
+    const selectionHyperparams = greedy ? { ...this.hyperparams, epsilon: 0 } : this.hyperparams
 
     // pendingAction rule: if Algorithm.pickNextAction() cached a next action on the
     // previous call (SARSA), it MUST be reused here verbatim rather than re-selecting —
     // otherwise the action the TD target was computed against could diverge from the
     // action actually executed next. Q-Learning never sets pendingAction, so it always
-    // falls through to selectAction() here, unchanged from Phase 1's behaviour.
-    const action = this.pendingAction ?? this.algorithm.selectAction(state, this.agent, this.hyperparams)
+    // falls through to selectAction() here, unchanged from Phase 1's behaviour. A Greedy
+    // run never sets pendingAction in the first place (see below), so this always
+    // re-selects fresh via argmax on every step while greedy.
+    const action = this.pendingAction ?? this.algorithm.selectAction(state, this.agent, selectionHyperparams)
 
     const stepResult = this.environment.step(action.action)
     const transition: Transition = { state, action: action.action, ...stepResult }
 
-    const nextAction = this.algorithm.pickNextAction?.(stepResult.nextState, this.agent, this.hyperparams)
-    const tdInfo = this.algorithm.computeUpdate(transition, this.agent, this.hyperparams, nextAction)
-
-    this.applyAgentUpdate(transition, tdInfo)
+    if (greedy) {
+      // Policy Evaluation/exhibition only — no TD update, no Q-table write. lastTdInfo is
+      // cleared (not stale) so Inspector correctly shows its existing "nothing to show"
+      // empty state rather than a misleading value from a step that didn't happen.
+      this.lastTdInfo = null
+      this.pendingAction = null
+    } else {
+      const nextAction = this.algorithm.pickNextAction?.(stepResult.nextState, this.agent, this.hyperparams)
+      const tdInfo = this.algorithm.computeUpdate(transition, this.agent, this.hyperparams, nextAction)
+      this.applyAgentUpdate(transition, tdInfo)
+      this.lastTdInfo = tdInfo
+      this.pendingAction = nextAction ?? null
+    }
 
     this.lastTransition = transition
     this.lastActionSelection = action
-    this.lastTdInfo = tdInfo
-    this.pendingAction = nextAction ?? null
 
     this.stats.totalReward += transition.reward
     this.stats.episodeReward += transition.reward
@@ -356,9 +402,6 @@ export class SimulationEngine {
     }
     this.stats.episode += 1
     this.stats.rewardHistory.push(this.stats.episodeReward)
-    if (this.stats.rewardHistory.length > REWARD_HISTORY_LIMIT) {
-      this.stats.rewardHistory.shift()
-    }
     this.stats.successRate = this.stats.successCount / this.stats.episode
 
     // Phase 21: snapshot this Episode's stats before any of the per-episode counters
@@ -384,9 +427,6 @@ export class SimulationEngine {
       trajectory: this.stats.episodeTrajectory,
     }
     this.stats.episodeStatsHistory.push(episodeStats)
-    if (this.stats.episodeStatsHistory.length > REWARD_HISTORY_LIMIT) {
-      this.stats.episodeStatsHistory.shift()
-    }
 
     // Agent's learned table is NOT touched here (ARCHITECTURE.md §7 — only reset()
     // clears it). Only the environment and per-episode bookkeeping restart.

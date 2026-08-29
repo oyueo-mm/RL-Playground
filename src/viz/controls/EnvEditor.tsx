@@ -141,7 +141,7 @@ export function EnvEditor({
   }
 
   return (
-    <div className="w-full max-w-md space-y-3 rounded border border-gray-200 p-4 text-sm" data-testid="env-editor">
+    <div className="w-full max-w-lg space-y-3 rounded border border-gray-200 p-4 text-sm" data-testid="env-editor">
       <h2 className="font-semibold text-gray-700">{t.envEditor.heading}</h2>
 
       <div className="flex items-center gap-3">

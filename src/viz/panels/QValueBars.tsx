@@ -39,7 +39,7 @@ export function QValueBars({ selectedState, agentSnapshot, t = translations.en, 
   if (!selectedState) {
     return (
       <div
-        className="w-full max-w-md rounded border border-gray-200 p-4 text-sm text-gray-500"
+        className="w-full max-w-lg rounded border border-gray-200 p-4 text-sm text-gray-500"
         data-testid="qvalue-bars-empty"
       >
         {t.qvalues.empty}
@@ -61,7 +61,7 @@ export function QValueBars({ selectedState, agentSnapshot, t = translations.en, 
   const greedyActionCanonicalLabel = GRIDWORLD_ACTION_LABELS[greedyActionIndex] ?? `Action ${greedyActionIndex}`
 
   return (
-    <div className="w-full max-w-md space-y-2 rounded border border-gray-200 p-4 text-sm" data-testid="qvalue-bars">
+    <div className="w-full max-w-lg space-y-2 rounded border border-gray-200 p-4 text-sm" data-testid="qvalue-bars">
       <h2 className="font-semibold text-gray-700">
         {t.qvalues.heading} — {selectedState}
       </h2>

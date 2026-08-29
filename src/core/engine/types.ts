@@ -77,7 +77,11 @@ export interface EngineStats {
    * call, alongside episodeStatsHistory below).
    */
   latestEpisodeStats: EpisodeStats | null
-  /** Phase 21 — history of completed Episodes' stats, capped the same way rewardHistory is. */
+  /**
+   * Phase 21 — history of completed Episodes' stats. Previously capped at 200 (shifted
+   * FIFO) the same way rewardHistory was; Phase 28 removed that cap on both so the user
+   * can run and see 500+ Episodes.
+   */
   episodeStatsHistory: EpisodeStats[]
 }
 
@@ -105,4 +109,11 @@ export interface EngineSnapshot {
    * copy that could drift from the Engine's actual value across reset()/setHyperparams().
    */
   hyperparams: Hyperparams
+  /**
+   * Phase 28 — true while the currently in-flight (or just-stopped) run was started via
+   * `run({ greedy: true })` (the "Run Greedy Policy" button). During a Greedy run, every
+   * action is selected with epsilon forced to 0 for that call only — `hyperparams.epsilon`
+   * above always still reflects the user's real, untouched setting throughout.
+   */
+  isGreedyRun: boolean
 }

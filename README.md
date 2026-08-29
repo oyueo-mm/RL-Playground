@@ -15,8 +15,9 @@ React·DOM에 의존하지 않으며, 서버나 외부 API 없이 정적 파일�
 - **Algorithm**: Q-Learning, SARSA (ε-greedy 행동 선택, on/off-policy TD control) — UI
   Selector로 전환 가능(IDLE 상태에서만, 전환 시 새 학습 실험으로 초기화). Epsilon(탐험률)/
   Alpha(학습률)/Gamma(할인율) 모두 실행 중 UI에서 실시간 조절 가능
-- **학습 제어**: Step / Run / Run Episode(실행할 Episode 수 지정 가능) / Pause / Resume / Reset,
-  4단계 Speed(Slow/Normal/Fast/Very Fast)
+- **학습 제어**: Step / Run / Run Episode(실행할 Episode 수 제한 없음) / Pause / Resume / Reset,
+  4단계 Speed(Slow/Normal/Fast/Very Fast) / Run Greedy Policy(학습 없이 현재 Q-table
+  기준 항상 greedy action만 실행 — 실행 중 사용자의 실제 ε 설정을 읽거나 바꾸지 않음)
 - **관찰**:
   - Inspector — State/Action/Reward/TD Target(수식 포함)/TD Error, Q-value 갱신 전→후 값
   - Q-value 막대그래프 (State 선택 시)
@@ -26,9 +27,12 @@ React·DOM에 의존하지 않으며, 서버나 외부 API 없이 정적 파일�
     단위 상세 통계(Steps/Termination/Exploration·Exploitation/Exploration Rate/Average
     Reward/Unique States)와 최근 Episode 기록 테이블 — 기록의 각 행을 선택(클릭 또는
     키보드)하면 해당 Episode의 상세(Episode Detail)를 확인할 수 있음
-  - Reward Chart — Episode별 보상 추이 SVG 라인 차트, 선택된 Episode의 지점을 강조 표시
-  - Learning Progress — Total Reward / Steps / Exploration Rate 세 가지 지표를 나란히
-    비교하는 추이 차트, Episode History 선택과 연동되어 동일 Episode가 함께 강조 표시됨
+  - Termination Reasons — 지금까지 완료된 전체 Episode의 종료 원인(Goal/Bomb/Other)
+    분포를 막대그래프로 표시(선택된 Episode와 무관하게 항상 전체 History 기준)
+  - Reward Chart — Episode별 보상 추이 SVG 라인 차트(X/Y축 실제 숫자 눈금 표시), 선택된
+    Episode의 지점을 강조 표시
+  - Learning Progress — Total Reward / Steps 두 가지 지표를 나란히 비교하는 추이 차트
+    (X/Y축 숫자 눈금 포함), Episode History 선택과 연동되어 동일 Episode가 함께 강조 표시됨
   - Episode Trajectory — 선택한 Episode에서 Agent가 실제로 방문한 State/Action/Reward
     순서를 Grid 위 경로 오버레이와 Step 단위 상세 테이블로 확인(반복 방문 State도 순서
     그대로 보존, 매우 긴 Episode는 처음 50개만 표시 후 전체 보기 가능)
@@ -57,7 +61,7 @@ Statistics/Selection, Learning Progress, Episode Trajectory 포함).
 ```bash
 npm install
 npm run dev      # 개발 서버 (http://localhost:5173)
-npm run test     # Vitest — 34 test files / 539 tests
+npm run test     # Vitest — 36 test files / 609 tests
 npm run lint     # ESLint
 npm run build    # 프로덕션 빌드 (dist/)
 npm run preview  # 빌드 결과를 로컬에서 정적으로 서빙
@@ -96,7 +100,7 @@ src/
 
 ## 테스트
 
-`npm run test` 기준 **34 test files / 539 tests** 전부 통과(Core 순수 함수/클래스 단위
+`npm run test` 기준 **36 test files / 609 tests** 전부 통과(Core 순수 함수/클래스 단위
 테스트부터 실제 Engine을 사용하는 브라우저 통합 테스트까지 포함).
 
 ## 배포

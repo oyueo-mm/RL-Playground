@@ -157,4 +157,38 @@ describe('RewardChart', () => {
       expect(screen.queryByTestId('reward-chart-selected-point')).toBeNull()
     })
   })
+
+  describe('Phase 28 §7 — numeric axis ticks', () => {
+    it('renders a numeric Y-axis tick reflecting the actual value range', () => {
+      render(<RewardChart rewardHistory={[-10, 0, 10]} />)
+      // -10..10 should produce a "0" tick among the nice round numbers.
+      expect(screen.getByTestId('reward-chart-y-tick-0')).toBeTruthy()
+    })
+
+    it('renders numeric X-axis tick labels reflecting real Episode numbers', () => {
+      const history = Array.from({ length: 10 }, (_, i) => i)
+      const episodeNumbers = Array.from({ length: 10 }, (_, i) => i + 1)
+      render(<RewardChart rewardHistory={history} episodeNumbers={episodeNumbers} />)
+      expect(screen.getByTestId('reward-chart-x-tick-10')).toBeTruthy()
+    })
+
+    it('falls back to index+1 for X ticks when episodeNumbers is omitted', () => {
+      render(<RewardChart rewardHistory={Array.from({ length: 10 }, (_, i) => i)} />)
+      expect(screen.getByTestId('reward-chart-x-tick-10')).toBeTruthy()
+    })
+
+    it('does not blow up the tick count for a very large Episode range (1..1000)', () => {
+      render(<RewardChart rewardHistory={[0, 5]} episodeNumbers={[1, 1000]} />)
+      const svg = screen.getByTestId('reward-chart-svg')
+      const xTickTexts = [...svg.querySelectorAll('text')].filter((el) =>
+        (el.getAttribute('data-testid') ?? '').includes('-x-tick-'),
+      )
+      expect(xTickTexts.length).toBeLessThanOrEqual(8)
+    })
+
+    it('renders no ticks in the empty state', () => {
+      render(<RewardChart rewardHistory={[]} />)
+      expect(screen.queryByTestId('reward-chart-svg')).toBeNull()
+    })
+  })
 })

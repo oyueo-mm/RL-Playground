@@ -81,7 +81,7 @@ export function StatsPanel({
     selectedEpisode == null ? null : (stats.episodeStatsHistory.find((row) => row.episode === selectedEpisode) ?? null)
 
   return (
-    <div className="w-full max-w-md rounded border border-gray-200 p-4 text-sm" data-testid="stats-panel">
+    <div className="w-full max-w-lg rounded border border-gray-200 p-4 text-sm" data-testid="stats-panel">
       <h2 className="mb-2 font-semibold text-gray-700">{t.stats.heading}</h2>
       <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
         <dt className="text-gray-500">{t.stats.episode}</dt>
