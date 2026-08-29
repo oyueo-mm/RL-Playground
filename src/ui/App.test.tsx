@@ -129,7 +129,8 @@ describe('App (integration, real Engine — Phase 5 §15.5)', () => {
   it('Run -> snapshot status becomes running', () => {
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     expect(engine.getSnapshot().status).toBe('running')
 
@@ -138,7 +139,8 @@ describe('App (integration, real Engine — Phase 5 §15.5)', () => {
 
   it('Pause -> snapshot status becomes paused, Resume -> running again', () => {
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(engine.getSnapshot().status).toBe('running')
 
     fireEvent.click(screen.getByTestId('playback-pause'))
@@ -170,6 +172,9 @@ describe('App (integration, real Engine — Phase 5 §15.5)', () => {
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
 
     render(<App />)
+    // Phase 46: episodeCount now defaults to 100 — set it to 1 explicitly so this test's
+    // "exactly one episode" premise still holds.
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     expect(engine.getSnapshot().status).toBe('idle')
@@ -260,6 +265,9 @@ describe('App (integration, real Engine — Phase 6 §9.3)', () => {
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
 
     render(<App />)
+    // Phase 46: episodeCount now defaults to 100 — set it to 1 explicitly so this test's
+    // "one Run Episode click completes exactly one episode" premise still holds.
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     const snapshot = engine.getSnapshot()
@@ -310,9 +318,12 @@ describe('App (integration, real Engine — Phase 6 §9.3)', () => {
     // than auto-continuing, so multiple completed episodes are produced by clicking Run
     // several times — each click completes synchronously within the single first batch
     // (stepsPerFrame=2000 on a 2-cell grid), returning to idle before the next click.
-    fireEvent.click(screen.getByTestId('playback-run'))
-    fireEvent.click(screen.getByTestId('playback-run'))
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     const snapshot = engine.getSnapshot()
     expect(snapshot.stats.rewardHistory.length).toBeGreaterThan(1)
@@ -495,7 +506,7 @@ describe('App (integration, real Engine — Phase 13: language selector)', () =>
   it('Phase 28: defaults to Korean on first render (no language selector interaction)', () => {
     rtlRender(<App />)
     expect(langSelect().value).toBe('ko')
-    expect(screen.getByTestId('playback-run').textContent).toBe('실행')
+    expect(screen.getByTestId('playback-run-episode').textContent).toBe('학습하기')
     expect(screen.getByTestId('playback-step').textContent).toBe('스텝')
     expect(screen.getByTestId('stats-panel').textContent).toContain('통계')
   })
@@ -504,7 +515,7 @@ describe('App (integration, real Engine — Phase 13: language selector)', () =>
     rtlRender(<App />)
     selectEnglish()
     expect(langSelect().value).toBe('en')
-    expect(screen.getByTestId('playback-run').textContent).toBe('Run')
+    expect(screen.getByTestId('playback-run-episode').textContent).toBe('Train')
     expect(screen.getByTestId('playback-step').textContent).toBe('Step')
     expect(screen.getByTestId('stats-panel').textContent).toContain('Statistics')
   })
@@ -515,8 +526,7 @@ describe('App (integration, real Engine — Phase 13: language selector)', () =>
 
     expect(langSelect().value).toBe('ko')
     expect(screen.getByTestId('playback-step').textContent).toBe('스텝')
-    expect(screen.getByTestId('playback-run').textContent).toBe('실행')
-    expect(screen.getByTestId('playback-run-episode').textContent).toBe('에피소드 실행')
+    expect(screen.getByTestId('playback-run-episode').textContent).toBe('학습하기')
     expect(screen.getByTestId('playback-reset').textContent).toBe('초기화')
     expect(screen.getByTestId('stats-panel').textContent).toContain('통계')
     expect(screen.getByTestId('toggle-env-editor').textContent).toBe('환경 편집')
@@ -525,10 +535,10 @@ describe('App (integration, real Engine — Phase 13: language selector)', () =>
   it('can be switched back to English from Korean', () => {
     render(<App />)
     selectKorean()
-    expect(screen.getByTestId('playback-run').textContent).toBe('실행')
+    expect(screen.getByTestId('playback-run-episode').textContent).toBe('학습하기')
 
     selectEnglish()
-    expect(screen.getByTestId('playback-run').textContent).toBe('Run')
+    expect(screen.getByTestId('playback-run-episode').textContent).toBe('Train')
     expect(screen.getByTestId('stats-panel').textContent).toContain('Statistics')
   })
 
@@ -624,9 +634,9 @@ describe('App (integration, real Engine — Phase 15: Episode count)', () => {
     bombPenalty: -10,
   }
 
-  it('A. defaults to 1', () => {
+  it('A. defaults to 100 (Phase 46)', () => {
     render(<App />)
-    expect(countInput().value).toBe('1')
+    expect(countInput().value).toBe('100')
   })
 
   it('B. can be changed to 5; invalid values (0, negative, decimal) are rejected', () => {
@@ -640,18 +650,6 @@ describe('App (integration, real Engine — Phase 15: Episode count)', () => {
     expect(countInput().value).toBe('5')
     setCount('2.5')
     expect(countInput().value).toBe('5')
-  })
-
-  it('C. Run still runs exactly 1 episode regardless of the Episode count input', () => {
-    engine.reset({ envConfig: tinyTwoCellGrid })
-    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
-    render(<App />)
-    setCount('7') // set a count that would matter for Run Episode, but not for Run
-
-    fireEvent.click(screen.getByTestId('playback-run'))
-
-    expect(engine.getSnapshot().status).toBe('idle')
-    expect(engine.getSnapshot().episode).toBe(1)
   })
 
   it('D/G. Run Episode with count=3 completes exactly 3 episodes, then idle', () => {
@@ -743,8 +741,8 @@ describe('App (integration, real Engine — Phase 15: Episode count)', () => {
 
     fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
     expect(screen.getByText('에피소드 수')).toBeTruthy()
-    // The count value itself is untouched by a language change.
-    expect(countInput().value).toBe('1')
+    // The count value itself is untouched by a language change (Phase 46: default is 100).
+    expect(countInput().value).toBe('100')
   })
 })
 
@@ -924,10 +922,10 @@ describe('App (integration, real Engine — Phase 18: Epsilon control)', () => {
     return screen.getByTestId('epsilon-number') as HTMLInputElement
   }
 
-  it('shows the default epsilon (0.2, the Algorithm schema default, Phase 28) on first render', () => {
+  it('shows the default epsilon (0.1, the Algorithm schema default, Phase 46) on first render', () => {
     render(<App />)
-    expect(epsilonNumberInput().value).toBe('0.2')
-    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.2)
+    expect(epsilonNumberInput().value).toBe('0.1')
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.1)
   })
 
   it('changing epsilon in the UI calls through to the Engine and is reflected back in the snapshot', () => {
@@ -953,14 +951,15 @@ describe('App (integration, real Engine — Phase 18: Epsilon control)', () => {
 
     fireEvent.click(screen.getByTestId('playback-reset'))
 
-    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.2)
-    expect(epsilonNumberInput().value).toBe('0.2')
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.1)
+    expect(epsilonNumberInput().value).toBe('0.1')
   })
 
   it('epsilon can be changed while an Episode is in progress (RUNNING) without resetting Engine state', () => {
     engine.setSpeed({ mode: 'interval', intervalMs: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(engine.getSnapshot().status).toBe('running')
     const episodeBefore = engine.getSnapshot().episode
     const qBefore = engine.getSnapshot().agentSnapshot
@@ -978,7 +977,8 @@ describe('App (integration, real Engine — Phase 18: Epsilon control)', () => {
   it('epsilon can also be changed while PAUSED', () => {
     engine.setSpeed({ mode: 'interval', intervalMs: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('playback-pause'))
     expect(engine.getSnapshot().status).toBe('paused')
 
@@ -1186,7 +1186,8 @@ describe('App (integration, real Engine — Phase 20: Bomb)', () => {
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     expect(engine.getSnapshot().status).toBe('idle')
     expect(engine.getSnapshot().episode).toBe(1)
@@ -1260,7 +1261,8 @@ describe('App (integration, real Engine — Phase 21: Episode Statistics)', () =
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     expect(engine.getSnapshot().status).toBe('idle')
     expect(screen.getByTestId('latest-episode')).toBeTruthy()
@@ -1304,6 +1306,9 @@ describe('App (integration, real Engine — Phase 21: Episode Statistics)', () =
     engine.setSpeed({ mode: 'interval', intervalMs: 500 })
     render(<App />)
 
+    // Phase 46: episodeCount now defaults to 100 — set it to 1 explicitly so completing
+    // the single Episode below actually returns to idle instead of continuing on.
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode')) // step 1 synchronously
     expect(engine.getSnapshot().status).toBe('running')
     fireEvent.click(screen.getByTestId('playback-pause'))
@@ -1342,7 +1347,8 @@ describe('App (integration, real Engine — Phase 21: Episode Statistics)', () =
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     expect(engine.getSnapshot().status).toBe('idle')
     expect(screen.getByTestId('latest-episode-termination').textContent).toBe('Bomb')
@@ -1356,12 +1362,14 @@ describe('App (integration, real Engine — Phase 21: Episode Statistics)', () =
     render(<App />)
 
     fireEvent.change(screen.getByTestId('epsilon-number'), { target: { value: '1' } })
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(screen.getByTestId('latest-episode-exploration').textContent).not.toBe('0')
     expect(screen.getByTestId('latest-episode-exploitation').textContent).toBe('0')
 
     engine.reset({ envConfig: tinyGridConfig, hyperparams: { alpha: 0.1, gamma: 0.9, epsilon: 0 } })
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(screen.getByTestId('latest-episode-exploration').textContent).toBe('0')
     expect(screen.getByTestId('latest-episode-exploitation').textContent).not.toBe('0')
   })
@@ -1370,7 +1378,8 @@ describe('App (integration, real Engine — Phase 21: Episode Statistics)', () =
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     expect(screen.getByText('Latest Episode')).toBeTruthy()
     expect(screen.getByTestId('latest-episode-termination').textContent).toBe('Goal')
@@ -1387,7 +1396,8 @@ describe('App (integration, real Engine — Phase 21: Episode Statistics)', () =
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(screen.getByTestId('latest-episode')).toBeTruthy()
 
     fireEvent.click(screen.getByTestId('playback-reset'))
@@ -1422,7 +1432,7 @@ describe('App (integration, real Engine — Phase 22: Alpha/Gamma controls)', ()
     render(<App />)
     expect(alphaNumberInput().value).toBe('0.1')
     expect(gammaNumberInput().value).toBe('0.9')
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.2 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.1 })
   })
 
   it('changing alpha in the UI calls through to the Engine and is reflected back in the snapshot', () => {
@@ -1443,11 +1453,11 @@ describe('App (integration, real Engine — Phase 22: Alpha/Gamma controls)', ()
     render(<App />)
     fireEvent.change(alphaNumberInput(), { target: { value: '0.9' } })
     fireEvent.change(gammaNumberInput(), { target: { value: '0.1' } })
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.9, gamma: 0.1, epsilon: 0.2 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.9, gamma: 0.1, epsilon: 0.1 })
 
     fireEvent.click(screen.getByTestId('playback-reset'))
 
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.2 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.1 })
     expect(alphaNumberInput().value).toBe('0.1')
     expect(gammaNumberInput().value).toBe('0.9')
   })
@@ -1455,7 +1465,8 @@ describe('App (integration, real Engine — Phase 22: Alpha/Gamma controls)', ()
   it('alpha/gamma can be changed while RUNNING (Pause -> change -> Resume) without resetting Engine state', () => {
     engine.setSpeed({ mode: 'interval', intervalMs: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('playback-pause'))
     expect(engine.getSnapshot().status).toBe('paused')
     const episodeBefore = engine.getSnapshot().episode
@@ -1553,7 +1564,8 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
   it('RUNNING: selector is disabled and cannot be changed', () => {
     engine.setSpeed({ mode: 'interval', intervalMs: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(engine.getSnapshot().status).toBe('running')
 
     expect(algorithmSelect().disabled).toBe(true)
@@ -1565,7 +1577,8 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
   it('PAUSED: selector remains disabled; Resume restores normal Run behavior', () => {
     engine.setSpeed({ mode: 'interval', intervalMs: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('playback-pause'))
     expect(engine.getSnapshot().status).toBe('paused')
 
@@ -1598,6 +1611,8 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
     })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
+    // Phase 46: episodeCount now defaults to 100 — set it to 1 explicitly.
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode')) // Q-Learning: run 1 episode
     expect(engine.getSnapshot().episode).toBe(1)
     expect(engine.getSnapshot().stats.episodeStatsHistory.length).toBe(1)
@@ -1656,10 +1671,10 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
 
     fireEvent.change(algorithmSelect(), { target: { value: 'sarsa' } })
 
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.2 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.1 })
     expect((screen.getByTestId('alpha-number') as HTMLInputElement).value).toBe('0.1')
     expect((screen.getByTestId('gamma-number') as HTMLInputElement).value).toBe('0.9')
-    expect((screen.getByTestId('epsilon-number') as HTMLInputElement).value).toBe('0.2')
+    expect((screen.getByTestId('epsilon-number') as HTMLInputElement).value).toBe('0.1')
   })
 
   it('Bomb termination still works after switching from Q-Learning to SARSA on the same Environment', () => {
@@ -1680,7 +1695,8 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(engine.getSnapshot().status).toBe('idle')
     expect(screen.getByTestId('inspector-reward').textContent).toBe('-10.000')
 
@@ -1688,7 +1704,8 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
     // Bomb config must survive the algorithm-only reset.
     expect(screen.getByTestId('grid-stack').querySelector('[data-testid="bomb-marker-1,0"]')).toBeTruthy()
 
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(engine.getSnapshot().algorithmId).toBe('sarsa')
     expect(engine.getSnapshot().status).toBe('idle')
     expect(screen.getByTestId('inspector-reward').textContent).toBe('-10.000')
@@ -1761,7 +1778,8 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(screen.getByTestId('episode-detail-empty')).toBeTruthy() // nothing selected yet
 
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
@@ -1809,7 +1827,8 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
     const detail = within(screen.getByTestId('episode-detail'))
@@ -1822,7 +1841,8 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('episode-detail')).toBeTruthy()
 
@@ -1836,12 +1856,14 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run')) // Episode 1
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode')) // Episode 1
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('episode-detail')).toBeTruthy()
 
     fireEvent.click(screen.getByTestId('playback-reset'))
-    fireEvent.click(screen.getByTestId('playback-run')) // a new Episode 1, post-reset
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode')) // a new Episode 1, post-reset
 
     expect(screen.getByTestId('episode-detail-empty')).toBeTruthy() // not auto-selected
   })
@@ -1850,7 +1872,8 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByText('Episode Detail')).toBeTruthy()
     expect(screen.getByTestId('reward-chart-selected-label').textContent).toBe('Selected Episode: 1')
@@ -1867,7 +1890,8 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('episode-detail')).toBeTruthy()
 
@@ -1883,7 +1907,8 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 5000 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('episode-detail')).toBeTruthy()
 
@@ -1897,7 +1922,8 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     fireEvent.keyDown(screen.getByTestId('episode-history-row-1'), { key: 'Enter' })
 
@@ -1908,7 +1934,8 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
     const twoColRow = screen.getByTestId('grid-stack').closest('.md\\:flex-row')
@@ -1984,7 +2011,8 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.change(screen.getByTestId('epsilon-number'), { target: { value: '0.3' } })
     fireEvent.change(screen.getByTestId('alpha-number'), { target: { value: '0.4' } })
     fireEvent.change(screen.getByTestId('gamma-number'), { target: { value: '0.8' } })
@@ -2012,6 +2040,8 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     engine.setSpeed({ mode: 'interval', intervalMs: 500 })
     render(<App />)
 
+    // Phase 46: episodeCount now defaults to 100 — set it to 1 explicitly.
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('playback-pause'))
     expect(screen.getByTestId('learning-progress-empty')).toBeTruthy() // no premature point
@@ -2027,7 +2057,8 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(screen.getByTestId('learning-progress')).toBeTruthy()
 
     fireEvent.click(screen.getByTestId('playback-reset'))
@@ -2041,7 +2072,8 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('learning-progress-total-reward-selected-point')).toBeTruthy()
 
@@ -2059,7 +2091,8 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     fireEvent.click(within(screen.getByTestId('env-editor-grid')).getByTestId('cell-1,1'))
     fireEvent.click(screen.getByTestId('env-editor-apply'))
 
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     expect(screen.getByTestId('learning-progress')).toBeTruthy()
     expect(screen.getByTestId('learning-progress-total-reward-chart')).toBeTruthy()
@@ -2069,7 +2102,8 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(screen.getByText('Learning Progress')).toBeTruthy()
 
     fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
@@ -2084,7 +2118,8 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     const twoColRow = screen.getByTestId('grid-stack').closest('.md\\:flex-row')
     expect(twoColRow).toBeTruthy()
@@ -2130,7 +2165,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     engine.reset({ envConfig: corridorConfig, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
@@ -2168,7 +2204,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     engine.reset({ envConfig: corridorConfig, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
     const ep = engine.getSnapshot().stats.episodeStatsHistory[0]
@@ -2187,7 +2224,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     engine.reset({ envConfig: tinyGridConfig, hyperparams: { alpha: 1, gamma: 0.9, epsilon: 0 } })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
     // Phase 34: State is "x,y,mask" — the bounces at (0,0) never collect the Goal (mask
@@ -2219,7 +2257,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
     expect(screen.getByTestId('episode-trajectory-termination').textContent).toBe('Bomb')
@@ -2232,7 +2271,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
     expect(screen.getByTestId('episode-trajectory-termination').textContent).toBe('Goal')
@@ -2244,7 +2284,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     render(<App />)
     fireEvent.change(screen.getByTestId('epsilon-number'), { target: { value: '0' } })
     fireEvent.change(screen.getByTestId('alpha-number'), { target: { value: '0.5' } })
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
     const ep = engine.getSnapshot().stats.episodeStatsHistory[0]
@@ -2255,6 +2296,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     engine.reset({ envConfig: corridorConfig, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
     engine.setSpeed({ mode: 'interval', intervalMs: 500 })
     render(<App />)
+    // Phase 46: episodeCount now defaults to 100 — set it to 1 explicitly.
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('playback-pause'))
     expect(screen.getByTestId('episode-history-empty')).toBeTruthy() // nothing to select yet
@@ -2270,7 +2313,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('episode-trajectory')).toBeTruthy()
 
@@ -2284,7 +2328,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('episode-trajectory')).toBeTruthy()
 
@@ -2298,7 +2343,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 5000 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('episode-trajectory')).toBeTruthy()
 
@@ -2315,7 +2361,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     engine.reset({ envConfig: corridorConfig, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByText(/Episode Trajectory/)).toBeTruthy()
     const englishAction = screen.getByTestId('trajectory-step-action-0').textContent!
@@ -2333,7 +2380,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
     const twoColRow = screen.getByTestId('grid-stack').closest('.md\\:flex-row')
@@ -2346,7 +2394,8 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     fireEvent.click(screen.getByTestId('toggle-policy'))
     fireEvent.click(screen.getByTestId('toggle-value'))
@@ -2385,9 +2434,9 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     bombPenalty: -9,
   }
 
-  it('E. shows the default epsilon (0.2) and hyperparams on first render', () => {
+  it('E. shows the default epsilon (0.1) and hyperparams on first render', () => {
     render(<App />)
-    expect((screen.getByTestId('epsilon-number') as HTMLInputElement).value).toBe('0.2')
+    expect((screen.getByTestId('epsilon-number') as HTMLInputElement).value).toBe('0.1')
     expect((screen.getByTestId('alpha-number') as HTMLInputElement).value).toBe('0.1')
     expect((screen.getByTestId('gamma-number') as HTMLInputElement).value).toBe('0.9')
   })
@@ -2396,7 +2445,8 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     expect(screen.getByTestId('learning-progress-total-reward-chart')).toBeTruthy()
     expect(screen.getByTestId('learning-progress-steps-chart')).toBeTruthy()
@@ -2407,7 +2457,8 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     expect(screen.getByTestId('reward-chart-x-tick-1')).toBeTruthy()
     expect(screen.getByTestId('learning-progress-total-reward-x-tick-1')).toBeTruthy()
@@ -2497,7 +2548,8 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     engine.setSpeed({ mode: 'interval', intervalMs: 500 })
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect((screen.getByTestId('playback-run-greedy') as HTMLButtonElement).disabled).toBe(true)
 
     fireEvent.click(screen.getByTestId('playback-pause'))
@@ -2520,7 +2572,7 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
   it('Phase 28 §9: the real default locale (no forced switch) is Korean', () => {
     rtlRender(<App />)
     expect((screen.getByTestId('language-selector') as HTMLSelectElement).value).toBe('ko')
-    expect(screen.getByTestId('playback-run').textContent).toBe('실행')
+    expect(screen.getByTestId('playback-run-episode').textContent).toBe('학습하기')
   })
 
   it('§2: <main> uses the wider Phase 28 layout width classes', () => {
@@ -2534,7 +2586,8 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(engine.getSnapshot().episode).toBe(1)
 
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
@@ -2546,7 +2599,7 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
 
     fireEvent.click(screen.getByTestId('playback-reset'))
     expect(engine.getSnapshot().episode).toBe(0)
-    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.2)
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.1)
   })
 
   it('I. Termination Chart: shows the empty state before any Episode, then real Goal/Bomb counts as Episodes complete', () => {
@@ -2582,7 +2635,8 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     expect(screen.getByTestId('termination-chart-count-bomb').textContent).toBe('1')
     expect(screen.getByTestId('termination-chart-count-goal').textContent).toBe('0')
@@ -2620,7 +2674,8 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     engine.reset({ envConfig: tinyGridConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(screen.getByText('Termination Reasons')).toBeTruthy()
 
     fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
@@ -2718,7 +2773,8 @@ describe('App (integration, real Engine — Phase 36: Policy/Value dedup, Greedy
     engine.reset({ envConfig: createDefaultGridWorldConfig() })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     expect(screen.getByTestId('episode-history-hint').textContent).toBe('Click an episode to view its path.')
 
@@ -2768,7 +2824,8 @@ describe('App (integration, real Engine — Phase 36: Policy/Value dedup, Greedy
     expect(learnedEntries).toBeGreaterThan(0)
 
     engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
-    fireEvent.click(screen.getByTestId('playback-run')) // starts a new in-progress run
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode')) // starts a new in-progress run
     expect(engine.getSnapshot().status === 'running' || engine.getSnapshot().status === 'idle').toBe(true)
 
     fireEvent.click(screen.getByTestId('playback-restart-episode'))
@@ -2918,7 +2975,8 @@ describe('App (integration, real Engine — Phase 44: "Goals Collected" denomina
     engine.reset({ envConfig: createDefaultGridWorldConfig(), hyperparams: { alpha: 0.5, gamma: 0.9, epsilon: 0.2 } })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-run'))
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
 
     expect(screen.queryByTestId('latest-episode-goals-collected')).toBeNull()
   })

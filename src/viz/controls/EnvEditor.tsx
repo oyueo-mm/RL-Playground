@@ -14,7 +14,7 @@
 // Environment Preset selector were added; both still only ever mutate the local Draft —
 // neither reaches the live Environment before Apply.
 
-import { useState } from 'react'
+import { useRef, useState, type ChangeEvent } from 'react'
 import type { GridWorldConfig } from '../../core/environments/gridworld/types'
 import type { EnvRenderModel } from '../../core/types/render'
 import type { StateKey } from '../../core/types/rl'
@@ -34,6 +34,7 @@ import {
   type EditMode,
   type GridEditorDraft,
 } from './envEditorDraft'
+import { exportFileName, parseEnvImport, serializeEnvExport } from './envEditorIO'
 
 export interface EnvEditorProps {
   /** The live environment's current render model — used only to seed the initial Draft. */
@@ -61,6 +62,10 @@ export function EnvEditor({
   const [draft, setDraft] = useState<GridEditorDraft>(() => draftFromRenderModel(currentRenderModel))
   const [mode, setMode] = useState<EditMode>('wall')
   const [presetId, setPresetId] = useState<string>('custom')
+  // Phase 46 — Import/Export. `importError` is cleared on every successful Import (and
+  // stays until then — a bad file otherwise leaves no visible trace it was rejected).
+  const [importError, setImportError] = useState<string | null>(null)
+  const importFileInputRef = useRef<HTMLInputElement>(null)
 
   // validateDraft() itself always returns plain English messages (its own pure-function
   // tests assert those exact strings) — translated only for display here.
@@ -181,6 +186,53 @@ export function EnvEditor({
     onApply(draftToGridWorldConfig(draft))
   }
 
+  // Phase 46 §17/§18 — client-side file save, no server/DB: a Blob + a temporary
+  // <a download> click, exactly the standard browser download pattern (revoked right
+  // after the click so the object URL doesn't leak).
+  function handleExport() {
+    const blob = new Blob([serializeEnvExport(draft)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = exportFileName(draft)
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleImportClick() {
+    importFileInputRef.current?.click()
+  }
+
+  // Phase 46 §7/§11 — unlike every other Draft mutation above, a successful Import
+  // updates the Draft AND immediately calls `onApply()` (bypassing `confirmApply`'s
+  // window.confirm gate the manual Apply button above uses) — selecting a file is itself
+  // the deliberate confirming action. A REJECTED import touches neither the Draft nor the
+  // live Environment: only `importError` changes, so the app can never crash or partially
+  // apply a bad file (Phase 46's own "실행 중인 환경은 변경되지 않아야 한다" requirement).
+  function handleImportFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    // Always reset the input value so re-selecting the SAME file path still fires
+    // onChange again (browsers otherwise treat an unchanged file input as a no-op).
+    e.target.value = ''
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const text = typeof reader.result === 'string' ? reader.result : ''
+      const result = parseEnvImport(text)
+      if (!result.ok) {
+        setImportError(result.error)
+        return
+      }
+      setImportError(null)
+      setPresetId('custom')
+      setDraft(result.draft)
+      onApply(draftToGridWorldConfig(result.draft))
+    }
+    reader.onerror = () => setImportError('Could not read the selected file.')
+    reader.readAsText(file)
+  }
+
   // Canonical mode ids ('wall'/'start'/'goal'/'bomb') drive data-testid/aria-pressed
   // unchanged; only the visible button text is looked up per-locale.
   const modeLabel: Record<EditMode, string> = {
@@ -202,6 +254,45 @@ export function EnvEditor({
   return (
     <div className="w-full max-w-lg space-y-3 rounded border border-gray-200 p-4 text-sm" data-testid="env-editor">
       <h2 className="font-semibold text-gray-700">{t.envEditor.heading}</h2>
+
+      {/*
+        Phase 46 — Import/Export, placed right under the heading per the phase's own
+        suggested UI structure. Standard browser file input/download only — no server/DB
+        (Phase 46 §17/§18). The hidden <input type="file"> is triggered by the visible
+        "환경 불러오기"/Import button so it can be styled consistently with Export instead
+        of showing the browser's own default file-input control.
+      */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={handleImportClick}
+          data-testid="env-editor-import"
+          className="rounded bg-gray-200 px-3 py-1 text-sm font-medium text-gray-800 hover:bg-gray-300"
+        >
+          {t.envEditor.importButton}
+        </button>
+        <input
+          ref={importFileInputRef}
+          type="file"
+          accept=".json,application/json"
+          onChange={handleImportFileChange}
+          data-testid="env-editor-import-file-input"
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={handleExport}
+          data-testid="env-editor-export"
+          className="rounded bg-gray-200 px-3 py-1 text-sm font-medium text-gray-800 hover:bg-gray-300"
+        >
+          {t.envEditor.exportButton}
+        </button>
+      </div>
+      {importError && (
+        <p className="text-xs text-red-600" data-testid="env-editor-import-error">
+          {t.envEditor.importError} {translateValidationError(importError, locale)}
+        </p>
+      )}
 
       <label className="flex items-center gap-1">
         {t.envEditor.preset}

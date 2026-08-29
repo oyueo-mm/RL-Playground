@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { SpeedSetting } from '../core/engine/Scheduler'
 import type { StateKey } from '../core/types/rl'
 import { GridSvg } from '../viz/grid/GridSvg'
@@ -19,6 +19,7 @@ import { TerminationChart } from '../viz/panels/TerminationChart'
 import { RewardChart } from '../viz/panels/RewardChart'
 import { LearningProgress } from '../viz/panels/LearningProgress'
 import { EpisodeTrajectory } from '../viz/panels/EpisodeTrajectory'
+import { EpisodeStepViewer } from '../viz/panels/EpisodeStepViewer'
 import { EnvEditor } from '../viz/controls/EnvEditor'
 import { engine } from './engine'
 import { useSimulationEngine } from './hooks/useSimulationEngine'
@@ -46,6 +47,16 @@ function App() {
   // experiment, so an evicted Episode's number can never recur, and StatsPanel's
   // `episodeStatsHistory.find()` already degrades to "no selection" (null) safely.
   const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null)
+  // Phase 46 — Step Viewer's current Step, `null` meaning "not scrubbed yet, show the
+  // full path" (visually identical to the last Step — see `effectiveStep` below — so a
+  // fresh Episode selection renders exactly like Phase 26 always did, until the user
+  // actually moves the slider). Reset to `null` whenever the selected Episode changes,
+  // via the effect right below, so a leftover Step from a previously browsed Episode
+  // never silently applies to a newly selected one.
+  const [viewedStep, setViewedStep] = useState<number | null>(null)
+  useEffect(() => {
+    setViewedStep(null)
+  }, [selectedEpisode])
   const [showPolicy, setShowPolicy] = useState(false)
   const [showValue, setShowValue] = useState(false)
   // Phase 30 §14/§15: toggles only whether TrajectoryOverlay is drawn — independent of
@@ -58,12 +69,15 @@ function App() {
   const [showPath, setShowPath] = useState(true)
   const [speed, setSpeed] = useState<SpeedSetting>(() => engine.getSpeed())
   const [showEditor, setShowEditor] = useState(false)
-  // Phase 15: how many episodes "Run Episode" runs — pure UI state, never written into
+  // Phase 15: how many episodes "학습하기"/Train runs — pure UI state, never written into
   // Engine/Core. Once engine.run({ episodes: episodeCount }) is called, the Engine's own
   // remainingEpisodes takes over as the sole source of truth for the in-flight run;
   // changing this state afterward (impossible anyway while RUNNING/PAUSED — the input is
   // disabled) can never retroactively affect it.
-  const [episodeCount, setEpisodeCount] = useState(1)
+  // Phase 46: default raised 1 -> 100 so a fresh session's first Train run already does a
+  // meaningful number of episodes instead of exactly one (pairs with lowering the default
+  // epsilon 0.2 -> 0.1 in qLearning.ts/sarsa.ts).
+  const [episodeCount, setEpisodeCount] = useState(100)
   // Phase 13: locale is pure UI state, entirely separate from the Engine — it never
   // reads from or writes to `engine`, so changing it can never reset/affect Episode,
   // Q-table, Environment, or reward history (no localStorage either, per Phase 13 §6 —
@@ -88,6 +102,14 @@ function App() {
     if (snapshot.envRenderModel.kind === 'grid' && snapshot.envRenderModel.walls.includes(state)) return
     setSelectedState(state)
   }
+
+  // Phase 46 — the selected Episode's own EpisodeStats (or null), and the Step Viewer's
+  // effective (never-null) Step: `viewedStep` if the user has scrubbed, otherwise the
+  // Episode's last Step (full path), so TrajectoryOverlay renders identically to before
+  // Phase 46 until the slider is actually touched.
+  const selectedEpisodeStats =
+    selectedEpisode == null ? null : (snapshot.stats.episodeStatsHistory.find((row) => row.episode === selectedEpisode) ?? null)
+  const effectiveStep = viewedStep ?? (selectedEpisodeStats ? selectedEpisodeStats.trajectory.length : 0)
 
   return (
     // Phase 28 §2: max-width raised from max-w-4xl (56rem/896px) to max-w-7xl
@@ -216,6 +238,11 @@ function App() {
                   cellSize={CELL_SIZE}
                   className="absolute inset-0 h-auto w-full"
                   ariaLabel={`${t.episodeTrajectory.ariaLabelPrefix} ${selectedEpisode ?? ''}`}
+                  // Phase 46 — Step Viewer support: truncates the drawn path to the
+                  // currently browsed Step. `effectiveStep` already equals the full
+                  // trajectory length until the user scrubs, so this renders identically
+                  // to pre-Phase-46 behavior by default.
+                  stepIndex={effectiveStep}
                 />
               )}
             </div>
@@ -254,15 +281,10 @@ function App() {
           <PlaybackControls
             status={snapshot.status}
             onStep={() => engine.step()}
-            // Phase 12: Run always executes exactly the current episode (terminal ->
-            // idle) — that meaning is unchanged by Phase 15's episode-count input, which
-            // only affects Run Episode.
-            onRun={() => engine.run({ episodes: 1 })}
-            // Phase 15: Run Episode now runs the user-specified count via the same
-            // run({ episodes }) API Run uses (episodeCount defaults to 1, so with no
-            // input interaction this is behaviorally identical to Phase 12's
-            // engine.runEpisode() default). No Core change needed — run({episodes}) and
-            // its remainingEpisodes/runMode bookkeeping already fully support this.
+            // Phase 15: "학습하기"/Train runs the user-specified count via
+            // run({ episodes }). Phase 46: the old single-Episode "Run" button
+            // (`engine.run({ episodes: 1 })`) was removed — it was redundant with this
+            // button at episodeCount=1, and this is now the sole real-learning action.
             onRunEpisode={() => engine.run({ episodes: episodeCount })}
             onPause={() => engine.pause()}
             onResume={() => engine.resume()}
@@ -489,6 +511,20 @@ function App() {
             selectedEpisode={selectedEpisode}
             t={t}
             locale={locale}
+          />
+          {/*
+            Phase 46 — Step Viewer: 2nd stage of Episode exploration (Episode selection,
+            above, already existed since Phase 24; this adds per-Step scrubbing within the
+            selected Episode). Strictly read-only — `viewedStep`/`setViewedStep` are pure
+            UI state, never touching `engine` (see EpisodeStepViewer.tsx's own header
+            comment for the full read-only guarantee).
+          */}
+          <EpisodeStepViewer
+            episode={selectedEpisodeStats}
+            step={effectiveStep}
+            onStepChange={setViewedStep}
+            allGoals={snapshot.envRenderModel.kind === 'grid' ? (snapshot.envRenderModel.allGoals ?? []) : []}
+            t={t}
           />
         </div>
       </div>

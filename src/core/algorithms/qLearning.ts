@@ -21,7 +21,12 @@ export const QLEARNING_HYPERPARAM_SCHEMA: HyperparamSchema = [
   // Phase 28 — default lowered from 1.0 (always explore) to 0.2 (~20% exploration / ~80%
   // exploitation), matching describeEpsilon()'s existing wording so a fresh session's
   // default value and its own on-screen description agree from the very first render.
-  { key: 'epsilon', label: 'Exploration rate (ε)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.2 },
+  // Phase 46 — lowered again, 0.2 -> 0.1: a metadata-only default change (the epsilon-greedy
+  // *algorithm* in epsilonGreedy.ts/this file's computeUpdate() is completely untouched),
+  // paired with raising the default Episode count to 100 (App.tsx) so a fresh session's
+  // "학습하기" run does more exploitation across more episodes rather than spending a full
+  // fifth of every episode exploring at random.
+  { key: 'epsilon', label: 'Exploration rate (ε)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.1 },
 ]
 
 function assertActionValueAgent(agent: Agent): asserts agent is ActionValueAgent {

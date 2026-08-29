@@ -26,7 +26,8 @@ export const SARSA_HYPERPARAM_SCHEMA: HyperparamSchema = [
   // Phase 30: max widened 1 -> 2, same reasoning as qLearning.ts's own gamma schema entry.
   { key: 'gamma', label: 'Discount factor (γ)', type: 'range', min: 0, max: 2, step: 0.01, default: 0.9 },
   // Phase 28 — default lowered from 1.0 to 0.2, same reasoning as qLearning.ts.
-  { key: 'epsilon', label: 'Exploration rate (ε)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.2 },
+  // Phase 46 — lowered again to 0.1, same metadata-only reasoning as qLearning.ts.
+  { key: 'epsilon', label: 'Exploration rate (ε)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.1 },
 ]
 
 function assertActionValueAgent(agent: Agent): asserts agent is ActionValueAgent {

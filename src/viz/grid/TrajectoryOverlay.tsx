@@ -27,6 +27,17 @@ export interface TrajectoryOverlayProps {
   cellSize?: number
   className?: string
   ariaLabel: string
+  /**
+   * Phase 46 — Step Viewer support. When provided (0..trajectory.length, same range as
+   * `points`' own index below), the path/markers are truncated to `points[0..stepIndex]`
+   * and the truncated path's last point gets an extra "current position" highlight ring
+   * (testid "trajectory-current-position"), so scrubbing the Step Slider visibly shows
+   * exactly where the Agent was at that Step — without re-deriving any of the existing
+   * per-step pixel/offset computation below (same points array, just sliced). Omitted
+   * (default: show the full path, Phase 26 behavior) preserves every pre-Phase-46
+   * caller/test.
+   */
+  stepIndex?: number
 }
 
 // Small pixel offsets applied to repeat visits of the same State, so a 2nd/3rd/... marker
@@ -48,6 +59,7 @@ export function TrajectoryOverlay({
   cellSize = 48,
   className,
   ariaLabel,
+  stepIndex,
 }: TrajectoryOverlayProps) {
   const episode = selectedEpisode == null ? null : (episodeStatsHistory.find((e) => e.episode === selectedEpisode) ?? null)
 
@@ -91,7 +103,13 @@ export function TrajectoryOverlay({
   const lastOffset = nextOffsetFor(last.nextState)
   points.push({ index: episode.trajectory.length, x: lastCenter.cx + lastOffset.dx, y: lastCenter.cy + lastOffset.dy })
 
-  const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ')
+  // Phase 46: truncate to the Step Viewer's current step, if given — the offsets above
+  // are computed over the FULL trajectory first (order matters for Phase 39's repeat-
+  // offset assignment), so slicing afterward never changes any already-assigned offset.
+  const visiblePoints = stepIndex == null ? points : points.slice(0, Math.min(stepIndex, points.length - 1) + 1)
+  const currentPoint = stepIndex == null ? null : visiblePoints[visiblePoints.length - 1]
+
+  const d = visiblePoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ')
 
   return (
     <svg
@@ -105,7 +123,7 @@ export function TrajectoryOverlay({
       data-testid="trajectory-overlay"
     >
       <path d={d} fill="none" stroke="#f97316" strokeWidth={2} data-testid="trajectory-path" />
-      {points.map((p) => (
+      {visiblePoints.map((p) => (
         <g key={p.index} data-testid={`trajectory-marker-${p.index}`}>
           <circle cx={p.x} cy={p.y} r={7} fill="#f97316" stroke="white" strokeWidth={1.5} />
           <text x={p.x} y={p.y} textAnchor="middle" dominantBaseline="central" fontSize={9} fill="white">
@@ -113,6 +131,17 @@ export function TrajectoryOverlay({
           </text>
         </g>
       ))}
+      {currentPoint && (
+        <circle
+          cx={currentPoint.x}
+          cy={currentPoint.y}
+          r={11}
+          fill="none"
+          stroke="#2563eb"
+          strokeWidth={2.5}
+          data-testid="trajectory-current-position"
+        />
+      )}
     </svg>
   )
 }

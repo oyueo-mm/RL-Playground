@@ -275,4 +275,110 @@ describe('TrajectoryOverlay', () => {
     )
     expect(screen.getByTestId('trajectory-overlay')).toBeTruthy()
   })
+
+  describe('Phase 46 — stepIndex (Step Viewer support)', () => {
+    it('omitted stepIndex renders the full path, same as before Phase 46 (4 markers, no current-position ring)', () => {
+      render(
+        <TrajectoryOverlay
+          renderModel={gridRenderModel()}
+          episodeStatsHistory={[episodeStats({ episode: 1 })]}
+          selectedEpisode={1}
+          ariaLabel="x"
+        />,
+      )
+      expect(screen.getByTestId('trajectory-marker-3')).toBeTruthy()
+      expect(screen.queryByTestId('trajectory-current-position')).toBeNull()
+    })
+
+    it('stepIndex=0 renders only the first marker, plus a current-position ring at it', () => {
+      render(
+        <TrajectoryOverlay
+          renderModel={gridRenderModel()}
+          episodeStatsHistory={[episodeStats({ episode: 1 })]}
+          selectedEpisode={1}
+          ariaLabel="x"
+          stepIndex={0}
+        />,
+      )
+      expect(screen.getByTestId('trajectory-marker-0')).toBeTruthy()
+      expect(screen.queryByTestId('trajectory-marker-1')).toBeNull()
+      expect(screen.queryByTestId('trajectory-marker-2')).toBeNull()
+      expect(screen.queryByTestId('trajectory-marker-3')).toBeNull()
+      expect(screen.getByTestId('trajectory-current-position')).toBeTruthy()
+    })
+
+    it('stepIndex=2 (mid-episode) renders markers 0-2 only, the path has 1 M + 2 L, and the current-position ring sits at marker 2', () => {
+      render(
+        <TrajectoryOverlay
+          renderModel={gridRenderModel()}
+          episodeStatsHistory={[episodeStats({ episode: 1 })]}
+          selectedEpisode={1}
+          ariaLabel="x"
+          stepIndex={2}
+        />,
+      )
+      expect(screen.getByTestId('trajectory-marker-0')).toBeTruthy()
+      expect(screen.getByTestId('trajectory-marker-1')).toBeTruthy()
+      expect(screen.getByTestId('trajectory-marker-2')).toBeTruthy()
+      expect(screen.queryByTestId('trajectory-marker-3')).toBeNull()
+      const d = screen.getByTestId('trajectory-path').getAttribute('d') ?? ''
+      expect((d.match(/L/g) ?? []).length).toBe(2)
+
+      const marker2Circle = screen.getByTestId('trajectory-marker-2').querySelector('circle')!
+      const ring = screen.getByTestId('trajectory-current-position')
+      expect(ring.getAttribute('cx')).toBe(marker2Circle.getAttribute('cx'))
+      expect(ring.getAttribute('cy')).toBe(marker2Circle.getAttribute('cy'))
+    })
+
+    it('stepIndex equal to trajectory.length (the final step) renders the same full set of markers as omitting stepIndex', () => {
+      render(
+        <TrajectoryOverlay
+          renderModel={gridRenderModel()}
+          episodeStatsHistory={[episodeStats({ episode: 1 })]} // 3 transitions -> 4 points
+          selectedEpisode={1}
+          ariaLabel="x"
+          stepIndex={3}
+        />,
+      )
+      expect(screen.getByTestId('trajectory-marker-0')).toBeTruthy()
+      expect(screen.getByTestId('trajectory-marker-1')).toBeTruthy()
+      expect(screen.getByTestId('trajectory-marker-2')).toBeTruthy()
+      expect(screen.getByTestId('trajectory-marker-3')).toBeTruthy()
+      expect(screen.getByTestId('trajectory-current-position')).toBeTruthy()
+    })
+
+    it('repeat-visit offsets are identical whether or not stepIndex truncates the display (offsets computed over the full trajectory first)', () => {
+      const fixture = {
+        renderModel: gridRenderModel({ width: 2, height: 1, start: '0,0', goals: ['1,0'] }),
+        episodeStatsHistory: [
+          episodeStats({
+            episode: 1,
+            trajectory: [
+              { state: '0,0', action: 0, nextState: '0,0', reward: -1, done: false },
+              { state: '0,0', action: 1, nextState: '0,0', reward: -1, done: false },
+              { state: '0,0', action: 2, nextState: '0,0', reward: -1, done: false },
+              { state: '0,0', action: 3, nextState: '1,0', reward: 10, done: true },
+            ],
+          }),
+        ],
+        selectedEpisode: 1,
+        ariaLabel: 'x',
+      }
+
+      const full = render(<TrajectoryOverlay {...fixture} />)
+      const fullPositions = ['trajectory-marker-0', 'trajectory-marker-1', 'trajectory-marker-2'].map((id) => {
+        const c = screen.getByTestId(id).querySelector('circle')!
+        return `${c.getAttribute('cx')},${c.getAttribute('cy')}`
+      })
+      full.unmount()
+
+      render(<TrajectoryOverlay {...fixture} stepIndex={2} />)
+      const truncatedPositions = ['trajectory-marker-0', 'trajectory-marker-1', 'trajectory-marker-2'].map((id) => {
+        const c = screen.getByTestId(id).querySelector('circle')!
+        return `${c.getAttribute('cx')},${c.getAttribute('cy')}`
+      })
+
+      expect(truncatedPositions).toEqual(fullPositions)
+    })
+  })
 })

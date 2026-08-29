@@ -705,10 +705,10 @@ describe('SimulationEngine — 500 episode smoke test', () => {
 })
 
 describe('SimulationEngine — Phase 18: setHyperparams() / epsilon control', () => {
-  it('EngineSnapshot exposes the current hyperparameters, defaulting to the Algorithm schema defaults (epsilon=0.2, Phase 28)', () => {
+  it('EngineSnapshot exposes the current hyperparameters, defaulting to the Algorithm schema defaults (epsilon=0.1, Phase 46)', () => {
     const { source } = createManualTimerSource()
     const engine = new SimulationEngine({ timerSource: source })
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.2 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.1 })
   })
 
   it('setHyperparams({ epsilon: 0 }) is reflected in the snapshot and makes action selection fully greedy (no exploration)', () => {
@@ -802,7 +802,7 @@ describe('SimulationEngine — Phase 18: setHyperparams() / epsilon control', ()
     expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.05)
 
     engine.reset()
-    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.2)
+    expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.1)
   })
 })
 
@@ -1266,10 +1266,10 @@ describe('SimulationEngine — Phase 22: setHyperparams({ alpha }) / setHyperpar
     const engine = new SimulationEngine({ timerSource: source })
 
     engine.setHyperparams({ alpha: 0.99, gamma: 0.01 })
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.99, gamma: 0.01, epsilon: 0.2 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.99, gamma: 0.01, epsilon: 0.1 })
 
     engine.reset()
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.2 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.1 })
   })
 
   it('works identically under SARSA (same generic hyperparams pass-through, no algorithm-specific handling)', () => {
@@ -1361,7 +1361,7 @@ describe('SimulationEngine — Phase 23: Algorithm selection', () => {
     // qLearning.ts and sarsa.ts declare an identical schema (alpha=0.1/gamma=0.9/
     // epsilon=0.2 defaults, Phase 28) — confirmed by reading both files — so this also
     // proves the old engine's customized 0.77/0.11/0.33 values were NOT carried over.
-    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.2 })
+    expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.1 })
   })
 
   it('switching algorithm preserves the current Environment config (Bomb/Start/Goal untouched)', () => {

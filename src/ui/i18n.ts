@@ -8,6 +8,7 @@
 // (proper nouns), StateKey/action-index internals, and algorithm/environment ids.
 
 import { MAX_SIZE, MIN_SIZE } from '../viz/controls/envEditorDraft'
+import { ENV_EXPORT_TYPE, ENV_EXPORT_VERSION } from '../viz/controls/envEditorIO'
 
 export type Locale = 'en' | 'ko'
 
@@ -17,12 +18,15 @@ export interface Dictionary {
   }
   playback: {
     step: string
-    run: string
-    runEpisode: string
+    /** Phase 46 — "학습하기"/"Train": runs `episodeCount` Episode(s) with real learning.
+     * Replaces the old separate "run" (single-episode Run) and "runEpisode" (Run Episode)
+     * labels — those two buttons were merged into this one (episodeCount now defaults to
+     * 100, so the single-episode "Run" button became redundant and was removed). */
+    learn: string
     pause: string
     resume: string
     reset: string
-    /** Phase 15 — label for the Episode count input, next to Run Episode. */
+    /** Phase 15 — label for the Episode count input, next to Train. */
     episodeCount: string
     /** Phase 28 — "Run Greedy Policy" button label. */
     runGreedy: string
@@ -217,6 +221,30 @@ export interface Dictionary {
     applyConfirm: string
     /** Phase 32 — restores the Editor's Draft (not the live Environment) to the default. */
     resetEnvironment: string
+    /** Phase 46 — save the current Draft as a downloadable JSON file. */
+    exportButton: string
+    /** Phase 46 — load a JSON file, replacing the Draft AND immediately applying it to
+     * the live Simulation Environment (no separate "Apply" confirmation step — selecting
+     * the file itself is the deliberate confirming action). */
+    importButton: string
+    /** Phase 46 — shown when a selected Import file fails validation; the previous
+     * Draft/Environment are left completely unchanged. */
+    importError: string
+  }
+  /**
+   * Phase 46 — Step Viewer: scrubs through a selected Episode's individual Steps (not
+   * just the whole finished path TrajectoryOverlay/EpisodeTrajectory already show).
+   * Read-only — never mutates the live Simulation/Engine/Q-table (see EpisodeStepViewer.tsx).
+   */
+  stepViewer: {
+    heading: string
+    empty: string
+    /** e.g. "Step" in "Step 17 / 42". */
+    stepLabel: string
+    previous: string
+    next: string
+    play: string
+    pause: string
   }
 }
 
@@ -224,8 +252,7 @@ const en: Dictionary = {
   language: { selectorLabel: 'Language' },
   playback: {
     step: 'Step',
-    run: 'Run',
-    runEpisode: 'Run Episode',
+    learn: 'Train',
     pause: 'Pause',
     resume: 'Resume',
     reset: 'Reset',
@@ -342,6 +369,18 @@ const en: Dictionary = {
     apply: 'Apply Environment',
     applyConfirm: 'Applying this environment will reset the current Q-table, episode count, and statistics. Continue?',
     resetEnvironment: 'Reset Environment',
+    exportButton: 'Export Environment',
+    importButton: 'Import Environment',
+    importError: 'Could not import this file:',
+  },
+  stepViewer: {
+    heading: 'Step Viewer',
+    empty: 'Select an Episode from the History to browse its Steps.',
+    stepLabel: 'Step',
+    previous: 'Previous',
+    next: 'Next',
+    play: 'Play',
+    pause: 'Pause',
   },
 }
 
@@ -349,8 +388,7 @@ const ko: Dictionary = {
   language: { selectorLabel: '언어' },
   playback: {
     step: '스텝',
-    run: '실행',
-    runEpisode: '에피소드 실행',
+    learn: '학습하기',
     pause: '일시정지',
     resume: '재개',
     reset: '초기화',
@@ -469,6 +507,18 @@ const ko: Dictionary = {
     apply: '환경 적용',
     applyConfirm: '이 환경을 적용하면 현재 Q-table, 에피소드 수, 통계가 초기화됩니다. 계속하시겠습니까?',
     resetEnvironment: '환경 초기화',
+    exportButton: '환경 내보내기',
+    importButton: '환경 불러오기',
+    importError: '이 파일을 불러올 수 없습니다:',
+  },
+  stepViewer: {
+    heading: 'Step Viewer',
+    empty: 'History에서 Episode를 선택하면 Step을 살펴볼 수 있습니다.',
+    stepLabel: 'Step',
+    previous: '이전',
+    next: '다음',
+    play: '재생',
+    pause: '일시정지',
   },
 }
 
@@ -509,6 +559,17 @@ const VALIDATION_ERROR_TRANSLATIONS: Record<string, string> = {
   'Step reward must be a number.': '이동 보상은 숫자여야 합니다.',
   'Wall penalty must be a number.': '벽 충돌 페널티는 숫자여야 합니다.',
   'Goal reward must be a number.': '목표 보상은 숫자여야 합니다.',
+  // Phase 46 — envEditorIO.ts's Import structural-validation error strings.
+  'File is not valid JSON.': '파일이 올바른 JSON 형식이 아닙니다.',
+  'File does not contain a JSON object.': '파일에 JSON 객체가 들어있지 않습니다.',
+  [`Unsupported export version (expected ${ENV_EXPORT_VERSION}).`]: `지원하지 않는 내보내기 버전입니다 (${ENV_EXPORT_VERSION} 버전이어야 함).`,
+  [`Unsupported environment type (expected "${ENV_EXPORT_TYPE}").`]: `지원하지 않는 환경 유형입니다 ("${ENV_EXPORT_TYPE}" 유형이어야 함).`,
+  'Width/height must be numbers.': '너비/높이는 숫자여야 합니다.',
+  'Start must be a position with numeric x/y.': 'Start는 숫자 x/y를 가진 좌표여야 합니다.',
+  'Goals must be an array of positions with numeric x/y.': 'Goals는 숫자 x/y를 가진 좌표 배열이어야 합니다.',
+  'Walls must be an array of positions with numeric x/y.': 'Walls는 숫자 x/y를 가진 좌표 배열이어야 합니다.',
+  'Bombs must be an array of positions with numeric x/y.': 'Bombs는 숫자 x/y를 가진 좌표 배열이어야 합니다.',
+  'Could not read the selected file.': '선택한 파일을 읽을 수 없습니다.',
 }
 
 export function translateValidationError(message: string, locale: Locale): string {

@@ -12,7 +12,14 @@ import { translations, type Dictionary } from '../../ui/i18n'
 export interface PlaybackControlsProps {
   status: EngineStatus
   onStep: () => void
-  onRun: () => void
+  /**
+   * Phase 46 — "학습하기"/"Train": runs `episodeCount` Episode(s) with real learning
+   * (epsilon-greedy exploration, Q-table updates), the Agent visibly moving Step by Step
+   * on the Grid at the current Speed. This is the exact same `engine.run({ episodes })`
+   * call the old, now-removed single-Episode "Run" button used (with episodeCount fixed
+   * at 1) — that button was redundant with this one at episodeCount=1, so it was removed
+   * rather than kept alongside an equivalent action under a different name.
+   */
   onRunEpisode: () => void
   onPause: () => void
   onResume: () => void
@@ -27,10 +34,17 @@ export interface PlaybackControlsProps {
   episodeCount?: number
   onEpisodeCountChange?: (count: number) => void
   /**
-   * Phase 28 — "Run Greedy Policy": runs exactly the current Episode (Phase 12's "Run"
-   * semantics) using pure argmax action selection instead of the user's real epsilon.
-   * Optional/omitted preserves every pre-Phase-28 caller/test (button simply doesn't
-   * render — see below).
+   * Phase 28 — "탐욕 정책 실행"/"Run Greedy Policy": runs exactly one Episode using pure
+   * argmax action selection instead of the user's real epsilon — no exploration, no
+   * Q-table update, just the Agent following the currently-learned policy, visibly on
+   * the Grid. Optional/omitted preserves every pre-Phase-28 caller/test (button simply
+   * doesn't render — see below).
+   *
+   * Phase 46 — promoted from an isolated row below the Episode-count input into the
+   * primary button row, directly beside "학습하기"/Train (`onRunEpisode` above), so the
+   * two are equally prominent and their difference ("학습하기 = Agent를 움직이면서
+   * 학습한다" vs "탐욕 정책 실행 = 학습된 정책대로 Agent를 움직여 결과를 확인한다") is
+   * immediately visible side by side rather than one being visually secondary.
    */
   onRunGreedy?: () => void
   /**
@@ -56,13 +70,12 @@ const EPISODE_COUNT_MIN = 1
 export function PlaybackControls({
   status,
   onStep,
-  onRun,
   onRunEpisode,
   onPause,
   onResume,
   onReset,
   t = translations.en,
-  episodeCount = 1,
+  episodeCount = 100,
   onEpisodeCountChange = () => {},
   onRunGreedy,
   onRestartEpisode,
@@ -94,15 +107,14 @@ export function PlaybackControls({
       >
         {t.playback.step}
       </button>
-      <button
-        type="button"
-        onClick={onRun}
-        disabled={!isIdle}
-        data-testid="playback-run"
-        className={`${baseButtonClass} bg-green-600 text-white hover:bg-green-700`}
-      >
-        {t.playback.run}
-      </button>
+      {/*
+        Phase 46 — the old single-Episode "실행"/"Run" button (`engine.run({episodes:1})`)
+        was removed: it was functionally redundant with this button at episodeCount=1, and
+        having two buttons for "run with real learning" made the difference between them
+        (episode count only) unclear. This button is now the sole "학습하기"/"Train"
+        action — same `onRunEpisode` handler/testid as before (Phase 15), just relabeled
+        and no longer needing a sibling to distinguish itself from.
+      */}
       <button
         type="button"
         onClick={onRunEpisode}
@@ -110,8 +122,26 @@ export function PlaybackControls({
         data-testid="playback-run-episode"
         className={`${baseButtonClass} bg-green-700 text-white hover:bg-green-800`}
       >
-        {t.playback.runEpisode}
+        {t.playback.learn}
       </button>
+      {/*
+        Phase 46 — promoted here from an isolated row further down (Phase 28), directly
+        beside "학습하기" above, so the two primary actions ("Agent를 움직이면서
+        학습한다" vs "학습된 정책대로 Agent를 움직여 결과를 확인한다") are equally
+        prominent. Omitted entirely (renders nothing) when the caller doesn't pass
+        `onRunGreedy`, so every pre-Phase-28 caller/test is unaffected.
+      */}
+      {onRunGreedy && (
+        <button
+          type="button"
+          onClick={onRunGreedy}
+          disabled={!isIdle}
+          data-testid="playback-run-greedy"
+          className={`${baseButtonClass} bg-teal-600 text-white hover:bg-teal-700`}
+        >
+          {t.playback.runGreedy}
+        </button>
+      )}
       {/*
         Phase 14: Pause and Resume previously were two ALWAYS-rendered buttons (each just
         toggling `disabled`), occupying two separate flex-item slots in this
@@ -177,24 +207,6 @@ export function PlaybackControls({
           className="w-20 rounded border border-gray-300 px-1 py-0.5 disabled:cursor-not-allowed disabled:opacity-40"
         />
       </label>
-
-      {/*
-        Phase 28 — same isolation reasoning as the Episode count row above: a separate
-        row, never added to the Phase 14 button row, so this can never affect that row's
-        own carefully-tuned wrap breakpoint. Omitted entirely (renders nothing) when the
-        caller doesn't pass `onRunGreedy`, so every pre-Phase-28 caller/test is unaffected.
-      */}
-      {onRunGreedy && (
-        <button
-          type="button"
-          onClick={onRunGreedy}
-          disabled={!isIdle}
-          data-testid="playback-run-greedy"
-          className={`${baseButtonClass} self-start bg-teal-600 text-white hover:bg-teal-700`}
-        >
-          {t.playback.runGreedy}
-        </button>
-      )}
 
       {/*
         Phase 36 — same isolation reasoning as the rows above: a separate row, never
