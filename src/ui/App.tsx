@@ -454,7 +454,15 @@ function App() {
             t={t}
             selectedEpisode={selectedEpisode}
             onSelectEpisode={setSelectedEpisode}
-            goals={snapshot.envRenderModel.kind === 'grid' ? snapshot.envRenderModel.goals : []}
+            // Phase 44: `allGoals` (the static, full Goal list), not `goals` (the
+            // live, collection-shrinking list) — StatsPanel's "N / M Goals Collected"
+            // needs the true fixed total for its denominator, not the count of
+            // Goals still remaining right now. See render.ts's doc comment.
+            // Phase 44: `allGoals` (the static, full Goal list), not `goals` (the
+            // live, collection-shrinking list) — StatsPanel's "N / M Goals Collected"
+            // needs the true fixed total for its denominator, not the count of
+            // Goals still remaining right now. See render.ts's doc comment.
+            goals={snapshot.envRenderModel.kind === 'grid' ? (snapshot.envRenderModel.allGoals ?? []) : []}
           />
           {/* Phase 28 §10/§11 — grouped directly with Statistics (its data source),
               showing the Goal/Bomb/Other distribution across all of episodeStatsHistory,

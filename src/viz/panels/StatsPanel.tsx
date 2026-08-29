@@ -38,6 +38,14 @@ export interface StatsPanelProps {
    * Episode's "N / M Goals Collected" display from its own `trajectory` (already stored
    * on EpisodeStats since Phase 26) — no new Core storage. Omitted/empty for a
    * single-Goal (or non-grid) Environment, in which case the row is not shown at all.
+   *
+   * Phase 44 — MUST be the full, static Goal list (`EnvRenderModel.allGoals`), never
+   * `EnvRenderModel.goals` (which shrinks as Goals are collected — see render.ts). The
+   * caller (App.tsx) previously passed the live-shrinking list here by mistake: since
+   * `collectedGoalCount()` below counts how many of THIS prop's entries appear in the
+   * trajectory, feeding it an already-shrunk list corrupted both the numerator and the
+   * denominator identically (e.g. "31/31" collapsing to "30/30", "29/29", ... on every
+   * single Goal collected, and the ratio never reaching the Episode's true total).
    */
   goals?: StateKey[]
 }

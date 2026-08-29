@@ -157,6 +157,12 @@ describe('GridWorldEnv', () => {
       goalReward: 10,
       start: '0,0',
       goals: ['4,3'],
+      // Phase 44 — new field: the full, static Goal list (never filtered by
+      // collectedGoals), distinct from `goals` above (which shrinks as Goals are
+      // collected). Neither Goal was collected in this test, so both happen to be
+      // equal here — see the dedicated Phase 44 tests below for the case where they
+      // diverge (one collected, `goals` shrinks, `allGoals` stays the same).
+      allGoals: ['4,3'],
       agentPos: '1,0',
     })
   })
@@ -434,6 +440,81 @@ describe('GridWorldEnv', () => {
       const model = env.getRenderModel()
       expect(model.goals).toEqual(['3,0']) // remaining goal still visible
       expect(model.bombs).toEqual(['2,0']) // bomb unaffected by goal collection
+    })
+  })
+
+  // Phase 44 — root cause was StatsPanel's "N / M Goals Collected" being fed the live
+  // (Phase 32 collection-shrinking) `getRenderModel().goals` for BOTH its numerator and
+  // denominator, so the true total ("M") silently decreased by 1 on every single Goal
+  // collected instead of staying fixed. `allGoals` is the fix: the full, static Goal
+  // list, unaffected by collection state, added specifically so callers that need "the
+  // true total Goal count" have a source that cannot shrink.
+  describe('allGoals (Phase 44 — the static Goal total, distinct from the shrinking goals)', () => {
+    it('allGoals never shrinks as Goals are collected, unlike goals', () => {
+      const env = new GridWorldEnv(
+        config({ width: 3, height: 1, start: { x: 0, y: 0 }, goals: [{ x: 1, y: 0 }, { x: 2, y: 0 }] }),
+      )
+      expect(env.getRenderModel().allGoals?.slice().sort()).toEqual(['1,0', '2,0'])
+
+      env.step(3) // collect (1,0)
+      expect(env.getRenderModel().goals).toEqual(['2,0']) // shrinks (existing Phase 32 behavior)
+      expect(env.getRenderModel().allGoals?.slice().sort()).toEqual(['1,0', '2,0']) // stays full
+
+      env.step(3) // collect (2,0) — the last Goal
+      expect(env.getRenderModel().goals).toEqual([]) // shrinks to empty
+      expect(env.getRenderModel().allGoals?.slice().sort()).toEqual(['1,0', '2,0']) // still full total
+    })
+
+    it('allGoals count matches the original config.goals length even after collecting every Goal', () => {
+      const goals = [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }]
+      const env = new GridWorldEnv(config({ width: 4, height: 1, start: { x: 0, y: 0 }, goals }))
+      env.step(3)
+      env.step(3)
+      env.step(3)
+      expect(env.getRenderModel().allGoals).toHaveLength(3) // never decreases, unlike goals (-> [])
+    })
+
+    it('does not mutate GridWorldConfig.goals via allGoals either', () => {
+      const goals = [{ x: 1, y: 0 }, { x: 2, y: 0 }]
+      const cfg = config({ width: 3, height: 1, start: { x: 0, y: 0 }, goals })
+      const env = new GridWorldEnv(cfg)
+      env.step(3)
+      env.getRenderModel().allGoals?.push('x,y') // mutating the returned array must not leak back
+      expect(cfg.goals).toEqual([{ x: 1, y: 0 }, { x: 2, y: 0 }])
+    })
+
+    it('reset() keeps allGoals at the full total (it was never shrunk in the first place)', () => {
+      const env = new GridWorldEnv(
+        config({ width: 3, height: 1, start: { x: 0, y: 0 }, goals: [{ x: 1, y: 0 }, { x: 2, y: 0 }] }),
+      )
+      env.step(3)
+      env.reset()
+      expect(env.getRenderModel().allGoals?.slice().sort()).toEqual(['1,0', '2,0'])
+    })
+  })
+
+  // Phase 44 — explicit regression lock for the claim under audit: the LAST Goal
+  // collected in a Multi-Goal Episode must set `done: true` on that exact transition.
+  // (Root-cause investigation found this was already correct — GridWorldEnv.step()/
+  // isTerminal() were never the bug — but the user's report explicitly asked this be
+  // locked in as a permanent regression test, not just re-verified ad hoc.)
+  describe('Multi-Goal termination on the final Goal (Phase 44 regression lock)', () => {
+    it('collecting the Nth (final) of N Goals sets done=true on that exact transition, not before', () => {
+      const env = new GridWorldEnv(
+        config({
+          width: 4,
+          height: 1,
+          start: { x: 0, y: 0 },
+          goals: [{ x: 1, y: 0 }, { x: 2, y: 0 }, { x: 3, y: 0 }],
+        }),
+      )
+      const r1 = env.step(3) // collect Goal 1 of 3
+      expect(r1.done).toBe(false)
+      const r2 = env.step(3) // collect Goal 2 of 3
+      expect(r2.done).toBe(false)
+      const r3 = env.step(3) // collect Goal 3 of 3 — the last one
+      expect(r3.done).toBe(true)
+      expect(r3.reward).toBe(10) // still paid goalReward on this first (and only) visit
     })
   })
 

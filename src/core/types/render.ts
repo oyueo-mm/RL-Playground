@@ -25,8 +25,41 @@ export type EnvRenderModel = {
   wallPenalty?: number
   goalReward?: number
   start: StateKey
-  /** Phase 30 — one or more Goal positions; Episode ends only once all are collected. */
+  /**
+   * Phase 30 — Goal positions NOT YET collected this Episode; Episode ends only once
+   * every configured Goal has been collected (Phase 32: a collected Goal is removed
+   * from this list so it disappears from the live Grid rendering — see GridWorldEnv.ts's
+   * getRenderModel()). This list SHRINKS as the Episode progresses, so it must never be
+   * used as "the total number of Goals" — use `allGoals` for that (Phase 44).
+   */
   goals: StateKey[]
+  /**
+   * Phase 44 — the full, static set of every Goal this Environment was configured with,
+   * unaffected by collection state (never filtered, unlike `goals` above). Added because
+   * StatsPanel's "N / M Goals Collected" display was using the live-shrinking `goals`
+   * list for BOTH its numerator and denominator.
+   *
+   * The corruption isn't visible on the very completed Episode being displayed —
+   * `SimulationEngine.finishEpisode()` calls `environment.reset()` synchronously as part
+   * of finishing an Episode, so by the time "Latest Episode" re-renders with that
+   * Episode's completed stats, `goals` has ALREADY been restored to the full list too.
+   * It shows up once the NEXT Episode (which auto-started via that same reset()) begins
+   * collecting its OWN Goals: "Latest Episode" keeps displaying the PREVIOUS (finished,
+   * unchanging) Episode's trajectory, but its denominator/numerator were being read from
+   * the CURRENT live `goals` — which now reflects the new Episode's own, currently-
+   * shrinking progress, entirely unrelated to the Episode actually on screen. That is how
+   * a fixed, already-completed Episode's "N / M" could visibly count down (reported as
+   * "31/31 -> 30/30 -> 29/29...") purely because a *different*, later Episode was quietly
+   * collecting its own Goals in the background (see the Phase 44 report for the full
+   * trace, including confirmation via deliberately reverting this fix and re-running the
+   * regression tests below to see them fail with the exact same symptom).
+   *
+   * Optional, matching the existing `stepReward?`/`wallPenalty?`/`goalReward?` fields'
+   * precedent, so the many pre-existing `EnvRenderModel` test fixtures across
+   * GridSvg/PolicyOverlay/ValueHeatmap/TrajectoryOverlay — which never read Goal counts —
+   * do not need to be touched.
+   */
+  allGoals?: StateKey[]
   agentPos: StateKey
   cellRewards?: Record<StateKey, number>
 }

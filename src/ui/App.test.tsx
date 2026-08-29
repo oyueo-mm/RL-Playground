@@ -2796,3 +2796,130 @@ describe('App (integration, real Engine — Phase 36: Policy/Value dedup, Greedy
     expect((screen.getByTestId('playback-restart-episode') as HTMLButtonElement).disabled).toBe(true)
   })
 })
+
+describe('App (integration, real Engine — Phase 44: "Goals Collected" denominator/numerator fix)', () => {
+  // Root cause: App.tsx was passing `snapshot.envRenderModel.goals` (the LIVE list that
+  // shrinks as Goals are collected — Phase 32) as StatsPanel's `goals` prop, instead of
+  // the new `allGoals` (the static, full list — Phase 44). Since StatsPanel counts how
+  // many of that prop's entries appear in the trajectory, feeding it the shrinking list
+  // corrupted both numerator and denominator identically (reported symptom: "31 / 31" ->
+  // "30 / 30" -> "29 / 29" ... on every single Goal collected, never reaching the true
+  // total). StatsPanel's own unit tests never caught this because they already passed a
+  // correct, static `goals` array directly — this integration test exercises the real
+  // App.tsx wiring end to end, which is where the actual bug lived.
+  //
+  // A fresh (all-zero) Q-table's argmax always ties on action 0 ("Up", decreasing y —
+  // see the Phase 28 §8 "H. Bomb" test's identical technique) — alpha=0/epsilon=0 keeps
+  // it that way forever, so a column of Goals going straight up from Start is collected
+  // in a fully deterministic order via plain Step clicks, no exploration needed.
+  const fiveGoalColumnConfig = {
+    width: 1,
+    height: 6,
+    start: { x: 0, y: 5 },
+    goals: [{ x: 0, y: 4 }, { x: 0, y: 3 }, { x: 0, y: 2 }, { x: 0, y: 1 }, { x: 0, y: 0 }],
+    walls: [],
+    stepReward: -0.1,
+    goalReward: 10,
+    terminalCells: [],
+    bombs: [],
+    bombPenalty: -10,
+  }
+
+  it('collecting all 5 of 5 Goals shows "5 / 5" immediately on completion', () => {
+    engine.reset({ envConfig: fiveGoalColumnConfig, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
+    engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
+    render(<App />)
+
+    for (let i = 0; i < 5; i++) fireEvent.click(screen.getByTestId('playback-step'))
+
+    expect(engine.getSnapshot().status).toBe('idle') // Episode auto-completed on the 5th (final) Goal
+    expect(engine.getSnapshot().stats.latestEpisodeStats!.terminationReason).toBe('goal')
+    expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('5 / 5')
+  })
+
+  // This is the precise reproduction of the reported bug. `finishEpisode()`
+  // (SimulationEngine.ts) calls `environment.reset()` synchronously as part of finishing
+  // an Episode, so by the time "Latest Episode" re-renders with episode 1's completed
+  // stats, `envRenderModel.goals` has ALREADY been restored to the full list too — the
+  // bug is invisible if you only check right at that instant (both `goals` and
+  // `allGoals` happen to agree there). It only shows up once episode 2 starts
+  // collecting its OWN Goals: "Latest Episode" still displays episode 1's (unchanged,
+  // correct) trajectory, but under the old code its denominator came from the LIVE
+  // `envRenderModel.goals` — which now reflects episode 2's own, currently-shrinking
+  // progress. That is exactly how a fixed, completed episode's "N / M" could visibly
+  // count down (the user's reported "31/31 -> 30/30 -> 29/29...") purely because a
+  // *different*, later Episode was quietly collecting its own Goals in the background.
+  it('a completed Episode\'s "5 / 5" stays exactly "5 / 5" while the NEXT Episode collects its own Goals (the actual reported bug)', () => {
+    engine.reset({ envConfig: fiveGoalColumnConfig, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
+    engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
+    render(<App />)
+
+    for (let i = 0; i < 5; i++) fireEvent.click(screen.getByTestId('playback-step')) // Episode 1: collect all 5
+    expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('5 / 5')
+
+    // Episode 2 has now silently started (auto-reset inside finishEpisode()). Step into
+    // it one Goal at a time — "Latest Episode" must keep describing episode 1 throughout.
+    for (let collected = 1; collected <= 4; collected++) {
+      fireEvent.click(screen.getByTestId('playback-step'))
+      expect(engine.getSnapshot().stats.latestEpisodeStats!.episode).toBe(1) // still episode 1's card
+      expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('5 / 5')
+    }
+  })
+
+  it('an Episode that ends early (Bomb) after collecting only 2 of 4 Goals shows "2 / 4", stable across the next Episode too', () => {
+    // Same upward column, but the 3rd Goal is replaced by a Bomb — the Agent collects
+    // exactly 2 Goals, then the Episode ends via Bomb with 2 Goals never reached.
+    const config = {
+      width: 1,
+      height: 6,
+      start: { x: 0, y: 5 },
+      goals: [{ x: 0, y: 4 }, { x: 0, y: 3 }, { x: 0, y: 1 }, { x: 0, y: 0 }],
+      walls: [],
+      stepReward: -0.1,
+      goalReward: 10,
+      terminalCells: [],
+      bombs: [{ x: 0, y: 2 }],
+      bombPenalty: -10,
+    }
+    engine.reset({ envConfig: config, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
+    engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('playback-step')) // y5->4: collect Goal 1/4
+    fireEvent.click(screen.getByTestId('playback-step')) // y4->3: collect Goal 2/4
+    fireEvent.click(screen.getByTestId('playback-step')) // y3->2: Bomb, Episode 1 ends
+
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(engine.getSnapshot().stats.latestEpisodeStats!.terminationReason).toBe('bomb')
+    expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('2 / 4')
+
+    // Episode 2 has silently started; step into it and collect one of ITS Goals too —
+    // episode 1's "2 / 4" card must not shift because of episode 2's own progress.
+    fireEvent.click(screen.getByTestId('playback-step'))
+    expect(engine.getSnapshot().stats.latestEpisodeStats!.episode).toBe(1)
+    // The exact regression this Phase fixes: before the fix this drifted to "1 / 3" (both
+    // numerator and denominator corrupted by episode 2's live-shrinking goal list).
+    expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('2 / 4')
+  })
+
+  it('a plain Reset clears the stale "Goals Collected" display (no leftover value from the previous Episode)', () => {
+    engine.reset({ envConfig: fiveGoalColumnConfig, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
+    engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
+    render(<App />)
+
+    for (let i = 0; i < 5; i++) fireEvent.click(screen.getByTestId('playback-step'))
+    expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('5 / 5')
+
+    fireEvent.click(screen.getByTestId('playback-reset'))
+    expect(screen.queryByTestId('latest-episode-goals-collected')).toBeNull()
+  })
+
+  it('single-Goal Environments are unaffected (row stays hidden, matching existing "> 1 Goal only" behavior)', () => {
+    engine.reset({ envConfig: createDefaultGridWorldConfig(), hyperparams: { alpha: 0.5, gamma: 0.9, epsilon: 0.2 } })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+    fireEvent.click(screen.getByTestId('playback-run'))
+
+    expect(screen.queryByTestId('latest-episode-goals-collected')).toBeNull()
+  })
+})

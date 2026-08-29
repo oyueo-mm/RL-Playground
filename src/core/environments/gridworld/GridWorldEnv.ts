@@ -240,6 +240,11 @@ export class GridWorldEnv implements Environment {
       // `this.config.goals` itself is never mutated (stays the static, restorable
       // configuration); only this render-time projection changes as Goals are collected.
       goals: this.config.goals.map(positionKey).filter((key) => !this.collectedGoals.has(key)),
+      // Phase 44 — the full, static Goal list `config.goals` itself, never filtered by
+      // `collectedGoals`. Distinct from `goals` above specifically so callers that need
+      // "the true total Goal count" (StatsPanel's "N / M Goals Collected") have a source
+      // that cannot shrink as Goals are collected — see render.ts's doc comment.
+      allGoals: this.config.goals.map(positionKey),
       agentPos: positionKey(this.agent),
     }
   }
