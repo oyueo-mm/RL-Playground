@@ -62,9 +62,13 @@ describe('TabularQAgent', () => {
     expect(agent.getValue('1,0,1', 3)).toBe(10)
     expect(agent.getValue('1,0,3', 3)).toBe(-0.1)
     expect(agent.getValue('1,0,1', 3)).not.toBe(agent.getValue('1,0,3', 3))
-    expect(agent.toSnapshot().qTable).toEqual({
-      '1,0,1': [0, 0, 0, 10],
-      '1,0,3': [0, 0, 0, -0.1],
-    })
+    const snapshot = agent.toSnapshot()
+    expect(snapshot.kind).toBe('Q')
+    if (snapshot.kind === 'Q') {
+      expect(snapshot.qTable).toEqual({
+        '1,0,1': [0, 0, 0, 10],
+        '1,0,3': [0, 0, 0, -0.1],
+      })
+    }
   })
 })

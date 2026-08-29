@@ -1847,7 +1847,8 @@ describe('SimulationEngine — Phase 34: State Representation (Markov) end-to-en
 
     // Test 6 — Q-Learning regression: the update rule itself is unchanged (verified by
     // inspecting the actual learned values it produced for the new-format keys).
-    const qTable = engine.getSnapshot().agentSnapshot.kind === 'Q' ? engine.getSnapshot().agentSnapshot.qTable : {}
+    const agentSnapshot = engine.getSnapshot().agentSnapshot
+    const qTable = agentSnapshot.kind === 'Q' ? agentSnapshot.qTable : {}
     expect(qTable['0,0,0']).toEqual([-1, -1, -1, 10]) // right -> collected Goal A there
     expect(qTable['1,0,1']).toEqual([-1, -1, -1, 10]) // right (2nd visit, same mask) -> collected the final Goal
     expect(qTable['0,0,1']).toEqual([-1, -1, -1, -1]) // distinct slot from '0,0,0' — no aliasing, despite the same position
