@@ -350,4 +350,70 @@ describe('GridWorldEnv', () => {
       expect(env.getRenderModel().goals.sort()).toEqual(['1,1', '4,4'])
     })
   })
+
+  // Phase 32 — a collected Goal disappears from the Grid (EnvRenderModel.goals) for the
+  // rest of the Episode, without ever mutating the static GridWorldConfig.goals itself.
+  describe('Goal removal from render model (Phase 32)', () => {
+    it('a collected Goal is removed from getRenderModel().goals immediately after collection', () => {
+      const env = new GridWorldEnv(
+        config({ width: 3, height: 1, start: { x: 0, y: 0 }, goals: [{ x: 1, y: 0 }, { x: 2, y: 0 }] }),
+      )
+      expect(env.getRenderModel().goals.sort()).toEqual(['1,0', '2,0'])
+      env.step(3) // collect the goal at (1,0)
+      expect(env.getRenderModel().goals).toEqual(['2,0'])
+    })
+
+    it('the last Goal is removed too, right before the Episode ends', () => {
+      const env = new GridWorldEnv(config({ start: { x: 5, y: 6 }, goals: [{ x: 6, y: 6 }] }))
+      const result = env.step(3)
+      expect(result.done).toBe(true)
+      expect(env.getRenderModel().goals).toEqual([])
+    })
+
+    it('does not mutate GridWorldConfig.goals when a Goal is collected', () => {
+      const goals = [{ x: 1, y: 0 }, { x: 2, y: 0 }]
+      const cfg = config({ width: 3, height: 1, start: { x: 0, y: 0 }, goals })
+      const env = new GridWorldEnv(cfg)
+      env.step(3) // collect (1,0)
+      // The config object passed in (and its goals array) must be untouched — only the
+      // Environment's own internal collectedGoals (runtime state) changes.
+      expect(cfg.goals).toEqual([{ x: 1, y: 0 }, { x: 2, y: 0 }])
+      expect(cfg.goals).toHaveLength(2)
+    })
+
+    it('reset() restores every Goal to getRenderModel().goals', () => {
+      const env = new GridWorldEnv(
+        config({ width: 3, height: 1, start: { x: 0, y: 0 }, goals: [{ x: 1, y: 0 }, { x: 2, y: 0 }] }),
+      )
+      env.step(3) // collect (1,0)
+      expect(env.getRenderModel().goals).toEqual(['2,0'])
+      env.reset()
+      expect(env.getRenderModel().goals.sort()).toEqual(['1,0', '2,0'])
+    })
+
+    it('a revisited, already-collected Goal cell stays absent from getRenderModel().goals (not re-added)', () => {
+      const env = new GridWorldEnv(
+        config({ width: 3, height: 1, start: { x: 0, y: 0 }, goals: [{ x: 1, y: 0 }, { x: 2, y: 0 }] }),
+      )
+      env.step(3) // collect (1,0)
+      env.step(2) // move back left onto the collected (1,0)
+      expect(env.getRenderModel().goals).toEqual(['2,0'])
+    })
+
+    it('Goal removal works normally alongside a Bomb that remains on the Grid', () => {
+      const env = new GridWorldEnv(
+        config({
+          width: 4,
+          height: 1,
+          start: { x: 0, y: 0 },
+          goals: [{ x: 1, y: 0 }, { x: 3, y: 0 }],
+          bombs: [{ x: 2, y: 0 }],
+        }),
+      )
+      env.step(3) // collect goal at (1,0)
+      const model = env.getRenderModel()
+      expect(model.goals).toEqual(['3,0']) // remaining goal still visible
+      expect(model.bombs).toEqual(['2,0']) // bomb unaffected by goal collection
+    })
+  })
 })

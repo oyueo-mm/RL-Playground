@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EnvRenderModel } from '../../core/types/render'
+import { translations } from '../../ui/i18n'
 import { EnvEditor } from './EnvEditor'
 import { draftToGridWorldConfig, validateDraft, type GridEditorDraft } from './envEditorDraft'
 
@@ -572,5 +573,96 @@ describe('EnvEditor — Environment Presets (Phase 30)', () => {
     fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'maze' } })
     fireEvent.click(screen.getByTestId('env-editor-apply'))
     expect(Object.keys(onApply.mock.calls[0][0])).not.toContain('algorithmId')
+  })
+})
+
+// Phase 32 §9-§14 — "Reset Environment": restores the Editor's Draft (not the live
+// Environment) to the project's existing default GridWorld config.
+describe('EnvEditor — Reset Environment (Phase 32)', () => {
+  it('the Reset Environment button exists', () => {
+    renderEditor()
+    expect(screen.getByTestId('env-editor-reset')).toBeTruthy()
+  })
+
+  it('Scenario A: Grid/Goal/Bomb/Reward Draft changes are all discarded by Reset Environment', () => {
+    const { onApply } = renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-width-input'), { target: { value: '15' } })
+    fireEvent.change(screen.getByTestId('env-editor-height-input'), { target: { value: '15' } })
+    fireEvent.change(screen.getByTestId('env-editor-step-reward-input'), { target: { value: '-0.9' } })
+    fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
+    fireEvent.click(within(screen.getByTestId('env-editor-grid')).getByTestId('cell-2,2'))
+
+    fireEvent.click(screen.getByTestId('env-editor-reset'))
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    const config = onApply.mock.calls[0][0]
+    expect(config.width).toBe(7)
+    expect(config.height).toBe(7)
+    expect(config.goals).toEqual([{ x: 6, y: 6 }])
+    expect(config.bombs).toEqual([])
+    expect(config.stepReward).toBe(-0.1)
+  })
+
+  it('Scenario B: a selected Preset\'s changes are discarded by Reset Environment (back to the default, not the Preset)', () => {
+    const { onApply } = renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'treasureHunt' } })
+
+    fireEvent.click(screen.getByTestId('env-editor-reset'))
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    const config = onApply.mock.calls[0][0]
+    expect(config.width).toBe(7)
+    expect(config.height).toBe(7)
+    expect(config.goals).toEqual([{ x: 6, y: 6 }])
+    expect(config.bombs).toEqual([])
+    // the Preset select itself also reverts to "Custom" once Reset has replaced its Draft
+    expect((screen.getByTestId('env-editor-preset-select') as HTMLSelectElement).value).toBe('custom')
+  })
+
+  it('Scenario C: Reset Environment alone never calls onApply — the live Environment is untouched until Apply', () => {
+    const { onApply } = renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-width-input'), { target: { value: '15' } })
+    fireEvent.click(screen.getByTestId('env-editor-reset'))
+    expect(onApply).not.toHaveBeenCalled()
+  })
+
+  it('Reset Environment followed by Apply applies exactly the default Environment', () => {
+    const { onApply } = renderEditor()
+    fireEvent.click(screen.getByTestId('env-editor-reset'))
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    expect(onApply).toHaveBeenCalledTimes(1)
+    const config = onApply.mock.calls[0][0]
+    expect(config).toMatchObject({
+      width: 7,
+      height: 7,
+      start: { x: 0, y: 0 },
+      goals: [{ x: 6, y: 6 }],
+      walls: [],
+      bombs: [],
+      stepReward: -0.1,
+      wallPenalty: -0.1,
+      goalReward: 10,
+      bombPenalty: -10,
+    })
+  })
+
+  it('the Reset Environment result passes validateDraft() with no errors (a valid, applyable Draft)', () => {
+    renderEditor()
+    fireEvent.click(screen.getByTestId('env-editor-reset'))
+    expect(screen.queryByTestId('env-editor-errors')).toBeNull()
+    // No @testing-library/jest-dom dependency in this project — read the native
+    // `disabled` DOM property directly instead of toBeDisabled().
+    expect((screen.getByTestId('env-editor-apply') as HTMLButtonElement).disabled).toBe(false)
+  })
+
+  it('shows an English label by default', () => {
+    renderEditor()
+    expect(screen.getByTestId('env-editor-reset').textContent).toBe('Reset Environment')
+  })
+
+  it('shows a Korean label when t=translations.ko', () => {
+    renderEditor({ t: translations.ko, locale: 'ko' })
+    expect(screen.getByTestId('env-editor-reset').textContent).toBe('환경 초기화')
   })
 })

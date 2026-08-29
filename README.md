@@ -15,6 +15,8 @@ React·DOM에 의존하지 않으며, 서버나 외부 API 없이 정적 파일�
   Reward/Wall Penalty(벽·경계 충돌 시 별도 페널티)/Goal Reward/Bomb Penalty를 모두
   독립적으로 편집 가능. 여러 Goal을 배치하면 **모든 Goal을 한 번씩 방문해야 Episode가
   종료**되며(Bomb는 즉시 종료), 각 Goal의 보상은 최초 방문 시에만 지급(재방문은 무보상).
+  Goal을 수집하면 Episode가 끝날 때까지 해당 Goal은 Grid에서 사라지고 빈 칸으로 표시됨
+  (Environment 설정 자체는 변경되지 않으며, Episode/Simulation Reset 시 모두 복원).
   Environment Editor에 미리 만들어진 **Preset**(Simple Corridor/Maze/Bomb Field/Multi
   Goal/Treasure Hunt) 선택 기능 제공 — 선택해도 Draft만 바뀌고, Apply 전까지 자유롭게 더
   수정 가능
@@ -48,13 +50,16 @@ React·DOM에 의존하지 않으며, 서버나 외부 API 없이 정적 파일�
   - Episode Detail — Goal이 2개 이상인 Environment에서는 "N / M Goals Collected" 표시
 - **Environment Editor**: Grid 크기 변경, Wall/Goal(복수) 추가·삭제, Start 지정, Step
   Reward/Wall Penalty/Goal Reward/Bomb Penalty 편집, Preset 선택 — Draft 편집 후
-  Apply해야 실제 시뮬레이션에 반영(적용 시 학습 상태 전체 초기화, 취소 시 미반영)
+  Apply해야 실제 시뮬레이션에 반영(적용 시 학습 상태 전체 초기화, 취소 시 미반영).
+  "Reset Environment" 버튼으로 편집 중인 Draft만 기본 환경으로 되돌릴 수 있음(Apply 전까지
+  실제 시뮬레이션에는 영향 없음 — Simulation Reset과는 별개의 동작)
 
-## v1.3 범위
+## v1.4 범위
 
 **포함(구현 완료)**: 위 "주요 기능" 전체(Algorithm Selector UI, Bomb Environment, Episode
 Statistics/Selection, Learning Progress, Episode Trajectory, Gamma 0~2.0, Step/Wall/Goal
-Reward 편집, Multiple Goals, Episode Path Toggle, Environment Presets 포함).
+Reward 편집, Multiple Goals, Episode Path Toggle, Environment Presets, 수집한 Goal의 Grid
+제거, Environment Editor Reset 포함).
 
 **Post-MVP(현재는 없음, 의도적으로 제외)**:
 
@@ -73,7 +78,7 @@ Reward 편집, Multiple Goals, Episode Path Toggle, Environment Presets 포함).
 ```bash
 npm install
 npm run dev      # 개발 서버 (http://localhost:5173)
-npm run test     # Vitest — 36 test files / 648 tests
+npm run test     # Vitest — 36 test files / 662 tests
 npm run lint     # ESLint
 npm run build    # 프로덕션 빌드 (dist/)
 npm run preview  # 빌드 결과를 로컬에서 정적으로 서빙
@@ -112,7 +117,7 @@ src/
 
 ## 테스트
 
-`npm run test` 기준 **36 test files / 648 tests** 전부 통과(Core 순수 함수/클래스 단위
+`npm run test` 기준 **36 test files / 662 tests** 전부 통과(Core 순수 함수/클래스 단위
 테스트부터 실제 Engine을 사용하는 브라우저 통합 테스트까지 포함).
 
 ## 배포

@@ -191,7 +191,10 @@ export class GridWorldEnv implements Environment {
       wallPenalty: this.config.wallPenalty,
       goalReward: this.config.goalReward,
       start: positionKey(this.config.start),
-      goals: this.config.goals.map(positionKey),
+      // Phase 32: visible goals = configured goals minus this Episode's collectedGoals —
+      // `this.config.goals` itself is never mutated (stays the static, restorable
+      // configuration); only this render-time projection changes as Goals are collected.
+      goals: this.config.goals.map(positionKey).filter((key) => !this.collectedGoals.has(key)),
       agentPos: positionKey(this.agent),
     }
   }

@@ -23,6 +23,7 @@ import { parseStateKey } from '../grid/stateKey'
 import { translations, translateValidationError, type Dictionary, type Locale } from '../../ui/i18n'
 import { ENVIRONMENT_PRESETS } from './environmentPresets'
 import {
+  defaultDraft,
   draftFromRenderModel,
   draftToGridWorldConfig,
   draftToRenderModel,
@@ -100,6 +101,15 @@ export function EnvEditor({
 
   function updateGoalReward(value: number) {
     setDraft((prev) => ({ ...prev, goalReward: value }))
+  }
+
+  // Phase 32 §9/§10 — "Reset Environment": restores the Editor's Draft to the project's
+  // default Environment. This ONLY touches Draft state (same as every other change in
+  // this component) — it never calls onApply, so the live/running Environment is
+  // completely unaffected until the user separately clicks Apply.
+  function handleResetEnvironment() {
+    setDraft(defaultDraft())
+    setPresetId('custom')
   }
 
   function selectPreset(id: string) {
@@ -314,15 +324,25 @@ export function EnvEditor({
         </ul>
       )}
 
-      <button
-        type="button"
-        onClick={handleApply}
-        disabled={!isValid}
-        data-testid="env-editor-apply"
-        className="rounded bg-purple-600 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-      >
-        {t.envEditor.apply}
-      </button>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={handleApply}
+          disabled={!isValid}
+          data-testid="env-editor-apply"
+          className="rounded bg-purple-600 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {t.envEditor.apply}
+        </button>
+        <button
+          type="button"
+          onClick={handleResetEnvironment}
+          data-testid="env-editor-reset"
+          className="rounded bg-gray-200 px-4 py-2 font-medium text-gray-800 hover:bg-gray-300"
+        >
+          {t.envEditor.resetEnvironment}
+        </button>
+      </div>
     </div>
   )
 }

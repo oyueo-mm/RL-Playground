@@ -54,6 +54,26 @@ export function draftFromRenderModel(renderModel: Extract<EnvRenderModel, { kind
   }
 }
 
+/**
+ * Phase 32 §11 — "Reset Environment" seed. Reuses `createDefaultGridWorldConfig()` (the
+ * project's single existing default-environment source, already used by `DEFAULT_CONFIG`
+ * above for `terminalCells`/reward fallbacks) rather than hardcoding a second default.
+ */
+export function defaultDraft(): GridEditorDraft {
+  return {
+    width: DEFAULT_CONFIG.width,
+    height: DEFAULT_CONFIG.height,
+    start: DEFAULT_CONFIG.start,
+    goals: DEFAULT_CONFIG.goals,
+    walls: DEFAULT_CONFIG.walls,
+    bombs: DEFAULT_CONFIG.bombs,
+    stepReward: DEFAULT_CONFIG.stepReward,
+    wallPenalty: DEFAULT_CONFIG.wallPenalty,
+    goalReward: DEFAULT_CONFIG.goalReward,
+    bombPenalty: DEFAULT_CONFIG.bombPenalty,
+  }
+}
+
 export function draftToRenderModel(draft: GridEditorDraft): Extract<EnvRenderModel, { kind: 'grid' }> {
   return {
     kind: 'grid',

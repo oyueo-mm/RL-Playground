@@ -206,6 +206,8 @@ export interface Dictionary {
     draftPreview: string
     apply: string
     applyConfirm: string
+    /** Phase 32 — restores the Editor's Draft (not the live Environment) to the default. */
+    resetEnvironment: string
   }
 }
 
@@ -328,6 +330,7 @@ const en: Dictionary = {
     draftPreview: 'Draft preview (not applied yet)',
     apply: 'Apply Environment',
     applyConfirm: 'Applying this environment will reset the current Q-table, episode count, and statistics. Continue?',
+    resetEnvironment: 'Reset Environment',
   },
 }
 
@@ -452,6 +455,7 @@ const ko: Dictionary = {
     draftPreview: '초안 미리보기 (아직 적용되지 않음)',
     apply: '환경 적용',
     applyConfirm: '이 환경을 적용하면 현재 Q-table, 에피소드 수, 통계가 초기화됩니다. 계속하시겠습니까?',
+    resetEnvironment: '환경 초기화',
   },
 }
 

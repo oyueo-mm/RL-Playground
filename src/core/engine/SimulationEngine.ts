@@ -386,13 +386,22 @@ export class SimulationEngine {
    * this Phase — kept generic across `EnvRenderModel`'s discriminated union, so a future
    * non-'grid' kind falls back to 'other' rather than crashing). "Success" (successCount)
    * is exactly `terminationReason === 'goal'`, unchanged from before.
+   *
+   * Phase 32: `renderModel.goals` now reflects only the Goals NOT YET collected this
+   * Episode (GridWorldEnv.getRenderModel() excludes collectedGoals) — by the time this is
+   * called, the just-collected terminal Goal has already been removed from it, so a Goal
+   * termination can no longer be detected via `renderModel.goals.includes(nextState)`
+   * (confirmed by this Phase's own regression run: that check always missed). Bombs are
+   * unaffected (never filtered). For a 'grid' Environment, `isTerminal()` only becomes
+   * true via a Bomb (handled above) or every Goal being collected — `terminalCells`
+   * (Post-MVP FR-9) is not reachable through any current UI path (every fixture in this
+   * codebase uses `[]`), so any other terminal transition is a Goal termination.
    */
   private classifyTermination(transition: Transition): EpisodeTerminationReason {
     const renderModel = this.environment.getRenderModel()
     if (renderModel.kind !== 'grid') return 'other'
     if (renderModel.bombs.includes(transition.nextState)) return 'bomb'
-    if (renderModel.goals.includes(transition.nextState)) return 'goal'
-    return 'other'
+    return 'goal'
   }
 
   private finishEpisode(transition: Transition): void {
