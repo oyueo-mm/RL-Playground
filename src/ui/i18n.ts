@@ -245,6 +245,11 @@ export interface Dictionary {
     next: string
     play: string
     pause: string
+    /** Phase 51 — collapse/expand toggle button text, shown depending on the panel's
+     * current state (same "opposite-of-current-state" convention envToggle/episodePath
+     * already use: while expanded, the button offers to collapse, and vice versa). */
+    collapse: string
+    expand: string
   }
 }
 
@@ -381,6 +386,8 @@ const en: Dictionary = {
     next: 'Next',
     play: 'Play',
     pause: 'Pause',
+    collapse: 'Collapse',
+    expand: 'Expand',
   },
 }
 
@@ -519,6 +526,8 @@ const ko: Dictionary = {
     next: '다음',
     play: '재생',
     pause: '일시정지',
+    collapse: '접기',
+    expand: '펼치기',
   },
 }
 

@@ -209,3 +209,93 @@ describe('EpisodeStepViewer', () => {
     expect(screen.getByTestId('step-viewer').textContent).toContain('Step Viewer')
   })
 })
+
+describe('EpisodeStepViewer — Phase 51: Collapse/Expand', () => {
+  it('defaults to expanded (controls visible, aria-expanded=true)', () => {
+    render(<EpisodeStepViewer episode={episodeStats()} step={0} onStepChange={vi.fn()} />)
+    expect(screen.getByTestId('step-viewer-controls')).toBeTruthy()
+    expect(screen.getByTestId('step-viewer-toggle').getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('clicking the toggle collapses the panel (controls hidden, aria-expanded=false)', () => {
+    render(<EpisodeStepViewer episode={episodeStats()} step={0} onStepChange={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('step-viewer-toggle'))
+    expect(screen.queryByTestId('step-viewer-controls')).toBeNull()
+    expect(screen.getByTestId('step-viewer-toggle').getAttribute('aria-expanded')).toBe('false')
+  })
+
+  it('clicking the toggle again re-expands the panel', () => {
+    render(<EpisodeStepViewer episode={episodeStats()} step={0} onStepChange={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('step-viewer-toggle')) // collapse
+    fireEvent.click(screen.getByTestId('step-viewer-toggle')) // expand again
+    expect(screen.getByTestId('step-viewer-controls')).toBeTruthy()
+    expect(screen.getByTestId('step-viewer-toggle').getAttribute('aria-expanded')).toBe('true')
+  })
+
+  it('while collapsed, the detail controls (slider/Prev/Next/Play/Goals) are all hidden, but the heading and toggle remain visible', () => {
+    render(
+      <EpisodeStepViewer
+        episode={episodeStats()}
+        step={1}
+        onStepChange={vi.fn()}
+        allGoals={['0,0', '1,1']}
+      />,
+    )
+    fireEvent.click(screen.getByTestId('step-viewer-toggle'))
+
+    expect(screen.queryByTestId('step-viewer-slider')).toBeNull()
+    expect(screen.queryByTestId('step-viewer-previous')).toBeNull()
+    expect(screen.queryByTestId('step-viewer-next')).toBeNull()
+    expect(screen.queryByTestId('step-viewer-play-pause')).toBeNull()
+    expect(screen.queryByTestId('step-viewer-position')).toBeNull()
+    expect(screen.queryByTestId('step-viewer-goals-collected')).toBeNull()
+
+    // The panel itself, its heading, and the toggle button all still render.
+    expect(screen.getByTestId('step-viewer')).toBeTruthy()
+    expect(screen.getByTestId('step-viewer').textContent).toContain('Step Viewer')
+    expect(screen.getByTestId('step-viewer-toggle')).toBeTruthy()
+  })
+
+  it('collapsing and re-expanding never calls onStepChange (no Episode/Step state reset)', () => {
+    const onStepChange = vi.fn()
+    render(<EpisodeStepViewer episode={episodeStats()} step={2} onStepChange={onStepChange} />)
+    fireEvent.click(screen.getByTestId('step-viewer-toggle')) // collapse
+    fireEvent.click(screen.getByTestId('step-viewer-toggle')) // expand
+    expect(onStepChange).not.toHaveBeenCalled()
+  })
+
+  it('re-expanding shows the same step position the panel had before it was collapsed (caller-controlled `step` prop is untouched by collapse)', () => {
+    const { rerender } = render(<EpisodeStepViewer episode={episodeStats()} step={2} onStepChange={vi.fn()} />)
+    expect(screen.getByTestId('step-viewer-position').textContent).toContain('2 /')
+
+    fireEvent.click(screen.getByTestId('step-viewer-toggle')) // collapse
+    // Simulate the caller (App.tsx) re-rendering with the same `step` while collapsed —
+    // collapsing never touches the prop, so this is exactly what would happen in practice.
+    rerender(<EpisodeStepViewer episode={episodeStats()} step={2} onStepChange={vi.fn()} />)
+    fireEvent.click(screen.getByTestId('step-viewer-toggle')) // expand again
+
+    expect(screen.getByTestId('step-viewer-position').textContent).toContain('2 /')
+  })
+
+  it('the toggle is keyboard-activatable (a native <button>, so Enter/Space work without extra wiring)', () => {
+    render(<EpisodeStepViewer episode={episodeStats()} step={0} onStepChange={vi.fn()} />)
+    const toggle = screen.getByTestId('step-viewer-toggle')
+    expect(toggle.tagName).toBe('BUTTON')
+    expect(toggle.getAttribute('type')).toBe('button')
+    fireEvent.click(toggle) // fireEvent.keyDown on a <button> does not auto-activate in
+    // jsdom (unlike a real browser) — clicking is the equivalent, deterministic way to
+    // assert the SAME handler a keyboard Enter/Space press would invoke natively.
+    expect(screen.queryByTestId('step-viewer-controls')).toBeNull()
+  })
+
+  it('shows the translated collapse/expand label in English and Korean', () => {
+    const { rerender } = render(<EpisodeStepViewer episode={episodeStats()} step={0} onStepChange={vi.fn()} />)
+    expect(screen.getByTestId('step-viewer-toggle').textContent).toBe('Collapse')
+
+    rerender(<EpisodeStepViewer episode={episodeStats()} step={0} onStepChange={vi.fn()} t={translations.ko} />)
+    expect(screen.getByTestId('step-viewer-toggle').textContent).toBe('접기')
+
+    fireEvent.click(screen.getByTestId('step-viewer-toggle'))
+    expect(screen.getByTestId('step-viewer-toggle').textContent).toBe('펼치기')
+  })
+})

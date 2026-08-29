@@ -57,6 +57,11 @@ function stateAtStep(episode: EpisodeStats, step: number): StateKey {
 
 export function EpisodeStepViewer({ episode, step, onStepChange, allGoals = [], t = translations.en }: EpisodeStepViewerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
+  // Phase 51 — purely a UI visibility toggle (default expanded, per §1): collapsing never
+  // touches `episode`/`step`/`onStepChange` or any other prop, so the selected Episode and
+  // viewedStep are completely unaffected by collapsing/expanding — this component isn't
+  // unmounted either way, only the controls below the heading are conditionally rendered.
+  const [isExpanded, setIsExpanded] = useState(true)
   const maxStep = episode ? episode.trajectory.length : 0
 
   // Auto-advance while Playing; stops itself at the last Step, and whenever the Episode
@@ -115,57 +120,79 @@ export function EpisodeStepViewer({ episode, step, onStepChange, allGoals = [], 
 
   return (
     <div className="w-full max-w-lg rounded border border-gray-200 p-4 text-sm" data-testid="step-viewer">
-      <h2 className="mb-2 font-semibold text-gray-700">
-        {t.stepViewer.heading} — {t.stats.episode} {episode.episode}
-      </h2>
-
-      <input
-        type="range"
-        min={0}
-        max={maxStep}
-        step={1}
-        value={clampedStep}
-        onChange={(e) => onStepChange(Number(e.target.value))}
-        data-testid="step-viewer-slider"
-        className="w-full"
-      />
-
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      {/*
+        Phase 51 — collapse/expand toggle. Same "isolated header row, only visibility
+        toggles" pattern already used by envToggle/episodePath (App.tsx) — the heading
+        and this button always render; only the controls below (slider/Prev/Next/Play/
+        Goals) are conditionally omitted, so a collapsed panel never loses its own
+        identity ("Step Viewer" + Episode number stay visible, per §1).
+      */}
+      <div className="mb-2 flex items-center justify-between">
+        <h2 className="font-semibold text-gray-700">
+          {t.stepViewer.heading} — {t.stats.episode} {episode.episode}
+        </h2>
         <button
           type="button"
-          onClick={() => onStepChange(Math.max(0, clampedStep - 1))}
-          disabled={clampedStep <= 0}
-          data-testid="step-viewer-previous"
-          className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {t.stepViewer.previous}
-        </button>
-        <button
-          type="button"
-          onClick={() => setIsPlaying((prev) => !prev)}
-          data-testid="step-viewer-play-pause"
+          onClick={() => setIsExpanded((prev) => !prev)}
+          aria-expanded={isExpanded}
+          data-testid="step-viewer-toggle"
           className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
         >
-          {isPlaying ? t.stepViewer.pause : t.stepViewer.play}
+          {isExpanded ? t.stepViewer.collapse : t.stepViewer.expand}
         </button>
-        <button
-          type="button"
-          onClick={() => onStepChange(Math.min(maxStep, clampedStep + 1))}
-          disabled={clampedStep >= maxStep}
-          data-testid="step-viewer-next"
-          className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          {t.stepViewer.next}
-        </button>
-        <span className="tabular-nums text-gray-600" data-testid="step-viewer-position">
-          {t.stepViewer.stepLabel} {clampedStep} / {maxStep}
-        </span>
       </div>
 
-      {allGoals.length > 1 && (
-        <p className="mt-2 tabular-nums text-gray-600" data-testid="step-viewer-goals-collected">
-          {t.stats.goalsCollected}: {collected} / {allGoals.length}
-        </p>
+      {isExpanded && (
+        <div data-testid="step-viewer-controls">
+          <input
+            type="range"
+            min={0}
+            max={maxStep}
+            step={1}
+            value={clampedStep}
+            onChange={(e) => onStepChange(Number(e.target.value))}
+            data-testid="step-viewer-slider"
+            className="w-full"
+          />
+
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onStepChange(Math.max(0, clampedStep - 1))}
+              disabled={clampedStep <= 0}
+              data-testid="step-viewer-previous"
+              className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {t.stepViewer.previous}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsPlaying((prev) => !prev)}
+              data-testid="step-viewer-play-pause"
+              className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200"
+            >
+              {isPlaying ? t.stepViewer.pause : t.stepViewer.play}
+            </button>
+            <button
+              type="button"
+              onClick={() => onStepChange(Math.min(maxStep, clampedStep + 1))}
+              disabled={clampedStep >= maxStep}
+              data-testid="step-viewer-next"
+              className="rounded bg-gray-100 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {t.stepViewer.next}
+            </button>
+            <span className="tabular-nums text-gray-600" data-testid="step-viewer-position">
+              {t.stepViewer.stepLabel} {clampedStep} / {maxStep}
+            </span>
+          </div>
+
+          {allGoals.length > 1 && (
+            <p className="mt-2 tabular-nums text-gray-600" data-testid="step-viewer-goals-collected">
+              {t.stats.goalsCollected}: {collected} / {allGoals.length}
+            </p>
+          )}
+        </div>
       )}
     </div>
   )
