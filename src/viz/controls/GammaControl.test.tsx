@@ -165,4 +165,28 @@ describe('GammaControl', () => {
       expect(rowAtHigh.children.length).toBe(childCountAtLow)
     })
   })
+
+  // Phase 39 — the Phase 38 Audit's real-browser measurement found that `flex-col`
+  // alone only stopped the slider row from wrapping onto a 2nd line; it never stopped
+  // the outer `gamma-control` box itself from shrink-to-fitting its own widest content
+  // (the description) and then being re-centered by App.tsx's `items-center` left
+  // column — an actual ~50px horizontal jump whenever gamma crossed 1.0, not the
+  // sub-pixel font-rendering noise the earlier reports described. jsdom has no real
+  // layout engine, so the pixel-level "does it actually stop moving" claim can only be
+  // proven in a real browser (done separately — see the Phase 39 report); what's
+  // guarded here is the specific CSS mechanism (`w-full`) that fix depends on.
+  describe('Phase 39 — gamma-control has a stable (non-shrink-to-fit) width', () => {
+    it('the outer gamma-control container carries w-full', () => {
+      render(<GammaControl gamma={0.9} onChange={vi.fn()} />)
+      expect(screen.getByTestId('gamma-control').className).toContain('w-full')
+    })
+
+    it('w-full is present regardless of gamma (<=1 or >1), so the container never reverts to shrink-to-fit', () => {
+      const { rerender } = render(<GammaControl gamma={0.9} onChange={vi.fn()} />)
+      expect(screen.getByTestId('gamma-control').className).toContain('w-full')
+
+      rerender(<GammaControl gamma={1.5} onChange={vi.fn()} />)
+      expect(screen.getByTestId('gamma-control').className).toContain('w-full')
+    })
+  })
 })

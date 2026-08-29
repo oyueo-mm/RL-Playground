@@ -149,6 +149,121 @@ describe('TrajectoryOverlay', () => {
     expect(new Set(positions).size).toBe(3) // all three distinct on-screen positions
   })
 
+  describe('Phase 39 — repeat-visit offset keyed by physical position, not the full "x,y,mask" StateKey', () => {
+    it('two visits to the same position under DIFFERENT Goal-collection masks still get distinct offsets (no overlap)', () => {
+      render(
+        <TrajectoryOverlay
+          renderModel={gridRenderModel({ width: 2, height: 1, start: '0,0', goals: ['1,0'] })}
+          episodeStatsHistory={[
+            episodeStats({
+              episode: 1,
+              trajectory: [
+                // Same position (0,0) visited three times, each under a different mask
+                // suffix — before Phase 39 this reset the repeat-offset counter every
+                // time (visitCounts keyed by the full StateKey), so all three markers
+                // rendered at the identical (cx, cy) despite the anti-overlap logic.
+                { state: '0,0,0', action: 3, nextState: '1,0,1', reward: -1, done: false },
+                { state: '1,0,1', action: 2, nextState: '0,0,1', reward: -1, done: false },
+                { state: '0,0,1', action: 3, nextState: '1,0,3', reward: -1, done: false },
+                { state: '1,0,3', action: 2, nextState: '0,0,3', reward: -1, done: false },
+              ],
+            }),
+          ]}
+          selectedEpisode={1}
+          ariaLabel="x"
+        />,
+      )
+      // Steps 0, 2 both start at position (0,0) (masks 0 and 1) — and the final
+      // destination (step 4) also lands at (0,0) (mask 3). All three must be visually
+      // distinct on-screen positions despite sharing the same (x,y).
+      const at00 = ['trajectory-marker-0', 'trajectory-marker-2', 'trajectory-marker-4'].map((id) => {
+        const c = screen.getByTestId(id).querySelector('circle')!
+        return `${c.getAttribute('cx')},${c.getAttribute('cy')}`
+      })
+      expect(new Set(at00).size).toBe(3)
+    })
+
+    it('the offset sequence for position-based repeats matches what a plain (no-mask) StateKey trajectory would produce', () => {
+      // Same shape as the pre-existing "a repeated State gets an offset marker" test
+      // above, but every step's StateKey carries a mask suffix — the resulting on-screen
+      // positions must be identical either way, proving the fix is purely about which
+      // key visitCounts uses internally, not a change to the offset values/order.
+      const withMask = render(
+        <TrajectoryOverlay
+          renderModel={gridRenderModel({ width: 2, height: 1, start: '0,0', goals: ['1,0'] })}
+          episodeStatsHistory={[
+            episodeStats({
+              episode: 1,
+              trajectory: [
+                { state: '0,0,0', action: 0, nextState: '0,0,0', reward: -1, done: false },
+                { state: '0,0,0', action: 1, nextState: '0,0,0', reward: -1, done: false },
+                { state: '0,0,0', action: 2, nextState: '0,0,0', reward: -1, done: false },
+                { state: '0,0,0', action: 3, nextState: '1,0,1', reward: 10, done: true },
+              ],
+            }),
+          ]}
+          selectedEpisode={1}
+          ariaLabel="x"
+        />,
+      )
+      const withMaskPositions = ['trajectory-marker-0', 'trajectory-marker-1', 'trajectory-marker-2'].map((id) => {
+        const c = screen.getByTestId(id).querySelector('circle')!
+        return `${c.getAttribute('cx')},${c.getAttribute('cy')}`
+      })
+      withMask.unmount()
+
+      const withoutMask = render(
+        <TrajectoryOverlay
+          renderModel={gridRenderModel({ width: 2, height: 1, start: '0,0', goals: ['1,0'] })}
+          episodeStatsHistory={[
+            episodeStats({
+              episode: 1,
+              trajectory: [
+                { state: '0,0', action: 0, nextState: '0,0', reward: -1, done: false },
+                { state: '0,0', action: 1, nextState: '0,0', reward: -1, done: false },
+                { state: '0,0', action: 2, nextState: '0,0', reward: -1, done: false },
+                { state: '0,0', action: 3, nextState: '1,0', reward: 10, done: true },
+              ],
+            }),
+          ]}
+          selectedEpisode={1}
+          ariaLabel="x"
+        />,
+      )
+      const withoutMaskPositions = ['trajectory-marker-0', 'trajectory-marker-1', 'trajectory-marker-2'].map((id) => {
+        const c = screen.getByTestId(id).querySelector('circle')!
+        return `${c.getAttribute('cx')},${c.getAttribute('cy')}`
+      })
+      withoutMask.unmount()
+
+      expect(withMaskPositions).toEqual(withoutMaskPositions)
+    })
+
+    it('positions that never repeat still render at their exact plain (x,y) center, unaffected by mask stripping', () => {
+      render(
+        <TrajectoryOverlay
+          renderModel={gridRenderModel()}
+          episodeStatsHistory={[
+            episodeStats({
+              episode: 1,
+              trajectory: [
+                { state: '0,3,0', action: 0, nextState: '0,2,0', reward: -1, done: false },
+                { state: '0,2,0', action: 0, nextState: '0,1,1', reward: -1, done: false },
+                { state: '0,1,1', action: 0, nextState: '0,0,1', reward: 10, done: true },
+              ],
+            }),
+          ]}
+          selectedEpisode={1}
+          ariaLabel="x"
+        />,
+      )
+      const marker0 = screen.getByTestId('trajectory-marker-0').querySelector('circle')!
+      // cellSize defaults to 48; position (0,3) -> center (24, 168).
+      expect(marker0.getAttribute('cx')).toBe('24')
+      expect(marker0.getAttribute('cy')).toBe('168')
+    })
+  })
+
   it('renders without crashing when the render model also declares Walls elsewhere on the grid (Wall rendering itself is GridSvg\'s responsibility, not this overlay\'s)', () => {
     render(
       <TrajectoryOverlay

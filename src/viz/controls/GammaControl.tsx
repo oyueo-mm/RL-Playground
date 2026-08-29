@@ -35,7 +35,19 @@ export function GammaControl({ gamma, onChange, t = translations.en, locale = 'e
     // description (Phase 30) is materially longer than the other branches and used to
     // push the slider row itself onto a second line at moderate widths, shifting every
     // control below it whenever gamma crossed 1.0 mid-interaction.
-    <div className="flex flex-col gap-1 text-sm" data-testid="gamma-control">
+    //
+    // Phase 39: `w-full` — this div is a direct child of App.tsx's `items-center`
+    // left column (Phase 37 audit: no explicit width elsewhere in that chain either),
+    // so without an explicit width it shrink-to-fits its own widest content and gets
+    // re-centered by items-center whenever that content's width changes. `flex-col`
+    // above only stopped the slider row from wrapping onto its own second line; it never
+    // stopped THIS div's own box from growing/shrinking with the description's length,
+    // so the whole control (slider + number input) was still visibly jumping ~50px left/
+    // right whenever gamma crossed 1.0 (see the Phase 38 Audit's real-browser
+    // measurement). `w-full` pins this div's width to its parent's (stable, Grid-size-
+    // driven, gamma-independent) available width instead — the same pattern grid-stack
+    // and the two-column row already use for the identical class of bug (Phase 14/37).
+    <div className="w-full flex flex-col gap-1 text-sm" data-testid="gamma-control">
       <label className="flex flex-wrap items-center gap-2">
         {/* Phase 36: `tabular-nums` — digits at proportional width (e.g. "1" narrower
             than "0"/"9") made this label's own rendered width vary by value, shifting the

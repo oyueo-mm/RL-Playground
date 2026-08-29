@@ -9,13 +9,14 @@
 // Draws the ordered transition sequence as a single connected path (not a deduplicated
 // "visited state" set — see SimulationEngine.ts's Phase 26 comment on why
 // episodeVisitedStates, a Set, could never have been reused for this), with a small
-// numbered marker at every step (0..steps). A State visited more than once gets a small
-// fixed offset per repeat so its markers don't fully overlap — the authoritative,
+// numbered marker at every step (0..steps). A grid POSITION visited more than once (see
+// Phase 39 — keyed by position, not the full "x,y,mask" StateKey, since Phase 34) gets a
+// small fixed offset per repeat so its markers don't fully overlap — the authoritative,
 // unambiguous record of repeat visits is the ordered step table in EpisodeTrajectory.tsx.
 
 import type { EpisodeStats } from '../../core/engine/types'
 import type { EnvRenderModel } from '../../core/types/render'
-import { parseStateKey } from './stateKey'
+import { parseStateKey, toStateKey } from './stateKey'
 
 type GridRenderModel = Extract<EnvRenderModel, { kind: 'grid' }>
 
@@ -60,10 +61,20 @@ export function TrajectoryOverlay({
     return { cx: x * cellSize + cellSize / 2, cy: y * cellSize + cellSize / 2 }
   }
 
+  // Phase 39: keyed by the parsed physical POSITION ("x,y"), not the raw StateKey
+  // ("x,y,mask" since Phase 34) — the marker's actual pixel position (via center()
+  // above) only ever depends on x,y, so two visits to the same cell under different
+  // Goal-collection masks must share one repeat-count, or the 2nd visit's offset resets
+  // to 0 and lands exactly on top of the 1st visit's marker (verified via real-browser
+  // measurement in the Phase 38 Audit — up to 5 markers stacked at one pixel position in
+  // a Multi-Goal environment). This only changes which markers get offset from each
+  // other; it does not touch the StateKey itself, the Environment, or the recorded
+  // trajectory data (still keyed/rendered per the original per-step State).
   const visitCounts = new Map<string, number>()
   function nextOffsetFor(stateKey: string) {
-    const visits = visitCounts.get(stateKey) ?? 0
-    visitCounts.set(stateKey, visits + 1)
+    const positionKey = toStateKey(parseStateKey(stateKey))
+    const visits = visitCounts.get(positionKey) ?? 0
+    visitCounts.set(positionKey, visits + 1)
     return REPEAT_OFFSETS[visits % REPEAT_OFFSETS.length]
   }
 
