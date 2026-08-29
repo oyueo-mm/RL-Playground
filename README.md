@@ -57,12 +57,25 @@ React·DOM에 의존하지 않으며, 서버나 외부 API 없이 정적 파일�
   "Reset Environment" 버튼으로 편집 중인 Draft만 기본 환경으로 되돌릴 수 있음(Apply 전까지
   실제 시뮬레이션에는 영향 없음 — Simulation Reset과는 별개의 동작)
 
-## v1.4 범위
+## v1.6 범위
 
 **포함(구현 완료)**: 위 "주요 기능" 전체(Algorithm Selector UI, Bomb Environment, Episode
 Statistics/Selection, Learning Progress, Episode Trajectory, Gamma 0~2.0, Step/Wall/Goal
 Reward 편집, Multiple Goals, Episode Path Toggle, Environment Presets, 수집한 Goal의 Grid
 제거, Environment Editor Reset 포함).
+
+**v1.4 이후 추가된 사항**: State가 Agent 위치뿐 아니라 해당 Episode 동안 수집한 Goal
+상태까지 포함하도록 개선되어, Multiple Goal 환경에서 같은 좌표라도 남은 Goal 구성이
+다르면 Q-value가 서로 섞이지 않고 정확히 구분됨(위 "주요 기능"에 이미 반영). Policy/Value
+Overlay가 현재 Goal 수집 상태 기준으로 셀당 정확히 하나의 화살표/값만 표시. Greedy 정책
+실행 중에도 Inspector에서 State/Action/Reward 확인 가능(TD 정보는 학습이 일어나지 않으므로
+표시하지 않음). Q-value 막대그래프에서 Greedy Action 행 강조 표시. Gamma 설명 텍스트
+길이에 따라 슬라이더 위치가 흔들리던 레이아웃 문제 수정. Episode History에 클릭 안내
+문구 추가. Greedy 정책이 종료되지 않는 환경(예: 사방이 벽으로 막힌 State)에서 학습된
+Q-table을 보존한 채 실행을 중단하고 처음으로 되돌릴 수 있는 Stop & Restart 기능 추가.
+Grid 위 Agent marker가 셀 클릭을 가로채던 문제와, 20×20 등 큰 Grid에서 좁은 화면(768px)에
+발생하던 가로 스크롤 문제 수정. Multiple Goal 환경에서 동일 위치를 서로 다른 Goal 수집
+상태로 재방문할 때 Episode Trajectory의 마커가 겹치던 문제 수정.
 
 **Post-MVP(현재는 없음, 의도적으로 제외)**:
 
@@ -81,7 +94,7 @@ Reward 편집, Multiple Goals, Episode Path Toggle, Environment Presets, 수집�
 ```bash
 npm install
 npm run dev      # 개발 서버 (http://localhost:5173)
-npm run test     # Vitest — 37 test files / 676 tests
+npm run test     # Vitest — 37 test files / 724 tests
 npm run lint     # ESLint
 npm run build    # 프로덕션 빌드 (dist/)
 npm run preview  # 빌드 결과를 로컬에서 정적으로 서빙
@@ -120,7 +133,7 @@ src/
 
 ## 테스트
 
-`npm run test` 기준 **37 test files / 676 tests** 전부 통과(Core 순수 함수/클래스 단위
+`npm run test` 기준 **37 test files / 724 tests** 전부 통과(Core 순수 함수/클래스 단위
 테스트부터 실제 Engine을 사용하는 브라우저 통합 테스트까지 포함).
 
 ## 배포
