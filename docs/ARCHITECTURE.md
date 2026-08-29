@@ -297,8 +297,16 @@ type EnvRenderModel =
       width: number;
       height: number;
       walls: StateKey[];
+      bombs: StateKey[];
+      bombPenalty: number;
+      // Phase 30: stepReward/wallPenalty/goalReward optional (Environment Editor seed
+      // only — see EnvEditor.tsx); goal is now goals: StateKey[] (Phase 30 §6-§10 —
+      // Episode ends only once every Goal has been visited, or a Bomb is reached).
+      stepReward?: number;
+      wallPenalty?: number;
+      goalReward?: number;
       start: StateKey;
-      goal: StateKey;
+      goals: StateKey[];
       agentPos: StateKey;
       cellRewards?: Record<StateKey, number>;
     };

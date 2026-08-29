@@ -30,9 +30,10 @@ function parsePosition(stateKey: string): { x: number; y: number } {
 type CellKind = 'empty' | 'wall' | 'start' | 'goal' | 'bomb'
 
 export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onStateSelect }: GridSvgProps) {
-  const { width, height, walls, bombs, start, goal, agentPos } = renderModel
+  const { width, height, walls, bombs, start, goals, agentPos } = renderModel
   const wallSet = new Set(walls)
   const bombSet = new Set(bombs)
+  const goalSet = new Set(goals)
   const agent = parsePosition(agentPos)
   const svgWidth = width * cellSize
   const svgHeight = height * cellSize
@@ -55,7 +56,7 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
       let kind: CellKind = 'empty'
       if (wallSet.has(key)) kind = 'wall'
       else if (bombSet.has(key)) kind = 'bomb'
-      else if (key === goal) kind = 'goal'
+      else if (goalSet.has(key)) kind = 'goal'
       else if (key === start) kind = 'start'
       cells.push({ key, x, y, kind })
     }

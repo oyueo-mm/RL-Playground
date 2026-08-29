@@ -12,22 +12,24 @@ import { parseStateKey, toStateKey } from '../grid/stateKey'
 export const MIN_SIZE = 3
 export const MAX_SIZE = 20
 
-// stepReward/goalReward/terminalCells are NOT observable anywhere in the public
-// EngineSnapshot/Environment surface (see this Phase's report, "발견된 문제" #1) and
-// this Phase doesn't edit them anyway (Post-MVP FR-8/FR-9), so Apply always carries the
-// environment's documented defaults forward unchanged.
 const DEFAULT_CONFIG = createDefaultGridWorldConfig()
 
 export interface GridEditorDraft {
   width: number
   height: number
   start: Position
-  goal: Position
+  /** Phase 30 — one or more Goals; at least one is required. */
+  goals: Position[]
   walls: Position[]
   bombs: Position[]
+  stepReward: number
+  wallPenalty: number
+  goalReward: number
   bombPenalty: number
 }
 
+// 'goal' mode still refers to editing the (now plural) Goal set one cell at a time —
+// same click-to-toggle interaction Bomb mode already uses (see EnvEditor.tsx).
 export type EditMode = 'wall' | 'start' | 'goal' | 'bomb'
 
 export function samePosition(a: Position, b: Position): boolean {
@@ -39,9 +41,15 @@ export function draftFromRenderModel(renderModel: Extract<EnvRenderModel, { kind
     width: renderModel.width,
     height: renderModel.height,
     start: parseStateKey(renderModel.start),
-    goal: parseStateKey(renderModel.goal),
+    goals: renderModel.goals.map(parseStateKey),
     walls: renderModel.walls.map(parseStateKey),
     bombs: renderModel.bombs.map(parseStateKey),
+    // renderModel's reward fields are optional (see EnvRenderModel's Phase 30 comment) —
+    // fall back to the environment's own documented defaults when a caller's renderModel
+    // doesn't carry them (e.g. an older/synthetic renderModel in a test).
+    stepReward: renderModel.stepReward ?? DEFAULT_CONFIG.stepReward,
+    wallPenalty: renderModel.wallPenalty ?? DEFAULT_CONFIG.wallPenalty,
+    goalReward: renderModel.goalReward ?? DEFAULT_CONFIG.goalReward,
     bombPenalty: renderModel.bombPenalty,
   }
 }
@@ -54,8 +62,11 @@ export function draftToRenderModel(draft: GridEditorDraft): Extract<EnvRenderMod
     walls: draft.walls.map(toStateKey),
     bombs: draft.bombs.map(toStateKey),
     bombPenalty: draft.bombPenalty,
+    stepReward: draft.stepReward,
+    wallPenalty: draft.wallPenalty,
+    goalReward: draft.goalReward,
     start: toStateKey(draft.start),
-    goal: toStateKey(draft.goal),
+    goals: draft.goals.map(toStateKey),
     // No live agent exists for a Draft — Start is shown as a stand-in so the preview
     // still renders a marker, without implying a real simulation is running there.
     agentPos: toStateKey(draft.start),
@@ -80,10 +91,11 @@ export function validateDraft(draft: GridEditorDraft): string[] {
   if (errors.length > 0) return errors
 
   if (!inBounds(draft.start, draft)) errors.push('Start is outside the grid.')
-  if (!inBounds(draft.goal, draft)) errors.push('Goal is outside the grid.')
-  if (samePosition(draft.start, draft.goal)) errors.push('Start and Goal cannot be the same cell.')
+  if (draft.goals.length === 0) errors.push('At least one Goal is required.')
+  if (draft.goals.some((g) => !inBounds(g, draft))) errors.push('One or more Goals are outside the grid.')
+  if (draft.goals.some((g) => samePosition(g, draft.start))) errors.push('Start and Goal cannot be the same cell.')
   if (draft.walls.some((w) => samePosition(w, draft.start))) errors.push('Start cannot be a wall.')
-  if (draft.walls.some((w) => samePosition(w, draft.goal))) errors.push('Goal cannot be a wall.')
+  if (draft.walls.some((w) => draft.goals.some((g) => samePosition(w, g)))) errors.push('Goal cannot be a wall.')
   if (draft.walls.some((w) => !inBounds(w, draft))) errors.push('One or more walls are outside the grid.')
 
   // Phase 20 — Bomb/Start/Goal collisions are already prevented at click-time
@@ -91,9 +103,12 @@ export function validateDraft(draft: GridEditorDraft): string[] {
   // here too so a Draft built any other way (e.g. a future non-click seeding path) is
   // still caught, exactly like the Wall checks above.
   if (draft.bombs.some((b) => samePosition(b, draft.start))) errors.push('Start cannot be a bomb.')
-  if (draft.bombs.some((b) => samePosition(b, draft.goal))) errors.push('Goal cannot be a bomb.')
+  if (draft.bombs.some((b) => draft.goals.some((g) => samePosition(b, g)))) errors.push('Goal cannot be a bomb.')
   if (draft.bombs.some((b) => !inBounds(b, draft))) errors.push('One or more bombs are outside the grid.')
   if (!Number.isFinite(draft.bombPenalty)) errors.push('Bomb penalty must be a number.')
+  if (!Number.isFinite(draft.stepReward)) errors.push('Step reward must be a number.')
+  if (!Number.isFinite(draft.wallPenalty)) errors.push('Wall penalty must be a number.')
+  if (!Number.isFinite(draft.goalReward)) errors.push('Goal reward must be a number.')
 
   return errors
 }
@@ -103,12 +118,13 @@ export function draftToGridWorldConfig(draft: GridEditorDraft): GridWorldConfig 
     width: draft.width,
     height: draft.height,
     start: draft.start,
-    goal: draft.goal,
+    goals: draft.goals,
     walls: draft.walls,
     bombs: draft.bombs,
     bombPenalty: draft.bombPenalty,
-    stepReward: DEFAULT_CONFIG.stepReward,
-    goalReward: DEFAULT_CONFIG.goalReward,
+    stepReward: draft.stepReward,
+    wallPenalty: draft.wallPenalty,
+    goalReward: draft.goalReward,
     terminalCells: DEFAULT_CONFIG.terminalCells,
   }
 }

@@ -11,8 +11,13 @@ export interface Environment {
   /** Fixed action count for the whole environment (not per-state). GridWorld: 4. */
   getActionSpace(): number
   /**
-   * Pure query, independent of step(). Invariant enforced by every Environment
-   * implementation: `step(a).done === isTerminal(step(a).nextState)`.
+   * Query independent of step() — callable right after construction/reset() without ever
+   * calling step() first. Invariant enforced by every Environment implementation:
+   * `step(a).done === isTerminal(step(a).nextState)`, evaluated against the environment's
+   * state at that same moment. Phase 30: for environments with per-episode history (e.g.
+   * GridWorld's multi-Goal "collect all before terminating"), the answer may depend on the
+   * environment's current episode progress (which goals have already been collected), not
+   * on `state` in isolation — it does not, however, require step() to have run.
    */
   isTerminal(state: StateKey): boolean
   getRenderModel(): EnvRenderModel

@@ -18,6 +18,7 @@
 // explorationCount + exploitationCount === steps invariant Phase 21 established.
 
 import type { EngineStats, EpisodeStats, EpisodeTerminationReason } from '../../core/engine/types'
+import type { StateKey } from '../../core/types/rl'
 import { translations, type Dictionary } from '../../ui/i18n'
 
 export interface StatsPanelProps {
@@ -32,6 +33,19 @@ export interface StatsPanelProps {
    * (click, or Enter/Space while focused). Omitted in existing callers/tests — rows
    * still render and are focusable, they just have nothing to report to. */
   onSelectEpisode?: (episode: number) => void
+  /**
+   * Phase 30 — the current Environment's Goal positions, used only to compute each
+   * Episode's "N / M Goals Collected" display from its own `trajectory` (already stored
+   * on EpisodeStats since Phase 26) — no new Core storage. Omitted/empty for a
+   * single-Goal (or non-grid) Environment, in which case the row is not shown at all.
+   */
+  goals?: StateKey[]
+}
+
+/** Phase 30 — distinct Goal StateKeys visited at least once in this Episode's trajectory. */
+function collectedGoalCount(stats: EpisodeStats, goals: StateKey[]): number {
+  const visited = new Set(stats.trajectory.map((t) => t.nextState))
+  return goals.filter((g) => visited.has(g)).length
 }
 
 function formatReward(value: number): string {
@@ -65,6 +79,7 @@ export function StatsPanel({
   t = translations.en,
   selectedEpisode = null,
   onSelectEpisode,
+  goals = [],
 }: StatsPanelProps) {
   const terminationLabel: Record<EpisodeTerminationReason, string> = {
     goal: t.stats.terminationGoal,
@@ -111,7 +126,7 @@ export function StatsPanel({
           {t.stats.latestEpisodeEmpty}
         </p>
       ) : (
-        <EpisodeStatsCard stats={stats.latestEpisodeStats} t={t} terminationLabel={terminationLabel} testIdPrefix="latest-episode" />
+        <EpisodeStatsCard stats={stats.latestEpisodeStats} t={t} terminationLabel={terminationLabel} testIdPrefix="latest-episode" goals={goals} />
       )}
 
       <h3 className="mt-4 mb-2 font-semibold text-gray-700">{t.stats.episodeHistoryHeading}</h3>
@@ -181,7 +196,7 @@ export function StatsPanel({
           {t.stats.episodeDetailEmpty}
         </p>
       ) : (
-        <EpisodeStatsCard stats={selectedEpisodeStats} t={t} terminationLabel={terminationLabel} testIdPrefix="episode-detail" />
+        <EpisodeStatsCard stats={selectedEpisodeStats} t={t} terminationLabel={terminationLabel} testIdPrefix="episode-detail" goals={goals} />
       )}
     </div>
   )
@@ -192,15 +207,24 @@ interface EpisodeStatsCardProps {
   t: Dictionary
   terminationLabel: Record<EpisodeTerminationReason, string>
   testIdPrefix: string
+  goals: StateKey[]
 }
 
 /** Phase 24 — generic card for one EpisodeStats, reused for both "Latest Episode"
  * (testIdPrefix="latest-episode", exact same testids as before Phase 24 — see
  * StatsPanel.test.tsx's pre-Phase-24 assertions) and the new "Episode Detail"
  * (testIdPrefix="episode-detail"). */
-function EpisodeStatsCard({ stats, t, terminationLabel, testIdPrefix }: EpisodeStatsCardProps) {
+function EpisodeStatsCard({ stats, t, terminationLabel, testIdPrefix, goals }: EpisodeStatsCardProps) {
   return (
     <dl className="grid grid-cols-2 gap-x-4 gap-y-1" data-testid={testIdPrefix}>
+      {goals.length > 1 && (
+        <>
+          <dt className="text-gray-500">{t.stats.goalsCollected}</dt>
+          <dd className="text-right tabular-nums" data-testid={`${testIdPrefix}-goals-collected`}>
+            {collectedGoalCount(stats, goals)} / {goals.length}
+          </dd>
+        </>
+      )}
       <dt className="text-gray-500">{t.stats.episode}</dt>
       <dd className="text-right tabular-nums" data-testid={`${testIdPrefix}-number`}>
         {stats.episode}

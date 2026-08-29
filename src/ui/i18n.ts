@@ -35,6 +35,12 @@ export interface Dictionary {
     show: string
     hide: string
   }
+  /** Phase 30 — toggles TrajectoryOverlay visibility for the selected Episode only; the
+   * underlying trajectory data/table/charts are unaffected either way. Default ON. */
+  episodePath: {
+    show: string
+    hide: string
+  }
   speed: {
     label: string
     slow: string
@@ -113,6 +119,10 @@ export interface Dictionary {
     exploitationRate: string
     averageReward: string
     uniqueStates: string
+    /** Phase 30 — "N / M" Goals collected this Episode, shown only when the Environment
+     * has more than one Goal (derived in StatsPanel.tsx from the Episode's own trajectory
+     * + the current renderModel's goals — no new Core storage). */
+    goalsCollected: string
     /** Phase 24 — detail card for whichever Episode History row is selected. */
     episodeDetailHeading: string
     episodeDetailEmpty: string
@@ -181,6 +191,18 @@ export interface Dictionary {
     modeBomb: string
     /** Phase 20 — label for the Bomb penalty reward number input. */
     bombPenalty: string
+    /** Phase 30 — Step/Wall/Goal reward number inputs. */
+    stepReward: string
+    wallPenalty: string
+    goalReward: string
+    /** Phase 30 — Environment Preset selector. */
+    preset: string
+    presetCustom: string
+    presetCorridor: string
+    presetMaze: string
+    presetBombField: string
+    presetMultiGoal: string
+    presetTreasureHunt: string
     draftPreview: string
     apply: string
     applyConfirm: string
@@ -201,6 +223,7 @@ const en: Dictionary = {
   },
   overlay: { policy: 'Policy', value: 'Value' },
   envToggle: { show: 'Edit Environment', hide: 'Hide Environment Editor' },
+  episodePath: { show: 'Show Episode Path', hide: 'Hide Episode Path' },
   speed: { label: 'Speed:', slow: 'Slow', normal: 'Normal', fast: 'Fast', veryFast: 'Very Fast' },
   epsilon: { label: 'Epsilon (ε)' },
   alpha: { label: 'Alpha (α)' },
@@ -249,6 +272,7 @@ const en: Dictionary = {
     exploitationRate: 'Exploitation Rate',
     averageReward: 'Average Reward',
     uniqueStates: 'Unique States',
+    goalsCollected: 'Goals Collected',
     episodeDetailHeading: 'Episode Detail',
     episodeDetailEmpty: 'Select an Episode from the History to see details.',
     terminationChartHeading: 'Termination Reasons',
@@ -291,6 +315,16 @@ const en: Dictionary = {
     modeGoal: 'goal',
     modeBomb: 'bomb',
     bombPenalty: 'Bomb Penalty',
+    stepReward: 'Step Reward',
+    wallPenalty: 'Wall Penalty',
+    goalReward: 'Goal Reward',
+    preset: 'Preset',
+    presetCustom: 'Custom',
+    presetCorridor: 'Simple Corridor',
+    presetMaze: 'Maze',
+    presetBombField: 'Bomb Field',
+    presetMultiGoal: 'Multi Goal',
+    presetTreasureHunt: 'Treasure Hunt',
     draftPreview: 'Draft preview (not applied yet)',
     apply: 'Apply Environment',
     applyConfirm: 'Applying this environment will reset the current Q-table, episode count, and statistics. Continue?',
@@ -311,6 +345,7 @@ const ko: Dictionary = {
   },
   overlay: { policy: '정책', value: '가치' },
   envToggle: { show: '환경 편집', hide: '환경 편집기 닫기' },
+  episodePath: { show: '경로 표시', hide: '경로 숨기기' },
   speed: { label: '속도:', slow: '느림', normal: '보통', fast: '빠름', veryFast: '매우 빠름' },
   epsilon: { label: '엡실론 (ε)' },
   alpha: { label: '알파 (α)' },
@@ -361,6 +396,7 @@ const ko: Dictionary = {
     exploitationRate: '활용 비율',
     averageReward: '평균 보상',
     uniqueStates: '고유 State 수',
+    goalsCollected: '수집한 Goal 수',
     episodeDetailHeading: 'Episode 상세',
     episodeDetailEmpty: 'History에서 Episode를 선택하면 상세 정보가 표시됩니다.',
     terminationChartHeading: '종료 원인 분포',
@@ -403,6 +439,16 @@ const ko: Dictionary = {
     modeGoal: '목표',
     modeBomb: '폭탄',
     bombPenalty: '폭탄 페널티',
+    stepReward: '이동 보상',
+    wallPenalty: '벽 충돌 페널티',
+    goalReward: '목표 보상',
+    preset: '프리셋',
+    presetCustom: '사용자 지정',
+    presetCorridor: '단순 복도',
+    presetMaze: '미로',
+    presetBombField: '폭탄 지대',
+    presetMultiGoal: '다중 목표',
+    presetTreasureHunt: '보물 찾기',
     draftPreview: '초안 미리보기 (아직 적용되지 않음)',
     apply: '환경 적용',
     applyConfirm: '이 환경을 적용하면 현재 Q-table, 에피소드 수, 통계가 초기화됩니다. 계속하시겠습니까?',
@@ -432,7 +478,6 @@ const VALIDATION_ERROR_TRANSLATIONS: Record<string, string> = {
   [`Width must be a whole number between ${MIN_SIZE} and ${MAX_SIZE}.`]: `너비는 ${MIN_SIZE}에서 ${MAX_SIZE} 사이의 정수여야 합니다.`,
   [`Height must be a whole number between ${MIN_SIZE} and ${MAX_SIZE}.`]: `높이는 ${MIN_SIZE}에서 ${MAX_SIZE} 사이의 정수여야 합니다.`,
   'Start is outside the grid.': 'Start가 grid 밖에 있습니다.',
-  'Goal is outside the grid.': 'Goal이 grid 밖에 있습니다.',
   'Start and Goal cannot be the same cell.': 'Start와 Goal은 같은 칸일 수 없습니다.',
   'Start cannot be a wall.': 'Start는 벽이 될 수 없습니다.',
   'Goal cannot be a wall.': 'Goal은 벽이 될 수 없습니다.',
@@ -441,6 +486,12 @@ const VALIDATION_ERROR_TRANSLATIONS: Record<string, string> = {
   'Goal cannot be a bomb.': 'Goal은 폭탄이 될 수 없습니다.',
   'One or more bombs are outside the grid.': '하나 이상의 폭탄이 grid 밖에 있습니다.',
   'Bomb penalty must be a number.': '폭탄 페널티는 숫자여야 합니다.',
+  // Phase 30 additions:
+  'At least one Goal is required.': '최소 하나의 Goal이 필요합니다.',
+  'One or more Goals are outside the grid.': '하나 이상의 Goal이 grid 밖에 있습니다.',
+  'Step reward must be a number.': '이동 보상은 숫자여야 합니다.',
+  'Wall penalty must be a number.': '벽 충돌 페널티는 숫자여야 합니다.',
+  'Goal reward must be a number.': '목표 보상은 숫자여야 합니다.',
 }
 
 export function translateValidationError(message: string, locale: Locale): string {
@@ -482,7 +533,15 @@ export function describeAlpha(alpha: number, locale: Locale): string {
  */
 export function describeGamma(gamma: number, locale: Locale): string {
   if (gamma <= 0) return locale === 'ko' ? '현재 보상만 고려' : 'Only the immediate reward matters'
-  if (gamma >= 1) return locale === 'ko' ? '미래 보상을 현재 보상만큼 중요하게 취급' : 'Future reward matters as much as immediate reward'
+  // Phase 30 — gamma's allowed range expanded to 0-2.0 (an intentionally non-standard,
+  // experimental range for this Playground); above 1, future reward is weighted MORE
+  // heavily than immediate reward, distinct from the gamma===1 "equally weighted" case.
+  if (gamma > 1) {
+    return locale === 'ko'
+      ? '미래 보상을 현재 보상보다 더 중요하게 취급 (실험적 설정)'
+      : 'Future reward matters more than immediate reward (an experimental setting)'
+  }
+  if (gamma === 1) return locale === 'ko' ? '미래 보상을 현재 보상만큼 중요하게 취급' : 'Future reward matters as much as immediate reward'
   const percent = Math.round(gamma * 100)
   return locale === 'ko' ? `미래 보상을 약 ${percent}% 반영` : `About ${percent}% weight on future reward`
 }

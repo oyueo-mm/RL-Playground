@@ -14,7 +14,7 @@ const renderModel: Extract<EnvRenderModel, { kind: 'grid' }> = {
   bombs: [],
   bombPenalty: -10,
   start: '0,0',
-  goal: '2,2',
+  goals: ['2,2'],
   agentPos: '0,0',
 }
 

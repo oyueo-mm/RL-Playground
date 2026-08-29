@@ -18,7 +18,7 @@ function gridRenderModel(overrides: Partial<GridRenderModel> = {}): GridRenderMo
     bombs: [],
     bombPenalty: -10,
     start: '0,3',
-    goal: '0,0',
+    goals: ['0,0'],
     agentPos: '0,3',
     ...overrides,
   }
@@ -123,7 +123,7 @@ describe('TrajectoryOverlay', () => {
   it('a repeated State gets an offset marker so repeats do not fully overlap', () => {
     render(
       <TrajectoryOverlay
-        renderModel={gridRenderModel({ width: 2, height: 1, start: '0,0', goal: '1,0' })}
+        renderModel={gridRenderModel({ width: 2, height: 1, start: '0,0', goals: ['1,0'] })}
         episodeStatsHistory={[
           episodeStats({
             episode: 1,

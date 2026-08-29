@@ -14,7 +14,10 @@ const ALGORITHM_ID = 'q-learning'
 
 export const QLEARNING_HYPERPARAM_SCHEMA: HyperparamSchema = [
   { key: 'alpha', label: 'Learning rate (α)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.1 },
-  { key: 'gamma', label: 'Discount factor (γ)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.9 },
+  // Phase 30: max widened 1 -> 2 for metadata consistency with GammaControl.tsx's actual
+  // enforced range (this min/max is decorative — no UI reads it, only `.default` is read
+  // by defaultHyperparams() in SimulationEngine.ts).
+  { key: 'gamma', label: 'Discount factor (γ)', type: 'range', min: 0, max: 2, step: 0.01, default: 0.9 },
   // Phase 28 — default lowered from 1.0 (always explore) to 0.2 (~20% exploration / ~80%
   // exploitation), matching describeEpsilon()'s existing wording so a fresh session's
   // default value and its own on-screen description agree from the very first render.

@@ -23,7 +23,8 @@ const ALGORITHM_ID = 'sarsa'
 // 추가하지 않는다") — SARSA needs no additional knobs beyond alpha/gamma/epsilon.
 export const SARSA_HYPERPARAM_SCHEMA: HyperparamSchema = [
   { key: 'alpha', label: 'Learning rate (α)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.1 },
-  { key: 'gamma', label: 'Discount factor (γ)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.9 },
+  // Phase 30: max widened 1 -> 2, same reasoning as qLearning.ts's own gamma schema entry.
+  { key: 'gamma', label: 'Discount factor (γ)', type: 'range', min: 0, max: 2, step: 0.01, default: 0.9 },
   // Phase 28 — default lowered from 1.0 to 0.2, same reasoning as qLearning.ts.
   { key: 'epsilon', label: 'Exploration rate (ε)', type: 'range', min: 0, max: 1, step: 0.01, default: 0.2 },
 ]

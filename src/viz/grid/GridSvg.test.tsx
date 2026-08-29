@@ -14,7 +14,7 @@ const model: Extract<EnvRenderModel, { kind: 'grid' }> = {
   bombs: [],
   bombPenalty: -10,
   start: '0,0',
-  goal: '2,1',
+  goals: ['2,1'],
   agentPos: '0,0',
 }
 
@@ -37,6 +37,13 @@ describe('GridSvg', () => {
 
   it('marks the goal cell', () => {
     render(<GridSvg renderModel={model} />)
+    expect(screen.getByTestId('cell-2,1').getAttribute('data-cell-kind')).toBe('goal')
+  })
+
+  it('marks every cell in a multi-Goal renderModel as a goal cell (Phase 30)', () => {
+    const multiGoalModel = { ...model, goals: ['1,1', '2,1'] }
+    render(<GridSvg renderModel={multiGoalModel} />)
+    expect(screen.getByTestId('cell-1,1').getAttribute('data-cell-kind')).toBe('goal')
     expect(screen.getByTestId('cell-2,1').getAttribute('data-cell-kind')).toBe('goal')
   })
 

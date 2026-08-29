@@ -15,7 +15,9 @@ export interface GammaControlProps {
 }
 
 const GAMMA_MIN = 0
-const GAMMA_MAX = 1
+// Phase 30 — expanded from 1 to 2.0, an intentionally non-standard range for this
+// experimentation Playground (epsilon/alpha ranges are unaffected, unchanged elsewhere).
+const GAMMA_MAX = 2
 const GAMMA_STEP = 0.01
 
 export function GammaControl({ gamma, onChange, t = translations.en, locale = 'en' }: GammaControlProps) {

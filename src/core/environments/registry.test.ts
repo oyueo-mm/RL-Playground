@@ -23,7 +23,7 @@ describe('environment registry', () => {
       bombPenalty: -10,
     })
     expect(env.getState()).toBe('0,0')
-    expect(env.getRenderModel()).toMatchObject({ width: 3, height: 3, goal: '2,2' })
+    expect(env.getRenderModel()).toMatchObject({ width: 3, height: 3, goals: ['2,2'] })
   })
 
   it('looks up the GridWorld EnvironmentDefinition by id', () => {

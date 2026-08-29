@@ -390,8 +390,8 @@ export class SimulationEngine {
   private classifyTermination(transition: Transition): EpisodeTerminationReason {
     const renderModel = this.environment.getRenderModel()
     if (renderModel.kind !== 'grid') return 'other'
-    if (transition.nextState === renderModel.goal) return 'goal'
     if (renderModel.bombs.includes(transition.nextState)) return 'bomb'
+    if (renderModel.goals.includes(transition.nextState)) return 'goal'
     return 'other'
   }
 

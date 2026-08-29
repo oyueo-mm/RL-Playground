@@ -48,6 +48,14 @@ function App() {
   const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null)
   const [showPolicy, setShowPolicy] = useState(false)
   const [showValue, setShowValue] = useState(false)
+  // Phase 30 §14/§15: toggles only whether TrajectoryOverlay is drawn — independent of
+  // which Episode is selected (selecting a different Episode while this is OFF keeps it
+  // OFF; the underlying trajectory data/table/charts are never affected either way).
+  // Default ON, restored to ON on every path that already resets Episode/Q-table state
+  // (plain Reset, Algorithm switch, Environment Apply) — no established UI-preference
+  // persistence exists in this project (Phase 13 §6: no localStorage), so plain React
+  // state reset is the correct, minimal choice here too.
+  const [showPath, setShowPath] = useState(true)
   const [speed, setSpeed] = useState<SpeedSetting>(() => engine.getSpeed())
   const [showEditor, setShowEditor] = useState(false)
   // Phase 15: how many episodes "Run Episode" runs — pure UI state, never written into
@@ -155,14 +163,16 @@ function App() {
                 action. Renders nothing (returns null) if the selected Episode isn't
                 found or has an empty trajectory, so it never errors on a stale selection.
               */}
-              <TrajectoryOverlay
-                renderModel={snapshot.envRenderModel}
-                episodeStatsHistory={snapshot.stats.episodeStatsHistory}
-                selectedEpisode={selectedEpisode}
-                cellSize={CELL_SIZE}
-                className="absolute inset-0"
-                ariaLabel={`${t.episodeTrajectory.ariaLabelPrefix} ${selectedEpisode ?? ''}`}
-              />
+              {showPath && (
+                <TrajectoryOverlay
+                  renderModel={snapshot.envRenderModel}
+                  episodeStatsHistory={snapshot.stats.episodeStatsHistory}
+                  selectedEpisode={selectedEpisode}
+                  cellSize={CELL_SIZE}
+                  className="absolute inset-0"
+                  ariaLabel={`${t.episodeTrajectory.ariaLabelPrefix} ${selectedEpisode ?? ''}`}
+                />
+              )}
             </div>
           ) : null}
 
@@ -185,6 +195,15 @@ function App() {
               />
               {t.overlay.value}
             </label>
+            <button
+              type="button"
+              onClick={() => setShowPath((prev) => !prev)}
+              aria-pressed={showPath}
+              data-testid="toggle-episode-path"
+              className="rounded bg-gray-100 px-2 py-1 font-medium text-gray-700 hover:bg-gray-200"
+            >
+              {showPath ? t.episodePath.hide : t.episodePath.show}
+            </button>
           </div>
 
           <PlaybackControls
@@ -205,6 +224,7 @@ function App() {
             onReset={() => {
               engine.reset()
               setSelectedEpisode(null)
+              setShowPath(true)
             }}
             // Phase 28 §8: "Run Greedy Policy" — exactly the current Episode (same
             // "always 1 Episode" semantics Run already has, Phase 12), but with pure
@@ -233,6 +253,7 @@ function App() {
             onChange={(algorithmId) => {
               engine.reset({ algorithmId })
               setSelectedEpisode(null)
+              setShowPath(true)
             }}
             disabled={snapshot.status !== 'idle'}
             t={t}
@@ -295,6 +316,7 @@ function App() {
                 // Phase 24: Apply also resets Episode numbering back to 0 (same reset()
                 // call as above), so any selected Episode History row must be cleared too.
                 setSelectedEpisode(null)
+                setShowPath(true)
               }}
               t={t}
               locale={locale}
@@ -335,6 +357,7 @@ function App() {
             t={t}
             selectedEpisode={selectedEpisode}
             onSelectEpisode={setSelectedEpisode}
+            goals={snapshot.envRenderModel.kind === 'grid' ? snapshot.envRenderModel.goals : []}
           />
           {/* Phase 28 §10/§11 — grouped directly with Statistics (its data source),
               showing the Goal/Bomb/Other distribution across all of episodeStatsHistory,

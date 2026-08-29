@@ -1264,7 +1264,7 @@ describe('SimulationEngine — Phase 23: Algorithm selection', () => {
       expect(snapshot.envRenderModel.bombs).toEqual(['0,2'])
       expect(snapshot.envRenderModel.bombPenalty).toBe(-9)
       expect(snapshot.envRenderModel.start).toBe('0,3')
-      expect(snapshot.envRenderModel.goal).toBe('0,0')
+      expect(snapshot.envRenderModel.goals).toEqual(['0,0'])
     }
   })
 

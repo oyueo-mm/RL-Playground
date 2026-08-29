@@ -123,6 +123,44 @@ describe('StatsPanel — Phase 21: Episode Statistics', () => {
     expect(latest.getByTestId('latest-episode-unique-states').textContent).toBe('5')
   })
 
+  // Phase 30 §11 — "N / M Goals Collected", derived from the Episode's own trajectory
+  // (no new Core storage) and the current Environment's goals.
+  it('shows "Goals Collected" only when there is more than one Goal', () => {
+    const ep = episodeStats({ trajectory: [{ state: '0,0', action: 3, nextState: '1,0', reward: 10, done: false }] })
+    const { rerender } = render(
+      <StatsPanel episode={1} stats={stats({ latestEpisodeStats: ep, episodeStatsHistory: [ep] })} goals={['1,0']} />,
+    )
+    expect(screen.queryByTestId('latest-episode-goals-collected')).toBeNull()
+
+    rerender(
+      <StatsPanel
+        episode={1}
+        stats={stats({ latestEpisodeStats: ep, episodeStatsHistory: [ep] })}
+        goals={['1,0', '2,0']}
+      />,
+    )
+    expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('1 / 2')
+  })
+
+  it('counts each distinct Goal only once even if visited more than once in the trajectory', () => {
+    const ep = episodeStats({
+      trajectory: [
+        { state: '0,0', action: 3, nextState: '1,0', reward: 10, done: false },
+        { state: '1,0', action: 2, nextState: '0,0', reward: -0.1, done: false },
+        { state: '0,0', action: 3, nextState: '1,0', reward: -0.1, done: false },
+        { state: '1,0', action: 3, nextState: '2,0', reward: 10, done: true },
+      ],
+    })
+    render(
+      <StatsPanel
+        episode={1}
+        stats={stats({ latestEpisodeStats: ep, episodeStatsHistory: [ep] })}
+        goals={['1,0', '2,0']}
+      />,
+    )
+    expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('2 / 2')
+  })
+
   it('shows the Goal/Other termination labels correctly too', () => {
     const { rerender } = render(
       <StatsPanel episode={1} stats={stats({ latestEpisodeStats: episodeStats({ terminationReason: 'goal' }) })} />,
