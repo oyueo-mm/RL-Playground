@@ -768,9 +768,19 @@ describe('App (integration — Phase 16: layout stability, structural)', () => {
   // space deficit (a large Grid on a narrow viewport), while its own children still
   // rendered at their natural size and stuck out past that 0px box, which is what
   // actually produced Phase 37's horizontal-overflow bug. `basis-auto` (content-based)
-  // makes it shrink proportionally alongside the Grid column instead of collapsing to
-  // zero. This test's role is unchanged: guard the specific classes this fix depends on.
-  it('the two-column row and the right column carry the width-stabilizing classes the Phase 16/37 fixes depend on', () => {
+  // made it shrink proportionally alongside the Grid column instead of collapsing to
+  // zero.
+  //
+  // Phase 42: `basis-auto` turned out to have its own defect — it measures this
+  // column's preferred width from its children's actual content, which includes
+  // InspectorPanel's `targetFormula` (an unrounded TD-target string whose length varies
+  // every Step). At large-enough Grid sizes this made the Grid/right-column boundary
+  // visibly oscillate on every Step (measured: 18.703125px at 15x15 @ 1440x900).
+  // `md:basis-0` (content-independent, like Phase 37's original bug) fixes the
+  // oscillation; `md:min-w-[260px]` (a fixed, equally content-independent floor)
+  // prevents Phase 37's collapse-to-0 regression from coming back. This test's role is
+  // unchanged: guard the specific classes this fix depends on.
+  it('the two-column row and the right column carry the width-stabilizing classes the Phase 16/37/42 fixes depend on', () => {
     render(<App />)
 
     const twoColRow = screen.getByTestId('grid-stack').closest('.md\\:flex-row')
@@ -780,8 +790,46 @@ describe('App (integration — Phase 16: layout stability, structural)', () => {
     const rightColumn = screen.getByTestId('stats-panel').parentElement!
     expect(rightColumn.className).toContain('md:grow')
     expect(rightColumn.className).toContain('md:shrink')
-    expect(rightColumn.className).toContain('md:basis-auto')
+    expect(rightColumn.className).toContain('md:basis-0')
+    expect(rightColumn.className).toContain('md:min-w-[260px]')
     expect(rightColumn.className).toContain('md:max-w-lg')
+  })
+})
+
+describe('App (integration — Phase 42: dynamic Inspector content does not affect flex sizing)', () => {
+  // The actual bug (Phase 38 Audit → Phase 42 fix): InspectorPanel's targetFormula
+  // string length varies every Step (unrounded floating-point noise — see
+  // qLearning.ts/sarsa.ts, deliberately unchanged this Phase), and under the old
+  // `md:basis-auto` right column, that length variance changed the column's own
+  // computed preferred width, visibly shifting the Grid/right-column boundary on every
+  // Step at large enough Grid sizes (measured 18.703125px @ 15x15/1440x900 — see the
+  // Phase 42 report for full real-browser pixel evidence; jsdom has no CSS box model so
+  // that pixel-level claim can only be proven there). What CAN be guarded here is the
+  // structural claim the fix depends on: the right column's sizing classes are static
+  // JSX literals, never derived from Inspector's own content, so a short vs. long
+  // targetFormula can never change them.
+  it('the right column keeps its content-independent sizing classes whether Inspector shows a short or long TD formula', () => {
+    // A short, "nice" TD formula (no bootstrap yet).
+    engine.reset({ envConfig: createDefaultGridWorldConfig(), hyperparams: { alpha: 0.37, gamma: 0.83, epsilon: 0 } })
+    render(<App />)
+    fireEvent.click(screen.getByTestId('playback-step'))
+    const shortFormula = screen.getByTestId('inspector-target-formula').textContent ?? ''
+    const rightColumnShort = screen.getByTestId('stats-panel').parentElement!
+    const classNameShort = rightColumnShort.className
+
+    // Continue stepping with irrational alpha/gamma until a real long (floating-point
+    // noise) formula string naturally appears, exactly as a genuine Run would produce.
+    let longFormula = shortFormula
+    for (let i = 0; i < 20 && longFormula.length <= shortFormula.length; i++) {
+      fireEvent.click(screen.getByTestId('playback-step'))
+      longFormula = screen.getByTestId('inspector-target-formula').textContent ?? ''
+    }
+    expect(longFormula.length).toBeGreaterThan(shortFormula.length) // sanity: content genuinely changed
+
+    const rightColumnLong = screen.getByTestId('stats-panel').parentElement!
+    expect(rightColumnLong.className).toBe(classNameShort) // identical regardless of content length
+    expect(rightColumnLong.className).toContain('md:basis-0')
+    expect(rightColumnLong.className).toContain('md:min-w-[260px]')
   })
 })
 

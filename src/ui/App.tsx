@@ -402,17 +402,38 @@ function App() {
           literal 0px box while its own children (charts/tables, not all internally
           shrinkable) still rendered at their natural size and stuck out past that 0px
           box, which is what actually produced the horizontal overflow (verified via
-          real-browser measurement: rightColWidth was 0 in every failing case).
-          `md:basis-auto` (this column's real content-based size, e.g. ~450px) instead of
-          `md:basis-0` fixes this: during a deficit, both columns now shrink
-          *proportionally* from their real sizes, so this column ends up meaningfully
-          smaller but never zero. `md:grow` is kept so it still fills leftover space up to
-          `md:max-w-lg` exactly as before whenever there IS a surplus (every viewport/grid
-          combination that already worked). `md:shrink` (shrink:1) is the same value the
-          old `md:flex-1` shorthand already implied — spelled out explicitly here now that
-          the shorthand is gone.
+          real-browser measurement: rightColWidth was 0 in every failing case). Phase 39
+          fixed that by switching to `md:basis-auto` (content-based size).
+
+          Phase 42: `basis-auto` turned out to have its own defect — it measures this
+          column's preferred width from its children's actual rendered content, which
+          includes InspectorPanel's `targetFormula` (an unrounded TD-target string whose
+          length varies every Step depending on floating-point noise, e.g. 50 vs 86
+          characters — see qLearning.ts/sarsa.ts's `targetFormula`, deliberately left
+          untouched this Phase per its own instructions). At Grid sizes large enough that
+          the row is already space-constrained (empirically: 15x15+ at 1440x900/1280x720,
+          14x14+ at 1024x768/768x1024), that per-Step length swing was enough to tip the
+          row in and out of a shrink deficit, so this column's resolved width — and the
+          Grid's, right next to it — visibly oscillated by exactly the pixel difference
+          the two formula lengths produced (measured: 18.703125px) on every Step, for as
+          long as a Run kept generating new TD values. Pausing (freezing the content)
+          made it stop immediately, confirming the content-length dependency.
+
+          Fix: `md:basis-0` — like Phase 37's original bug, a zero basis makes this
+          column's *preferred* size a fixed, content-independent number (0) rather than
+          something recomputed from whatever InspectorPanel happens to be showing, so a
+          longer or shorter targetFormula string can no longer change how the deficit is
+          distributed between the two columns. To avoid reintroducing Phase 37's
+          collapse-to-0 regression, `md:min-w-[260px]` gives this column an explicit,
+          equally content-independent floor the flex algorithm always honors (CSS clamps
+          flex-shrink results to `min-width` before finalizing, redistributing any
+          remaining deficit to whichever sibling can still shrink — the Grid column here,
+          via its own `min-w-0`) — so this column can shrink under real pressure exactly
+          as before, just never below a safe, constant floor, and never because of
+          Inspector's own content. `md:grow` still fills any leftover surplus up to
+          `md:max-w-lg`, unchanged from every already-working case.
         */}
-        <div className="flex min-w-0 flex-col gap-4 md:grow md:shrink md:basis-auto md:max-w-lg">
+        <div className="flex min-w-0 flex-col gap-4 md:grow md:shrink md:basis-0 md:min-w-[260px] md:max-w-lg">
           <InspectorPanel
             lastTransition={snapshot.lastTransition}
             lastActionSelection={snapshot.lastActionSelection}
