@@ -343,3 +343,24 @@ describe('StatsPanel — Phase 24: Episode Detail / selection', () => {
     expect(within(screen.getByTestId('latest-episode')).getByTestId('latest-episode-number').textContent).toBe('7')
   })
 })
+
+describe('StatsPanel — Phase 36: Episode History discoverability hint', () => {
+  it('shows the hint (English) when Episode History has entries', () => {
+    const ep = episodeStats({ episode: 1 })
+    render(<StatsPanel episode={1} stats={stats({ episodeStatsHistory: [ep] })} />)
+    expect(screen.getByTestId('episode-history-hint').textContent).toBe('Click an episode to view its path.')
+  })
+
+  it('shows the hint (Korean) when Episode History has entries', () => {
+    const ep = episodeStats({ episode: 1 })
+    render(<StatsPanel episode={1} stats={stats({ episodeStatsHistory: [ep] })} t={translations.ko} />)
+    expect(screen.getByTestId('episode-history-hint').textContent).toBe(
+      '에피소드를 클릭하면 해당 에피소드의 경로를 볼 수 있습니다.',
+    )
+  })
+
+  it('does not show the hint in the empty state (no Episodes yet)', () => {
+    render(<StatsPanel episode={0} stats={stats()} />)
+    expect(screen.queryByTestId('episode-history-hint')).toBeNull()
+  })
+})

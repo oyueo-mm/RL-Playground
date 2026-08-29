@@ -138,4 +138,31 @@ describe('GammaControl', () => {
     fireEvent.change(screen.getByTestId('gamma-number'), { target: { value: '0.42' } })
     expect(setHyperparams).toHaveBeenCalledWith({ gamma: 0.42 })
   })
+
+  // Phase 36 — the gamma > 1 description (materially longer than the other branches)
+  // used to be a flex-wrap sibling of the slider/number row, so its length could push
+  // the slider row itself onto a second line, shifting every control below it. Fixed by
+  // giving the description its own block-level row, separate from the slider row's own
+  // (still internally wrap-able) flex container. A DOM-structure assertion is used here
+  // since jsdom has no real layout engine to measure actual pixel positions with — the
+  // "does gamma>1 not visually shift the slider" claim itself is verified by browser
+  // measurement, not this test.
+  describe('Phase 36 — layout stability structure', () => {
+    it('the description is not a sibling flex-item of the slider/number row (own separate row)', () => {
+      render(<GammaControl gamma={1.5} onChange={vi.fn()} />)
+      const description = screen.getByTestId('gamma-description')
+      const slider = screen.getByTestId('gamma-slider')
+      expect(description.parentElement).not.toBe(slider.parentElement)
+    })
+
+    it('the slider/number row itself has the same DOM structure whether gamma is <=1 or >1', () => {
+      const { rerender } = render(<GammaControl gamma={0.9} onChange={vi.fn()} />)
+      const rowAtLow = screen.getByTestId('gamma-slider').parentElement!
+      const childCountAtLow = rowAtLow.children.length
+
+      rerender(<GammaControl gamma={1.5} onChange={vi.fn()} />)
+      const rowAtHigh = screen.getByTestId('gamma-slider').parentElement!
+      expect(rowAtHigh.children.length).toBe(childCountAtLow)
+    })
+  })
 })

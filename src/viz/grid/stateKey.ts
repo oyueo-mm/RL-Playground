@@ -20,3 +20,17 @@ export function parseStateKey(stateKey: StateKey): { x: number; y: number } {
 export function toStateKey(pos: { x: number; y: number }): StateKey {
   return `${pos.x},${pos.y}`
 }
+
+/**
+ * Phase 36 — the mask segment of a StateKey (the 3rd comma-separated component), or
+ * `undefined` if the key has none (a plain "x,y" position, or a legacy/synthetic
+ * two-part StateKey). Used by PolicyOverlay/ValueHeatmap to pick exactly one Q-table
+ * entry per grid position — the one matching the Environment's CURRENT Goal-collection
+ * mask (see stateKey.split(',') usage there) — since Phase 34's `"x,y,mask"` format means
+ * a single grid cell can legitimately have multiple distinct Q-table entries (one per
+ * mask ever visited there), which previously rendered as multiple overlapping arrows/
+ * cells at the same position.
+ */
+export function stateMask(stateKey: StateKey): string | undefined {
+  return stateKey.split(',')[2]
+}

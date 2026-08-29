@@ -5,7 +5,7 @@
 
 import type { StateKey } from '../../core/types/rl'
 import type { AgentSnapshot } from '../../core/types/render'
-import { GRIDWORLD_ACTION_LABELS } from '../grid/actionLabels'
+import { GRIDWORLD_ACTION_ARROWS, GRIDWORLD_ACTION_LABELS } from '../grid/actionLabels'
 import { argmaxLowestIndex } from '../grid/policy'
 import { useHighlightOnChange } from '../hooks/useHighlightOnChange'
 import { translations, translateActionLabel, type Dictionary, type Locale } from '../../ui/i18n'
@@ -108,8 +108,13 @@ export function QValueBars({
             key={action}
             testIdLabel={canonicalLabel}
             displayLabel={translateActionLabel(canonicalLabel, locale)}
+            arrow={GRIDWORLD_ACTION_ARROWS[canonicalLabel]}
             value={value}
             maxAbs={maxAbs}
+            // Phase 36 — marks the row matching the same argmax index already shown in
+            // the "Greedy Action"/"Greedy Value" text above, so it's visually obvious
+            // which bar the Agent would actually act on from this State.
+            isGreedyAction={action === greedyActionIndex}
           />
         )
       })}
@@ -120,11 +125,13 @@ export function QValueBars({
 interface QValueBarRowProps {
   testIdLabel: string
   displayLabel: string
+  arrow: string | undefined
   value: number
   maxAbs: number
+  isGreedyAction: boolean
 }
 
-function QValueBarRow({ testIdLabel, displayLabel, value, maxAbs }: QValueBarRowProps) {
+function QValueBarRow({ testIdLabel, displayLabel, arrow, value, maxAbs, isGreedyAction }: QValueBarRowProps) {
   const highlight = useHighlightOnChange(value)
   // Bar width is relative to the largest |value| among the currently displayed
   // actions, and capped at 50% of the track (each side of the zero-line) — so bars
@@ -133,14 +140,28 @@ function QValueBarRow({ testIdLabel, displayLabel, value, maxAbs }: QValueBarRow
   const isPositive = value >= 0
 
   return (
-    <div className="flex items-center gap-2" data-testid={`qvalue-row-${testIdLabel.toLowerCase()}`}>
-      <span className="w-14 shrink-0 text-gray-600">{displayLabel}</span>
+    <div
+      className={`flex items-center gap-2 rounded px-1 ${isGreedyAction ? 'bg-blue-50' : ''}`}
+      data-testid={`qvalue-row-${testIdLabel.toLowerCase()}`}
+      data-greedy-action={isGreedyAction ? 'true' : undefined}
+    >
+      <span className="w-14 shrink-0 text-gray-600">
+        {/* Phase 36 — the arrow only appears on the Greedy Action's own row, so it
+            doubles as the "this is the selected action" marker requirement asks for,
+            without adding a whole new column to every row. */}
+        {isGreedyAction && arrow ? (
+          <span aria-hidden className="mr-1 font-semibold text-blue-700" data-testid={`qvalue-row-${testIdLabel.toLowerCase()}-greedy-arrow`}>
+            {arrow}
+          </span>
+        ) : null}
+        {displayLabel}
+      </span>
       <div className="relative h-4 flex-1 overflow-hidden rounded bg-gray-100">
         <div className="absolute top-0 left-1/2 h-full w-px bg-gray-300" />
         <div
           className={`absolute top-0 h-full transition-all duration-300 ${
             isPositive ? 'left-1/2' : 'right-1/2'
-          } ${highlight ? 'bg-amber-400' : 'bg-blue-500'}`}
+          } ${highlight ? 'bg-amber-400' : isGreedyAction ? 'bg-blue-700' : 'bg-blue-500'}`}
           style={{ width: `${widthPercent}%` }}
         />
       </div>

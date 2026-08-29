@@ -79,4 +79,54 @@ describe('PolicyOverlay', () => {
     rerender(<PolicyOverlay renderModel={renderModel} agentSnapshot={after} />)
     expect(screen.getByTestId('policy-arrow-0,0').textContent).toBe('→')
   })
+
+  describe('Phase 36 — multiple masks at the same position', () => {
+    it('renders exactly one arrow at a position with two distinct-mask Q-table entries, matching the current mask', () => {
+      const agentSnapshot: AgentSnapshot = {
+        kind: 'Q',
+        qTable: {
+          '0,0,0': [1, 0, 0, 0], // Up — mask 0 (no goals collected)
+          '0,0,1': [0, 0, 0, 1], // Right — mask 1 (one goal collected)
+        },
+      }
+      render(<PolicyOverlay renderModel={renderModel} agentSnapshot={agentSnapshot} currentState="0,0,1" />)
+
+      expect(screen.getAllByTestId(/^policy-arrow-/)).toHaveLength(1)
+      expect(screen.getByTestId('policy-arrow-0,0,1').textContent).toBe('→')
+      expect(screen.queryByTestId('policy-arrow-0,0,0')).toBeNull()
+    })
+
+    it('switches which entry is shown as the live mask changes, never showing both at once', () => {
+      const agentSnapshot: AgentSnapshot = {
+        kind: 'Q',
+        qTable: {
+          '0,0,0': [1, 0, 0, 0], // Up
+          '0,0,1': [0, 0, 0, 1], // Right
+        },
+      }
+      const { rerender } = render(
+        <PolicyOverlay renderModel={renderModel} agentSnapshot={agentSnapshot} currentState="0,0,0" />,
+      )
+      expect(screen.getAllByTestId(/^policy-arrow-/)).toHaveLength(1)
+      expect(screen.getByTestId('policy-arrow-0,0,0').textContent).toBe('↑')
+
+      rerender(<PolicyOverlay renderModel={renderModel} agentSnapshot={agentSnapshot} currentState="0,0,1" />)
+      expect(screen.getAllByTestId(/^policy-arrow-/)).toHaveLength(1)
+      expect(screen.getByTestId('policy-arrow-0,0,1').textContent).toBe('→')
+    })
+
+    it('omitting currentState falls back to matching only plain "x,y" (no-mask) entries', () => {
+      const agentSnapshot: AgentSnapshot = {
+        kind: 'Q',
+        qTable: {
+          '0,0': [1, 0, 0, 0], // legacy plain-position key, no mask
+          '0,0,1': [0, 0, 0, 1], // mask-suffixed key
+        },
+      }
+      render(<PolicyOverlay renderModel={renderModel} agentSnapshot={agentSnapshot} />)
+
+      expect(screen.getAllByTestId(/^policy-arrow-/)).toHaveLength(1)
+      expect(screen.getByTestId('policy-arrow-0,0').textContent).toBe('↑')
+    })
+  })
 })

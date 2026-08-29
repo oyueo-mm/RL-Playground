@@ -33,6 +33,15 @@ export interface PlaybackControlsProps {
    * render — see below).
    */
   onRunGreedy?: () => void
+  /**
+   * Phase 36 — stops any in-flight run (primarily for aborting a stuck/looping Greedy
+   * run — Scheduler has no built-in max-step limit, see SimulationEngine.ts's
+   * `restartEpisode()`) and returns the Environment to episode-start, WITHOUT touching
+   * the Agent/Q-table (unlike `onReset` above). Enabled only while running/paused, since
+   * there's nothing to abort while idle. Optional/omitted preserves every
+   * pre-Phase-36 caller/test (button simply doesn't render — see below).
+   */
+  onRestartEpisode?: () => void
 }
 
 const baseButtonClass = 'rounded px-4 py-2 font-medium disabled:cursor-not-allowed disabled:opacity-40'
@@ -56,6 +65,7 @@ export function PlaybackControls({
   episodeCount = 1,
   onEpisodeCountChange = () => {},
   onRunGreedy,
+  onRestartEpisode,
 }: PlaybackControlsProps) {
   const isIdle = status === 'idle'
   const isRunning = status === 'running'
@@ -183,6 +193,25 @@ export function PlaybackControls({
           className={`${baseButtonClass} self-start bg-teal-600 text-white hover:bg-teal-700`}
         >
           {t.playback.runGreedy}
+        </button>
+      )}
+
+      {/*
+        Phase 36 — same isolation reasoning as the rows above: a separate row, never
+        added to the Phase 14 button row, so this can never affect that row's own
+        carefully-tuned wrap breakpoint. Enabled only while running/paused (nothing to
+        abort while idle). Omitted entirely when the caller doesn't pass
+        `onRestartEpisode`, so every pre-Phase-36 caller/test is unaffected.
+      */}
+      {onRestartEpisode && (
+        <button
+          type="button"
+          onClick={onRestartEpisode}
+          disabled={isIdle}
+          data-testid="playback-restart-episode"
+          className={`${baseButtonClass} self-start bg-rose-600 text-white hover:bg-rose-700`}
+        >
+          {t.playback.restartEpisode}
         </button>
       )}
     </div>

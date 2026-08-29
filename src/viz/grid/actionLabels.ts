@@ -8,3 +8,16 @@ export const GRIDWORLD_ACTION_LABELS = ['Up', 'Down', 'Left', 'Right'] as const
 export function actionLabel(action: number): string {
   return GRIDWORLD_ACTION_LABELS[action] ?? `Action ${action}`
 }
+
+/**
+ * Phase 36 — moved here from being private to PolicyOverlay.tsx so QValueBars.tsx can
+ * share the same arrow glyphs (Greedy Action row marker) instead of redefining them a
+ * second time. Keyed by the same canonical (untranslated) labels as
+ * GRIDWORLD_ACTION_LABELS/actionLabel() above.
+ */
+export const GRIDWORLD_ACTION_ARROWS: Record<string, string> = {
+  Up: '↑',
+  Down: '↓',
+  Left: '←',
+  Right: '→',
+}

@@ -321,6 +321,54 @@ export class SimulationEngine {
     this.emitSnapshot()
   }
 
+  // ---- restart current episode (Phase 36) ----
+
+  /**
+   * Phase 36 — stops any in-flight run (Greedy or not) and returns the Environment to
+   * its episode-start state, WITHOUT recreating the Agent/Q-table — unlike reset()
+   * above, which always fully reinitializes the Agent regardless of which fields
+   * changed (ARCHITECTURE.md §5.5). Added specifically so a stuck/looping Greedy run
+   * (Phase 36 audit §7: Scheduler has no built-in max-step safety limit, and a
+   * deterministic infinite loop was reproduced and confirmed by direct execution) can be
+   * aborted by the user without destroying whatever was genuinely learned via prior
+   * Step/Run actions — a Greedy run itself never writes to the Q-table in the first
+   * place (performOneStep()'s `greedy` branch skips computeUpdate()/applyAgentUpdate()),
+   * so there is nothing greedy-specific to lose by keeping the Agent untouched here.
+   *
+   * Only this in-progress Episode's own accumulators are reset — the same fields
+   * finishEpisode() itself resets after a normal completion (episodeReward/
+   * episodeLength/episodeExploration·ExploitationCount/episodeVisitedStates/
+   * episodeTrajectory) — because this Episode never validly completed (it was aborted,
+   * not finished), so it must not be counted into `stats.episode`/`successCount`/
+   * `rewardHistory`/`episodeStatsHistory`, and the NEXT episode must not start with
+   * leftover counts from the aborted attempt. Cross-episode aggregates (totalReward,
+   * successCount, successRate, rewardHistory, episodeStatsHistory, the episode counter
+   * itself) are untouched, exactly like a normal in-progress episode never contributes
+   * to them until finishEpisode() runs.
+   */
+  restartEpisode(): void {
+    this.scheduler.stop() // invalidate any in-flight callback before anything else changes
+    this.environment.reset()
+
+    this.status = 'idle'
+    this.pendingAction = null
+    this.lastTransition = null
+    this.lastActionSelection = null
+    this.lastTdInfo = null
+    this.runMode = null
+    this.remainingEpisodes = null
+    this.greedyRun = false
+
+    this.stats.episodeReward = 0
+    this.stats.episodeLength = 0
+    this.stats.episodeExplorationCount = 0
+    this.stats.episodeExploitationCount = 0
+    this.stats.episodeVisitedStates = new Set()
+    this.stats.episodeTrajectory = []
+
+    this.emitSnapshot()
+  }
+
   // ---- performStep() primitive (ARCHITECTURE.md §5.1) ----
 
   private performOneStep(greedy = false): void {

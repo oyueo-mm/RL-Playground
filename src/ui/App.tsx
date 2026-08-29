@@ -143,6 +143,7 @@ function App() {
                 <ValueHeatmap
                   renderModel={snapshot.envRenderModel}
                   agentSnapshot={snapshot.agentSnapshot}
+                  currentState={snapshot.currentState}
                   cellSize={CELL_SIZE}
                   className="absolute inset-0"
                 />
@@ -151,6 +152,7 @@ function App() {
                 <PolicyOverlay
                   renderModel={snapshot.envRenderModel}
                   agentSnapshot={snapshot.agentSnapshot}
+                  currentState={snapshot.currentState}
                   cellSize={CELL_SIZE}
                   className="absolute inset-0"
                 />
@@ -232,6 +234,11 @@ function App() {
             // run({ greedy: true }) comment). The user's real epsilon/alpha/gamma are
             // never read from or written to for this — nothing to "restore" afterward.
             onRunGreedy={() => engine.run({ episodes: 1, greedy: true })}
+            // Phase 36 §6: aborts any in-flight run (Greedy or not) and returns the
+            // Environment to episode-start WITHOUT recreating the Agent/Q-table — unlike
+            // onReset above, which always fully reinitializes the Agent. See
+            // SimulationEngine.ts's restartEpisode() for the exact semantics.
+            onRestartEpisode={() => engine.restartEpisode()}
             t={t}
             episodeCount={episodeCount}
             onEpisodeCountChange={setEpisodeCount}

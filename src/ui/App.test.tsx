@@ -2485,3 +2485,169 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     expect(screen.getByText('Termination Reasons')).toBeTruthy()
   })
 })
+
+describe('App (integration, real Engine — Phase 36: Policy/Value dedup, Greedy Inspector, QValueBars highlight, Episode History hint, Stop/Restart)', () => {
+  // A cell fully enclosed by walls on all four sides — every action from `start` is a
+  // boundary/wall no-op regardless of what the Q-table looks like, so a Greedy run from
+  // here never reaches any terminal cell. This is the App-level equivalent of the Phase
+  // 36 audit's 1x1-grid infinite-loop fixture, reproduced here as a real user-reachable
+  // config (via the Environment Editor's own Apply path — engine.reset({envConfig}) —
+  // rather than a temporary test-only construct).
+  const isolatedCellConfig = {
+    width: 3,
+    height: 3,
+    start: { x: 1, y: 1 },
+    goal: { x: 2, y: 2 },
+    walls: [
+      { x: 0, y: 1 },
+      { x: 2, y: 1 },
+      { x: 1, y: 0 },
+      { x: 1, y: 2 },
+    ],
+    stepReward: -0.1,
+    goalReward: 10,
+    terminalCells: [],
+    bombs: [],
+    bombPenalty: -10,
+  }
+
+  it('Policy/Value overlays show exactly one arrow/cell per position even when the same cell has entries under two different Goal-collection masks', () => {
+    // Two Goals on a 1-row corridor: the agent revisits position (0,0) both before and
+    // after collecting the first Goal, so the Q-table ends up with distinct "0,0,0" and
+    // "0,0,mask" entries at the same grid position — the exact multi-mask duplication
+    // Phase 36 fixes (see PolicyOverlay.tsx/ValueHeatmap.tsx file headers).
+    const multiGoalConfig = {
+      width: 3,
+      height: 1,
+      start: { x: 0, y: 0 },
+      goals: [{ x: 1, y: 0 }, { x: 2, y: 0 }],
+      walls: [],
+      stepReward: -1,
+      wallPenalty: -1,
+      goalReward: 10,
+      terminalCells: [],
+      bombs: [],
+      bombPenalty: -9,
+    }
+    engine.reset({ envConfig: multiGoalConfig, hyperparams: { alpha: 0.5, gamma: 0.9, epsilon: 0.8 } })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+
+    // Regardless of exact mask semantics for this config, the live overlay must never
+    // show more than one arrow/cell at the same grid position — the core Phase 36
+    // regression this test guards against.
+    const arrowPositions = screen
+      .queryAllByTestId(/^policy-arrow-/)
+      .map((el) => statePosition(el.getAttribute('data-testid')!.replace('policy-arrow-', '')))
+    expect(new Set(arrowPositions).size).toBe(arrowPositions.length)
+
+    const valuePositions = screen
+      .queryAllByTestId(/^value-cell-/)
+      .map((el) => statePosition(el.getAttribute('data-testid')!.replace('value-cell-', '')))
+    expect(new Set(valuePositions).size).toBe(valuePositions.length)
+  })
+
+  it('Inspector shows State/Action/Reward during a Greedy run, and QValueBars highlights the Greedy Action row', () => {
+    engine.reset({ envConfig: createDefaultGridWorldConfig() })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('playback-run-greedy'))
+
+    expect(screen.queryByTestId('inspector-empty')).toBeNull()
+    expect(screen.getByTestId('inspector-state')).toBeTruthy()
+    expect(screen.getByTestId('inspector-action')).toBeTruthy()
+    expect(screen.getByTestId('inspector-reward')).toBeTruthy()
+    // No TD update happens during Greedy (no learning) — those sections must stay hidden.
+    expect(screen.queryByTestId('inspector-target')).toBeNull()
+    expect(screen.queryByTestId('inspector-estimate')).toBeNull()
+
+    // Select the start State to inspect its Q-value bars and confirm the Greedy row is marked.
+    fireEvent.click(screen.getByTestId(`cell-${statePosition(engine.getSnapshot().envRenderModel.start)}`))
+    const greedyRows = screen.queryAllByTestId(/^qvalue-row-/).filter((el) => el.getAttribute('data-greedy-action') === 'true')
+    expect(greedyRows.length).toBe(1)
+  })
+
+  it('Episode History shows the discoverability hint once an Episode completes, in both locales', () => {
+    engine.reset({ envConfig: createDefaultGridWorldConfig() })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+    fireEvent.click(screen.getByTestId('playback-run'))
+
+    expect(screen.getByTestId('episode-history-hint').textContent).toBe('Click an episode to view its path.')
+
+    fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
+    expect(screen.getByTestId('episode-history-hint').textContent).toBe(
+      '에피소드를 클릭하면 해당 에피소드의 경로를 볼 수 있습니다.',
+    )
+  })
+
+  it('Stop & Restart aborts a stuck/looping Greedy run, returns the Agent to Start, and leaves the Q-table untouched', () => {
+    engine.reset({ envConfig: isolatedCellConfig, hyperparams: { alpha: 0.5, gamma: 0.9, epsilon: 0 } })
+    engine.setSpeed({ mode: 'interval', intervalMs: 100_000 }) // one synchronous step per click, no real-timer flush needed
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('playback-run-greedy'))
+    expect(engine.getSnapshot().status).toBe('running') // never reaches a terminal cell
+    const qTableDuringRun = engine.getSnapshot().agentSnapshot
+    expect(qTableDuringRun.kind).toBe('Q')
+    const entriesDuringRun = qTableDuringRun.kind === 'Q' ? Object.keys(qTableDuringRun.qTable).length : -1
+
+    fireEvent.click(screen.getByTestId('playback-restart-episode'))
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.status).toBe('idle')
+    expect(snapshot.envRenderModel.agentPos).toBe(snapshot.envRenderModel.start)
+    expect(snapshot.lastTransition).toBeNull()
+    const qTableAfterRestart = snapshot.agentSnapshot
+    expect(qTableAfterRestart.kind).toBe('Q')
+    if (qTableAfterRestart.kind === 'Q') {
+      // Greedy never writes to the Q-table in the first place, so this also implicitly
+      // confirms restartEpisode() never recreated the Agent (a recreated Agent would
+      // still show 0 entries either way here — the meaningful assertion is the second
+      // test below, where real prior learning exists).
+      expect(Object.keys(qTableAfterRestart.qTable).length).toBe(entriesDuringRun)
+    }
+  })
+
+  it('Stop & Restart preserves real prior learning when a normal (non-Greedy) run is aborted mid-flight', () => {
+    engine.reset({ envConfig: createDefaultGridWorldConfig(), hyperparams: { alpha: 0.5, gamma: 0.9, epsilon: 0.5 } })
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+
+    fireEvent.click(screen.getByTestId('playback-run-episode')) // a few real learning episodes
+    const learnedSnapshot = engine.getSnapshot().agentSnapshot
+    expect(learnedSnapshot.kind).toBe('Q')
+    const learnedEntries = learnedSnapshot.kind === 'Q' ? Object.keys(learnedSnapshot.qTable).length : 0
+    expect(learnedEntries).toBeGreaterThan(0)
+
+    engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
+    fireEvent.click(screen.getByTestId('playback-run')) // starts a new in-progress run
+    expect(engine.getSnapshot().status === 'running' || engine.getSnapshot().status === 'idle').toBe(true)
+
+    fireEvent.click(screen.getByTestId('playback-restart-episode'))
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.status).toBe('idle')
+    const afterSnapshot = snapshot.agentSnapshot
+    expect(afterSnapshot.kind).toBe('Q')
+    if (afterSnapshot.kind === 'Q') {
+      expect(Object.keys(afterSnapshot.qTable).length).toBeGreaterThanOrEqual(learnedEntries)
+    }
+  })
+
+  it('Stop & Restart button is disabled while idle and becomes enabled once a run starts', () => {
+    engine.reset({ envConfig: isolatedCellConfig })
+    engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
+    render(<App />)
+
+    expect((screen.getByTestId('playback-restart-episode') as HTMLButtonElement).disabled).toBe(true)
+
+    fireEvent.click(screen.getByTestId('playback-run-greedy'))
+    expect((screen.getByTestId('playback-restart-episode') as HTMLButtonElement).disabled).toBe(false)
+
+    fireEvent.click(screen.getByTestId('playback-restart-episode'))
+    expect((screen.getByTestId('playback-restart-episode') as HTMLButtonElement).disabled).toBe(true)
+  })
+})

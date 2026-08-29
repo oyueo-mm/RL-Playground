@@ -89,4 +89,25 @@ describe('InspectorPanel', () => {
     expect(text).toContain('0.000')
     expect(text).toContain('0.500')
   })
+
+  describe('Phase 36 — Greedy run (lastTdInfo null, lastTransition/lastActionSelection populated)', () => {
+    it('shows State/Action/Reward but not the empty state', () => {
+      render(<InspectorPanel lastTransition={transition} lastActionSelection={actionSelection} lastTdInfo={null} />)
+
+      expect(screen.queryByTestId('inspector-empty')).toBeNull()
+      expect(screen.getByTestId('inspector-panel')).toBeTruthy()
+      expect(screen.getByTestId('inspector-state').textContent ?? '').toContain('1,0')
+      expect(screen.getByTestId('inspector-action').textContent ?? '').toContain('Right')
+      expect(screen.getByTestId('inspector-reward').textContent).toBe('-0.100')
+    })
+
+    it('hides the TD Target/Error/Estimate sections', () => {
+      render(<InspectorPanel lastTransition={transition} lastActionSelection={actionSelection} lastTdInfo={null} />)
+
+      expect(screen.queryByTestId('inspector-target')).toBeNull()
+      expect(screen.queryByTestId('inspector-target-formula')).toBeNull()
+      expect(screen.queryByTestId('inspector-error')).toBeNull()
+      expect(screen.queryByTestId('inspector-estimate')).toBeNull()
+    })
+  })
 })

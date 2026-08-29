@@ -366,6 +366,114 @@ describe('SimulationEngine — reset()', () => {
   })
 })
 
+describe('SimulationEngine — restartEpisode() (Phase 36)', () => {
+  it('preserves the Q-table learned before an in-flight run is restarted (unlike reset())', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+
+    // Learn something real first.
+    engine.run({ episodes: 10 })
+    flushAll()
+    const learnedSnapshot = engine.getSnapshot()
+    expect(learnedSnapshot.agentSnapshot.kind).toBe('Q')
+    const learnedEntryCount =
+      learnedSnapshot.agentSnapshot.kind === 'Q' ? Object.keys(learnedSnapshot.agentSnapshot.qTable).length : 0
+    expect(learnedEntryCount).toBeGreaterThan(0)
+
+    // Start a new (greedy) run and abort it mid-flight.
+    engine.run({ episodes: 1, greedy: true })
+    expect(engine.getSnapshot().status).toBe('running')
+
+    engine.restartEpisode()
+    const snapshot = engine.getSnapshot()
+
+    expect(snapshot.status).toBe('idle')
+    expect(snapshot.agentSnapshot.kind).toBe('Q')
+    if (snapshot.agentSnapshot.kind === 'Q') {
+      // Q-table content must survive — restartEpisode() never recreates the Agent.
+      expect(Object.keys(snapshot.agentSnapshot.qTable).length).toBe(learnedEntryCount)
+    }
+  })
+
+  it('stops an in-flight run, clears in-progress-episode execution state, and returns to idle', () => {
+    const { source, flushOne } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+
+    engine.run({ episodes: 1000 })
+    flushOne()
+    expect(engine.getSnapshot().status).toBe('running')
+    expect(engine.getSnapshot().lastTransition).not.toBeNull()
+
+    engine.restartEpisode()
+    const snapshot = engine.getSnapshot()
+
+    expect(snapshot.status).toBe('idle')
+    expect(snapshot.lastTransition).toBeNull()
+    expect(snapshot.lastActionSelection).toBeNull()
+    expect(snapshot.lastTdInfo).toBeNull()
+    expect(snapshot.stats.episodeReward).toBe(0)
+    expect(snapshot.stats.episodeLength).toBe(0)
+    // Nothing still-scheduled from before the restart should resurrect the old run.
+    expect(flushOne()).toBe(false)
+  })
+
+  it('does not count the aborted episode into cross-episode aggregates', () => {
+    const { source, flushAll, flushOne } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+
+    engine.run({ episodes: 5 })
+    flushAll()
+    const before = engine.getSnapshot()
+    const episodeAtRestart = before.episode
+    const rewardHistoryLengthBefore = before.stats.rewardHistory.length
+
+    engine.run({ episodes: 1000 })
+    flushOne()
+    engine.restartEpisode()
+
+    const after = engine.getSnapshot()
+    expect(after.episode).toBe(episodeAtRestart)
+    expect(after.stats.rewardHistory.length).toBe(rewardHistoryLengthBefore)
+    expect(after.stats.episodeStatsHistory.length).toBe(rewardHistoryLengthBefore)
+  })
+
+  it('resets the Environment/Agent position back to Start', () => {
+    const { source, flushOne } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+
+    engine.run({ episodes: 1000 })
+    flushOne()
+    flushOne()
+    engine.restartEpisode()
+
+    const snapshot = engine.getSnapshot()
+    expect(snapshot.envRenderModel.agentPos).toEqual(snapshot.envRenderModel.start)
+  })
+
+  it('works correctly when called during a Greedy run (the primary motivating case: a stuck/looping Greedy run)', () => {
+    const { source, flushAll } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+
+    engine.run({ episodes: 1, greedy: true })
+    flushAll(50)
+    expect(engine.getSnapshot().status).toBe('running')
+
+    engine.restartEpisode()
+    const snapshot = engine.getSnapshot()
+
+    expect(snapshot.status).toBe('idle')
+    expect(snapshot.lastTransition).toBeNull()
+  })
+
+  it('is a no-op-safe call while already idle (no error, stays idle)', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source })
+
+    expect(() => engine.restartEpisode()).not.toThrow()
+    expect(engine.getSnapshot().status).toBe('idle')
+  })
+})
+
 describe('SimulationEngine — computation vs. emit frequency invariant', () => {
   it('fast batch mode performs every RL update but can emit less often than steps taken', () => {
     const { source } = createManualTimerSource()

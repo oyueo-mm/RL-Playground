@@ -97,4 +97,30 @@ describe('QValueBars', () => {
       expect(screen.getByTestId('greedy-value').textContent).toBe('탐욕적 가치: 3.0000')
     })
   })
+
+  describe('Phase 36 — Greedy Action row highlight', () => {
+    it('marks only the row matching greedyActionIndex with the highlight attribute and arrow', () => {
+      // qTable['0,0'] = [1, -2, 3, -0.5] -> index 2 (Left) is the greedy action.
+      render(<QValueBars selectedState="0,0" agentSnapshot={agentSnapshot} />)
+
+      expect(screen.getByTestId('qvalue-row-left').getAttribute('data-greedy-action')).toBe('true')
+      expect(screen.getByTestId('qvalue-row-left-greedy-arrow').textContent).toBe('←')
+
+      for (const label of ['up', 'down', 'right']) {
+        expect(screen.getByTestId(`qvalue-row-${label}`).getAttribute('data-greedy-action')).toBeNull()
+        expect(screen.queryByTestId(`qvalue-row-${label}-greedy-arrow`)).toBeNull()
+      }
+    })
+
+    it('moves the highlight to the new greedy row when Q-values change', () => {
+      const { rerender } = render(<QValueBars selectedState="0,0" agentSnapshot={agentSnapshot} />)
+      expect(screen.getByTestId('qvalue-row-left').getAttribute('data-greedy-action')).toBe('true')
+
+      const updatedSnapshot: AgentSnapshot = { kind: 'Q', qTable: { '0,0': [9, -2, 3, -0.5] } }
+      rerender(<QValueBars selectedState="0,0" agentSnapshot={updatedSnapshot} />)
+
+      expect(screen.getByTestId('qvalue-row-up').getAttribute('data-greedy-action')).toBe('true')
+      expect(screen.getByTestId('qvalue-row-left').getAttribute('data-greedy-action')).toBeNull()
+    })
+  })
 })

@@ -79,4 +79,35 @@ describe('ValueHeatmap', () => {
     rerender(<ValueHeatmap renderModel={renderModel} agentSnapshot={after} />)
     expect(screen.getByTestId('value-cell-0,0').getAttribute('data-value')).toBe('7')
   })
+
+  describe('Phase 36 — multiple masks at the same position', () => {
+    it('renders exactly one cell at a position with two distinct-mask Q-table entries, matching the current mask', () => {
+      const agentSnapshot: AgentSnapshot = {
+        kind: 'Q',
+        qTable: {
+          '0,0,0': [1, 0, 0, 0], // V=1, mask 0
+          '0,0,1': [9, 0, 0, 0], // V=9, mask 1
+        },
+      }
+      render(<ValueHeatmap renderModel={renderModel} agentSnapshot={agentSnapshot} currentState="0,0,1" />)
+
+      expect(screen.getAllByTestId(/^value-cell-/)).toHaveLength(1)
+      expect(screen.getByTestId('value-cell-0,0,1').getAttribute('data-value')).toBe('9')
+      expect(screen.queryByTestId('value-cell-0,0,0')).toBeNull()
+    })
+
+    it('omitting currentState falls back to matching only plain "x,y" (no-mask) entries', () => {
+      const agentSnapshot: AgentSnapshot = {
+        kind: 'Q',
+        qTable: {
+          '0,0': [1, 0, 0, 0],
+          '0,0,1': [9, 0, 0, 0],
+        },
+      }
+      render(<ValueHeatmap renderModel={renderModel} agentSnapshot={agentSnapshot} />)
+
+      expect(screen.getAllByTestId(/^value-cell-/)).toHaveLength(1)
+      expect(screen.getByTestId('value-cell-0,0').getAttribute('data-value')).toBe('1')
+    })
+  })
 })

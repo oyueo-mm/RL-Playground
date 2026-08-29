@@ -28,9 +28,20 @@ export function GammaControl({ gamma, onChange, t = translations.en, locale = 'e
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 text-sm" data-testid="gamma-control">
-      <label className="flex items-center gap-2">
-        <span className="text-gray-600">
+    // Phase 36: `flex-col` (was `flex flex-wrap` with the slider row and description as
+    // sibling flex items on one line) — description length now can never affect the
+    // slider row's own layout, since it always renders on its own line below rather
+    // than sharing a wrap-able row with the slider/number input. The `gamma > 1`
+    // description (Phase 30) is materially longer than the other branches and used to
+    // push the slider row itself onto a second line at moderate widths, shifting every
+    // control below it whenever gamma crossed 1.0 mid-interaction.
+    <div className="flex flex-col gap-1 text-sm" data-testid="gamma-control">
+      <label className="flex flex-wrap items-center gap-2">
+        {/* Phase 36: `tabular-nums` — digits at proportional width (e.g. "1" narrower
+            than "0"/"9") made this label's own rendered width vary by value, shifting the
+            slider next to it by a sub-pixel amount on every gamma change even after the
+            flex-col fix above. Fixed-width digits make the label's width value-independent. */}
+        <span className="text-gray-600 tabular-nums">
           {t.gamma.label}: {gamma.toFixed(2)}
         </span>
         <input

@@ -26,6 +26,11 @@ export interface Dictionary {
     episodeCount: string
     /** Phase 28 — "Run Greedy Policy" button label. */
     runGreedy: string
+    /** Phase 36 — stops any in-flight run (primarily for aborting a stuck/looping
+     * Greedy run — Scheduler has no built-in max-step limit) and returns the
+     * Environment to episode-start, WITHOUT touching the Agent/Q-table (unlike the
+     * plain Reset button). Enabled only while running/paused. */
+    restartEpisode: string
   }
   overlay: {
     policy: string
@@ -105,6 +110,10 @@ export interface Dictionary {
     latestEpisodeEmpty: string
     episodeHistoryHeading: string
     episodeHistoryEmpty: string
+    /** Phase 36 — short discoverability hint under the heading: rows are already
+     * clickable/keyboard-focusable (Phase 24), this just makes that fact visible up
+     * front rather than relying on cursor-hover alone (irrelevant on touch devices). */
+    episodeHistoryHint: string
     steps: string
     termination: string
     terminationGoal: string
@@ -222,6 +231,7 @@ const en: Dictionary = {
     reset: 'Reset',
     episodeCount: 'Episodes',
     runGreedy: 'Run Greedy Policy',
+    restartEpisode: 'Stop & Restart',
   },
   overlay: { policy: 'Policy', value: 'Value' },
   envToggle: { show: 'Edit Environment', hide: 'Hide Environment Editor' },
@@ -263,6 +273,7 @@ const en: Dictionary = {
     latestEpisodeEmpty: 'No Episode completed yet.',
     episodeHistoryHeading: 'Episode History',
     episodeHistoryEmpty: 'No Episode completed yet.',
+    episodeHistoryHint: 'Click an episode to view its path.',
     steps: 'Steps',
     termination: 'Termination',
     terminationGoal: 'Goal',
@@ -345,6 +356,7 @@ const ko: Dictionary = {
     reset: '초기화',
     episodeCount: '에피소드 수',
     runGreedy: '탐욕 정책 실행',
+    restartEpisode: '중지 후 처음으로',
   },
   overlay: { policy: '정책', value: '가치' },
   envToggle: { show: '환경 편집', hide: '환경 편집기 닫기' },
@@ -388,6 +400,7 @@ const ko: Dictionary = {
     latestEpisodeEmpty: '아직 완료된 Episode가 없습니다.',
     episodeHistoryHeading: 'Episode 기록',
     episodeHistoryEmpty: '아직 완료된 Episode가 없습니다.',
+    episodeHistoryHint: '에피소드를 클릭하면 해당 에피소드의 경로를 볼 수 있습니다.',
     steps: 'Step 수',
     termination: '종료 원인',
     terminationGoal: 'Goal',

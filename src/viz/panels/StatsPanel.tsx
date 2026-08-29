@@ -148,6 +148,12 @@ export function StatsPanel({
         </p>
       ) : (
         <div className="overflow-x-auto" data-testid="episode-history">
+          {/* Phase 36 — rows have been clickable/keyboard-focusable since Phase 24
+              (cursor-pointer + tabIndex + Enter/Space), but nothing said so up front.
+              Same quiet-caption pattern EnvEditor.tsx already uses for draftPreview. */}
+          <p className="mb-1 text-xs text-gray-500" data-testid="episode-history-hint">
+            {t.stats.episodeHistoryHint}
+          </p>
           <table className="w-full text-right text-xs">
             <thead>
               <tr className="text-gray-500">

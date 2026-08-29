@@ -359,3 +359,45 @@ describe('PlaybackControls — Phase 28: Run Greedy Policy', () => {
     expect(screen.getByTestId('playback-run-greedy').textContent).toBe('탐욕 정책 실행')
   })
 })
+
+describe('PlaybackControls — Phase 36: Stop / Restart Episode', () => {
+  it('is not rendered at all when onRestartEpisode is omitted (pre-Phase-36 callers/tests unaffected)', () => {
+    renderControls({ status: 'idle' })
+    expect(screen.queryByTestId('playback-restart-episode')).toBeNull()
+  })
+
+  it('IDLE: renders but disabled (nothing to abort while idle)', () => {
+    renderControls({ status: 'idle', onRestartEpisode: vi.fn() })
+    expect(isDisabled(screen.getByTestId('playback-restart-episode'))).toBe(true)
+  })
+
+  it('RUNNING: renders enabled and calls onRestartEpisode when clicked', () => {
+    const onRestartEpisode = vi.fn()
+    renderControls({ status: 'running', onRestartEpisode })
+
+    const button = screen.getByTestId('playback-restart-episode')
+    expect(isDisabled(button)).toBe(false)
+    fireEvent.click(button)
+    expect(onRestartEpisode).toHaveBeenCalledTimes(1)
+  })
+
+  it('PAUSED: renders enabled', () => {
+    renderControls({ status: 'paused', onRestartEpisode: vi.fn() })
+    expect(isDisabled(screen.getByTestId('playback-restart-episode'))).toBe(false)
+  })
+
+  it('does not add another item to the Phase 14 button row (own isolated row)', () => {
+    renderControls({ status: 'running', onRestartEpisode: vi.fn() })
+    const buttonRow = screen.getByTestId('playback-reset').parentElement!
+    expect(buttonRow.children).toHaveLength(5)
+    expect(within(buttonRow).queryByTestId('playback-restart-episode')).toBeNull()
+  })
+
+  it('shows the translated label in English (default) and Korean', () => {
+    const { rerender, ...props } = renderControls({ status: 'running', onRestartEpisode: vi.fn() })
+    expect(screen.getByTestId('playback-restart-episode').textContent).toBe('Stop & Restart')
+
+    rerender(<PlaybackControls {...props} onRestartEpisode={vi.fn()} t={translations.ko} />)
+    expect(screen.getByTestId('playback-restart-episode').textContent).toBe('중지 후 처음으로')
+  })
+})
