@@ -831,6 +831,68 @@ describe('App (integration — Phase 42: dynamic Inspector content does not affe
   })
 })
 
+describe('App (integration — Phase 49: Step Viewer positioned near the Grid, not the right column)', () => {
+  // Phase 49 §1: moved the Step Viewer from the bottom of the right column (Phase 46) to
+  // directly under the Grid, in the LEFT column, so the user can watch the Grid and
+  // scrub Steps without scrolling past Inspector/Statistics/charts. Purely a JSX
+  // relocation — no Step Viewer behavior changed (see EpisodeStepViewer.test.tsx, fully
+  // unmodified this Phase). jsdom has no real CSS box model, so the actual "pixels away
+  // from the Grid" claim is verified via Playwright (see the Phase 49 report); what's
+  // guarded here is the structural claim the visual result depends on: which column the
+  // Step Viewer's DOM node lives in.
+  it('the empty-state Step Viewer shares an ancestor with grid-stack, not with the right column (stats-panel)', () => {
+    render(<App />)
+
+    const gridColumn = screen.getByTestId('grid-stack').parentElement!
+    const rightColumn = screen.getByTestId('stats-panel').parentElement!
+    const stepViewerEmpty = screen.getByTestId('step-viewer-empty')
+
+    expect(gridColumn.contains(stepViewerEmpty)).toBe(true)
+    expect(rightColumn.contains(stepViewerEmpty)).toBe(false)
+  })
+
+  it('the populated Step Viewer (an Episode selected) also lives in the left/Grid column, not the right column', () => {
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+    fireEvent.click(screen.getByTestId('episode-history-row-1'))
+
+    const gridColumn = screen.getByTestId('grid-stack').parentElement!
+    const rightColumn = screen.getByTestId('stats-panel').parentElement!
+    const stepViewer = screen.getByTestId('step-viewer')
+
+    expect(gridColumn.contains(stepViewer)).toBe(true)
+    expect(rightColumn.contains(stepViewer)).toBe(false)
+  })
+
+  it('the Step Viewer appears immediately after grid-stack in DOM order (directly under the Grid, before the overlay toggles)', () => {
+    render(<App />)
+
+    const gridColumn = screen.getByTestId('grid-stack').parentElement!
+    const children = Array.from(gridColumn.children)
+    const gridIndex = children.indexOf(screen.getByTestId('grid-stack'))
+    const stepViewerWrapper = screen.getByTestId('step-viewer-empty').parentElement!
+    const stepViewerIndex = children.indexOf(stepViewerWrapper)
+
+    expect(stepViewerIndex).toBe(gridIndex + 1)
+  })
+
+  it('EpisodeStepViewer itself received no functional/behavioral changes this Phase (still controlled purely by App-owned step/onStepChange props)', () => {
+    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
+    render(<App />)
+    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
+    fireEvent.click(screen.getByTestId('playback-run-episode'))
+    fireEvent.click(screen.getByTestId('episode-history-row-1'))
+
+    const slider = screen.getByTestId('step-viewer-slider') as HTMLInputElement
+    fireEvent.change(slider, { target: { value: '0' } })
+    expect(screen.getByTestId('step-viewer-position').textContent).toContain('0 /')
+    fireEvent.click(screen.getByTestId('step-viewer-next'))
+    expect(screen.getByTestId('step-viewer-position').textContent).toContain('1 /')
+  })
+})
+
 describe('App (integration — Phase 37: responsive Grid, structural)', () => {
   // Same rationale as the Phase 16 suite above: jsdom has no real CSS box model, so the
   // actual "does 20x20 @ 768px overflow" question can only be answered by a real browser

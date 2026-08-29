@@ -248,6 +248,34 @@ function App() {
             </div>
           ) : null}
 
+          {/*
+            Phase 49 — moved here from the bottom of the right column (Phase 46) so the
+            Step Viewer sits directly under the Grid it controls, instead of scrolled far
+            away past Inspector/Statistics/charts. Only the POSITION changed — same
+            component, same props, same read-only behavior.
+
+            The wrapper's `maxWidth` mirrors `grid-stack` above exactly (both are a pure
+            function of `envRenderModel.width`, never of per-Step/dynamic content) so this
+            never becomes a new width-computation input for the left column: on a small
+            Grid (narrower than EpisodeStepViewer's own `max-w-lg` cap) it now matches the
+            Grid's width pixel-for-pixel rather than potentially exceeding it and silently
+            becoming the column's new widest child. This is the same deterministic-maxWidth
+            technique Phase 37 already established for grid-stack itself — no new content-
+            dependent sizing is introduced (Phase 42's Layout Shake fix is unaffected: that
+            fix concerns the RIGHT column's width, which this move doesn't touch).
+          */}
+          {snapshot.envRenderModel.kind === 'grid' && (
+            <div className="w-full" style={{ maxWidth: snapshot.envRenderModel.width * CELL_SIZE }}>
+              <EpisodeStepViewer
+                episode={selectedEpisodeStats}
+                step={effectiveStep}
+                onStepChange={setViewedStep}
+                allGoals={snapshot.envRenderModel.allGoals ?? []}
+                t={t}
+              />
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-3 text-sm">
             <label className="flex items-center gap-1">
               <input
@@ -511,20 +539,6 @@ function App() {
             selectedEpisode={selectedEpisode}
             t={t}
             locale={locale}
-          />
-          {/*
-            Phase 46 — Step Viewer: 2nd stage of Episode exploration (Episode selection,
-            above, already existed since Phase 24; this adds per-Step scrubbing within the
-            selected Episode). Strictly read-only — `viewedStep`/`setViewedStep` are pure
-            UI state, never touching `engine` (see EpisodeStepViewer.tsx's own header
-            comment for the full read-only guarantee).
-          */}
-          <EpisodeStepViewer
-            episode={selectedEpisodeStats}
-            step={effectiveStep}
-            onStepChange={setViewedStep}
-            allGoals={snapshot.envRenderModel.kind === 'grid' ? (snapshot.envRenderModel.allGoals ?? []) : []}
-            t={t}
           />
         </div>
       </div>
