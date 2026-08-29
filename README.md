@@ -16,7 +16,10 @@ React·DOM에 의존하지 않으며, 서버나 외부 API 없이 정적 파일�
   독립적으로 편집 가능. 여러 Goal을 배치하면 **모든 Goal을 한 번씩 방문해야 Episode가
   종료**되며(Bomb는 즉시 종료), 각 Goal의 보상은 최초 방문 시에만 지급(재방문은 무보상).
   Goal을 수집하면 Episode가 끝날 때까지 해당 Goal은 Grid에서 사라지고 빈 칸으로 표시됨
-  (Environment 설정 자체는 변경되지 않으며, Episode/Simulation Reset 시 모두 복원).
+  (Environment 설정 자체는 변경되지 않으며, Episode/Simulation Reset 시 모두 복원). GridWorld의
+  State는 Agent의 위치뿐 아니라 해당 Episode 동안 수집한 Goal 상태까지 함께 표현하므로
+  (Q-Learning/SARSA의 학습 공식 자체는 그대로), 같은 좌표라도 남은 Goal 구성이 다르면
+  서로 다른 State/Q-value로 정확히 구분됨
   Environment Editor에 미리 만들어진 **Preset**(Simple Corridor/Maze/Bomb Field/Multi
   Goal/Treasure Hunt) 선택 기능 제공 — 선택해도 Draft만 바뀌고, Apply 전까지 자유롭게 더
   수정 가능
@@ -78,7 +81,7 @@ Reward 편집, Multiple Goals, Episode Path Toggle, Environment Presets, 수집�
 ```bash
 npm install
 npm run dev      # 개발 서버 (http://localhost:5173)
-npm run test     # Vitest — 36 test files / 662 tests
+npm run test     # Vitest — 37 test files / 676 tests
 npm run lint     # ESLint
 npm run build    # 프로덕션 빌드 (dist/)
 npm run preview  # 빌드 결과를 로컬에서 정적으로 서빙
@@ -117,7 +120,7 @@ src/
 
 ## 테스트
 
-`npm run test` 기준 **36 test files / 662 tests** 전부 통과(Core 순수 함수/클래스 단위
+`npm run test` 기준 **37 test files / 676 tests** 전부 통과(Core 순수 함수/클래스 단위
 테스트부터 실제 Engine을 사용하는 브라우저 통합 테스트까지 포함).
 
 ## 배포

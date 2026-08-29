@@ -15,6 +15,18 @@
 //    `goalReward` is paid only on a Goal's first visit within the current Episode —
 //    tracked via `collectedGoals`, mutable per-episode state reset in `reset()` (the same
 //    "per-episode, not per-instance" lifetime as `this.agent`).
+//  - Phase 34 (State Representation audit, Phase 33): the RL State (`getState()`/
+//    `step()`'s `nextState`) is no longer just the Agent's position — it is
+//    `"x,y,mask"`, where `mask` is a bitmask over `config.goals`' index order marking
+//    which Goals `collectedGoals` already contains. This closes the Markov-property gap
+//    Phase 33 proved by direct execution: two truly different situations (same position,
+//    different remaining Goals) previously collapsed onto the identical StateKey `"x,y"`,
+//    so the same `Q[state][action]` slot was overwritten with contradictory targets (e.g.
+//    +10 the first time a Goal was collected there, -0.1 on a later revisit once it and
+//    another Goal were already collected). `positionKey()` itself is UNCHANGED and still
+//    means exactly "grid cell coordinate" — it is what `getRenderModel()` (walls/bombs/
+//    goals/start/agentPos, all rendering-only) and cell-membership checks keep using;
+//    only the RL-facing State gets the mask suffix appended by the new `stateKeyFor()`.
 
 import type { Environment, EnvironmentDefinition } from '../Environment'
 import type { StateKey, StepResult } from '../../types/rl'
@@ -116,25 +128,51 @@ export class GridWorldEnv implements Environment {
   reset(): StateKey {
     this.agent = { ...this.config.start }
     this.collectedGoals = new Set()
-    return positionKey(this.agent)
+    return this.stateKeyFor(this.agent)
   }
 
   getState(): StateKey {
-    return positionKey(this.agent)
+    return this.stateKeyFor(this.agent)
   }
 
   getActionSpace(): number {
     return ACTION_SPACE
   }
 
+  /**
+   * Phase 34 — bit `i` is set iff `config.goals[i]` is in `collectedGoals`. `config.goals`'
+   * array order is used as each Goal's fixed index for the lifetime of this instance
+   * (never reordered, `config.goals` itself never mutated — see the file header).
+   */
+  private goalsMask(): number {
+    let mask = 0
+    this.config.goals.forEach((goal, index) => {
+      if (this.collectedGoals.has(positionKey(goal))) mask |= 1 << index
+    })
+    return mask
+  }
+
+  /** Phase 34 — the actual RL State: grid position + this Episode's Goal-collection mask. */
+  private stateKeyFor(pos: Position): StateKey {
+    return `${positionKey(pos)},${this.goalsMask()}`
+  }
+
   isTerminal(state: StateKey): boolean {
-    if (this.config.bombs.some((bomb) => positionKey(bomb) === state)) return true
-    if (this.config.terminalCells.some((cell) => positionKey(cell) === state)) return true
-    const goalKeys = this.config.goals.map(positionKey)
-    if (!goalKeys.includes(state)) return false
-    // `state` is a Goal: terminal only if every Goal is collected once `state` counts too
-    // (i.e. every other Goal was already collected this Episode).
-    return goalKeys.every((key) => key === state || this.collectedGoals.has(key))
+    // Phase 34: `state` is now "x,y,mask" — parse the position back out for the
+    // position-only Bomb/terminalCells checks (unchanged semantics), and read `mask`
+    // directly from the input rather than `this.collectedGoals`, so this stays a query
+    // purely of `state` itself (independent of step()/of this instance's current episode
+    // progress) exactly as already documented on `Environment.isTerminal()`.
+    const [xStr, yStr, maskStr] = state.split(',')
+    const pos: Position = { x: Number(xStr), y: Number(yStr) }
+    const mask = Number(maskStr)
+
+    if (this.config.bombs.some((bomb) => samePosition(bomb, pos))) return true
+    if (this.config.terminalCells.some((cell) => samePosition(cell, pos))) return true
+    if (!this.config.goals.some((goal) => samePosition(goal, pos))) return false
+    // `pos` is a Goal cell: terminal only once every Goal's bit is set in `mask`.
+    const fullMask = this.config.goals.length === 0 ? 0 : (1 << this.config.goals.length) - 1
+    return mask === fullMask
   }
 
   step(action: number): StepResult {
@@ -174,7 +212,14 @@ export class GridWorldEnv implements Environment {
     }
 
     this.agent = next
-    const nextState = positionKey(next)
+    // Phase 34: computed AFTER `this.agent = next` and after any `collectedGoals.add()`
+    // above, so `nextState`'s mask correctly reflects "post-action, post-collection-
+    // judgment" — the snapshot semantics required for the Q-Learning/SARSA target to see
+    // the Goal it just collected. `state` (the pre-action snapshot used in Transition) is
+    // never touched here — it was already captured by a separate `getState()` call before
+    // `step()` was invoked (SimulationEngine.performOneStep()), so it still reflects
+    // collectedGoals as of BEFORE this step.
+    const nextState = this.stateKeyFor(next)
     const done = this.isTerminal(nextState)
     return { nextState, reward, done }
   }

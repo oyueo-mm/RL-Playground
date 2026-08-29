@@ -25,6 +25,15 @@ function render(ui: Parameters<typeof rtlRender>[0]) {
   return result
 }
 
+// Phase 34: a StateKey is now "x,y,mask" (Environment.getState()/Transition.state —
+// GridWorldEnv.ts's file header), but GridSvg's own cell testids stay plain "x,y"
+// (rendering-only, deliberately unaffected). Strips the mask segment back off wherever a
+// test needs to look up the Grid cell a given State's position corresponds to.
+function statePosition(state: string): string {
+  const [x, y] = state.split(',')
+  return `${x},${y}`
+}
+
 // `engine` is the app's single shared instance (src/ui/engine.ts) — reset it before
 // each test so tests don't leak state into one another through it. reset() does not
 // touch Scheduler speed (that's not simulation state), so it's restored explicitly too
@@ -98,7 +107,9 @@ describe('App (integration, real Engine — Phase 4 §9.4)', () => {
     const snapshot = engine.getSnapshot()
     expect(screen.getByTestId('qvalue-bars').textContent).toContain('0,0')
     if (snapshot.agentSnapshot.kind === 'Q') {
-      const qVector = snapshot.agentSnapshot.qTable['0,0'] ?? [0, 0, 0, 0]
+      // Phase 34: the real Q-table key is "x,y,mask" — the far-off default Goal (6,6) is
+      // nowhere near (0,0) after only 2 steps, so mask is still "0".
+      const qVector = snapshot.agentSnapshot.qTable['0,0,0'] ?? [0, 0, 0, 0]
       expect(screen.getByTestId('qvalue-up').textContent).toBe(qVector[0].toFixed(3))
     }
   })
@@ -170,7 +181,7 @@ describe('App (integration, real Engine — Phase 5 §15.5)', () => {
     fireEvent.click(screen.getByTestId('playback-step'))
     const visitedState = engine.getSnapshot().lastTransition!.state
 
-    fireEvent.click(screen.getByTestId(`cell-${visitedState}`))
+    fireEvent.click(screen.getByTestId(`cell-${statePosition(visitedState)}`))
     fireEvent.click(screen.getByTestId('toggle-policy'))
     fireEvent.click(screen.getByTestId('toggle-value'))
 
@@ -345,7 +356,7 @@ describe('App (integration, real Engine — Phase 7 §15)', () => {
     fireEvent.click(screen.getByTestId('env-editor-apply'))
 
     expect(mainGrid().getByTestId('cell-2,2').getAttribute('data-cell-kind')).toBe('start')
-    expect(engine.getSnapshot().currentState).toBe('2,2')
+    expect(engine.getSnapshot().currentState).toBe('2,2,0') // Phase 34: fresh Apply -> mask 0
     expect(mainGrid().getByTestId('agent-marker').getAttribute('cx')).toBe(String(2 * 48 + 24)) // CELL_SIZE=48 in App.tsx
   })
 
@@ -848,7 +859,7 @@ describe('App (integration, real Engine — Phase 19: Greedy Value / Reward Char
 
     const snapshot = engine.getSnapshot()
     const visitedState = snapshot.lastTransition!.state
-    fireEvent.click(screen.getByTestId(`cell-${visitedState}`))
+    fireEvent.click(screen.getByTestId(`cell-${statePosition(visitedState)}`))
 
     expect(snapshot.agentSnapshot.kind).toBe('Q')
     const qVector =
@@ -928,7 +939,7 @@ describe('App (integration, real Engine — Phase 19: Greedy Value / Reward Char
     render(<App />)
     fireEvent.click(screen.getByTestId('playback-step'))
     const visitedState = engine.getSnapshot().lastTransition!.state
-    fireEvent.click(screen.getByTestId(`cell-${visitedState}`))
+    fireEvent.click(screen.getByTestId(`cell-${statePosition(visitedState)}`))
     const valueBefore = screen.getByTestId('greedy-value').textContent
 
     fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
@@ -1980,8 +1991,10 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
 
     expect(screen.getByTestId('trajectory-overlay')).toBeTruthy()
     expect(screen.getByTestId('episode-trajectory')).toBeTruthy()
-    expect(screen.getByTestId('episode-trajectory-start').textContent).toBe('0,3')
-    expect(screen.getByTestId('episode-trajectory-end').textContent).toBe('0,0')
+    // Phase 34: State is "x,y,mask" — the single Goal at (0,0) is collected only on the
+    // final transition, so the start mask is "0" and the end mask is "1".
+    expect(screen.getByTestId('episode-trajectory-start').textContent).toBe('0,3,0')
+    expect(screen.getByTestId('episode-trajectory-end').textContent).toBe('0,0,1')
     expect(screen.getByTestId('episode-trajectory-step-count').textContent).toBe('3')
     expect(screen.getByTestId('episode-trajectory-termination').textContent).toBe('Goal')
   })
@@ -2032,11 +2045,13 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     fireEvent.click(screen.getByTestId('playback-run'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
+    // Phase 34: State is "x,y,mask" — the bounces at (0,0) never collect the Goal (mask
+    // stays "0"); the final nextState (Goal collected) becomes "1,0,1".
     expect(screen.getByTestId('episode-trajectory-step-count').textContent).toBe('4')
-    expect(screen.getByTestId('trajectory-step-state-0').textContent).toBe('0,0')
-    expect(screen.getByTestId('trajectory-step-state-1').textContent).toBe('0,0')
-    expect(screen.getByTestId('trajectory-step-state-2').textContent).toBe('0,0')
-    expect(screen.getByTestId('trajectory-step-next-state-3').textContent).toBe('1,0')
+    expect(screen.getByTestId('trajectory-step-state-0').textContent).toBe('0,0,0')
+    expect(screen.getByTestId('trajectory-step-state-1').textContent).toBe('0,0,0')
+    expect(screen.getByTestId('trajectory-step-state-2').textContent).toBe('0,0,0')
+    expect(screen.getByTestId('trajectory-step-next-state-3').textContent).toBe('1,0,1')
     // Grid overlay also draws all 4 points (3 repeats + final), not deduplicated.
     expect(screen.getByTestId('trajectory-marker-0')).toBeTruthy()
     expect(screen.getByTestId('trajectory-marker-3')).toBeTruthy()

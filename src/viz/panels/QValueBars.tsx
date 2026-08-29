@@ -13,6 +13,19 @@ import { translations, translateActionLabel, type Dictionary, type Locale } from
 export interface QValueBarsProps {
   selectedState: StateKey | null
   agentSnapshot: AgentSnapshot
+  /**
+   * Phase 34 — the Engine's current RL State (`EngineSnapshot.currentState`), e.g.
+   * GridWorld's `"x,y,mask"`. `selectedState` (above) is a plain grid-cell position
+   * reported by GridSvg's click callback (rendering-only, deliberately never carries a
+   * mask — see GridWorldEnv.ts's file header), so it can no longer be used by itself as a
+   * Q-table key now that real keys carry a mask suffix. This supplies the mask to
+   * reattach, always read live off the Engine (never mirrored into local state), so the
+   * displayed Q-values track the current Episode's Goal-collection progress as it
+   * changes. Optional/defaults to `selectedState` for pre-Phase-34 callers/tests that
+   * don't pass it — falling back to "no mask suffix" (the environment's own default when
+   * a StateKey doesn't have a 3rd segment; see `resolveQVector` below).
+   */
+  currentState?: StateKey | null
   /** Phase 13 — defaults to English so every pre-existing caller/test is unaffected. */
   t?: Dictionary
   locale?: Locale
@@ -28,14 +41,28 @@ export interface QValueBarsProps {
 // EngineSnapshot has no `getActionSpace()`-equivalent field, so the action count used
 // for that fallback vector is GRIDWORLD_ACTION_LABELS.length (4) — correct for the only
 // environment that exists in Phase 4, but see the Phase 4 report's "발견된 문제".
-function resolveQVector(agentSnapshot: AgentSnapshot, state: StateKey): number[] {
+//
+// Phase 34: `selectedState` is a plain "x,y" grid position (from GridSvg); the Q-table's
+// real keys are now "x,y,mask" (see GridWorldEnv.ts). `currentState` supplies the live
+// mask suffix to look up "what the Q-values would be for this position under the current
+// Episode's Goal-collection progress" — re-derived on every call (never cached), so this
+// naturally stays correct as Goals get collected mid-Episode.
+function resolveQVector(agentSnapshot: AgentSnapshot, selectedState: StateKey, currentState: StateKey): number[] {
   if (agentSnapshot.kind !== 'Q') {
     return new Array(GRIDWORLD_ACTION_LABELS.length).fill(0)
   }
-  return agentSnapshot.qTable[state] ?? new Array(GRIDWORLD_ACTION_LABELS.length).fill(0)
+  const mask = currentState.split(',')[2]
+  const key = mask === undefined ? selectedState : `${selectedState},${mask}`
+  return agentSnapshot.qTable[key] ?? new Array(GRIDWORLD_ACTION_LABELS.length).fill(0)
 }
 
-export function QValueBars({ selectedState, agentSnapshot, t = translations.en, locale = 'en' }: QValueBarsProps) {
+export function QValueBars({
+  selectedState,
+  currentState,
+  agentSnapshot,
+  t = translations.en,
+  locale = 'en',
+}: QValueBarsProps) {
   if (!selectedState) {
     return (
       <div
@@ -47,7 +74,7 @@ export function QValueBars({ selectedState, agentSnapshot, t = translations.en, 
     )
   }
 
-  const values = resolveQVector(agentSnapshot, selectedState)
+  const values = resolveQVector(agentSnapshot, selectedState, currentState ?? selectedState)
   const maxAbs = Math.max(1e-6, ...values.map((v) => Math.abs(v)))
 
   // Phase 19: "Greedy Value" is V(s) = max_a Q(s,a) — the exact same quantity

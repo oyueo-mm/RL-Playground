@@ -472,13 +472,15 @@ describe('SimulationEngine — Phase 12: episode execution model', () => {
     const midSnapshot = engine.getSnapshot()
     expect(midSnapshot.status).toBe('running')
     expect(midSnapshot.stepInCurrentEpisode).toBe(3)
-    expect(midSnapshot.currentState).toBe('0,0')
+    // Phase 34: State is "x,y,mask" — this fixture's agent self-loops against the
+    // boundary and never reaches a Goal, so the mask segment stays "0" throughout.
+    expect(midSnapshot.currentState).toBe('0,0,0')
 
     engine.pause()
     const pausedSnapshot = engine.getSnapshot()
     expect(pausedSnapshot.status).toBe('paused')
     expect(pausedSnapshot.stepInCurrentEpisode).toBe(3)
-    expect(pausedSnapshot.currentState).toBe('0,0')
+    expect(pausedSnapshot.currentState).toBe('0,0,0')
     expect(pausedSnapshot.stats.totalReward).toBe(midSnapshot.stats.totalReward)
 
     // resume() -> Scheduler.start() also performs the next step synchronously, so no
@@ -547,7 +549,8 @@ describe('SimulationEngine — Phase 12: episode execution model', () => {
         sawEpisodeOneStart = true
         // The moment the 1st episode ends and the 2nd begins, currentState must already
         // be back at Start (0,0) — not wherever episode 1's terminal transition landed.
-        expect(snap.currentState).toBe('0,0')
+        // Phase 34: reset() also clears collectedGoals, so the mask segment is "0".
+        expect(snap.currentState).toBe('0,0,0')
         expect(snap.stepInCurrentEpisode).toBe(0)
       }
     }
@@ -727,7 +730,9 @@ describe('SimulationEngine — Phase 20: Bomb', () => {
     // The episode's last transition must be the terminal Bomb entry with its penalty.
     expect(snapshot.lastTransition!.reward).toBe(-10)
     expect(snapshot.lastTransition!.done).toBe(true)
-    expect(snapshot.lastTransition!.nextState).toBe('1,0')
+    // Phase 34: State is "x,y,mask" — the Goal at (1,1) is unreachable on this 2x1 grid,
+    // so the mask segment stays "0" throughout.
+    expect(snapshot.lastTransition!.nextState).toBe('1,0,0')
   })
 
   it('run({ episodes: N }): a Bomb ending Episode 1 does not stop the overall run — Episode 2 starts at Start', () => {
@@ -739,7 +744,7 @@ describe('SimulationEngine — Phase 20: Bomb', () => {
       const snap = engine.getSnapshot()
       if (snap.episode === 1 && !sawEpisodeOneStart) {
         sawEpisodeOneStart = true
-        expect(snap.currentState).toBe('0,0') // back at Start, not stuck at the Bomb
+        expect(snap.currentState).toBe('0,0,0') // back at Start, not stuck at the Bomb
         expect(snap.stepInCurrentEpisode).toBe(0)
       }
     }
@@ -1340,10 +1345,12 @@ describe('SimulationEngine — Phase 26: Episode trajectory', () => {
     while (engine.getSnapshot().episode === 0) engine.step()
 
     const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    // Phase 34: State is "x,y,mask" — the single Goal at (0,0) is only collected on the
+    // final transition, so every `mask` segment is "0" until that last `nextState`.
     expect(ep.trajectory).toEqual([
-      { state: '0,3', action: 0, nextState: '0,2', reward: -1, done: false },
-      { state: '0,2', action: 0, nextState: '0,1', reward: -1, done: false },
-      { state: '0,1', action: 0, nextState: '0,0', reward: 10, done: true },
+      { state: '0,3,0', action: 0, nextState: '0,2,0', reward: -1, done: false },
+      { state: '0,2,0', action: 0, nextState: '0,1,0', reward: -1, done: false },
+      { state: '0,1,0', action: 0, nextState: '0,0,1', reward: 10, done: true },
     ])
   })
 
@@ -1393,7 +1400,7 @@ describe('SimulationEngine — Phase 26: Episode trajectory', () => {
 
     const ep = engine.getSnapshot().stats.latestEpisodeStats!
     expect(ep.terminationReason).toBe('goal')
-    expect(ep.trajectory[ep.trajectory.length - 1].nextState).toBe('0,0')
+    expect(ep.trajectory[ep.trajectory.length - 1].nextState).toBe('0,0,1') // Goal collected -> mask 1
     expect(ep.trajectory[ep.trajectory.length - 1].done).toBe(true)
   })
 
@@ -1413,9 +1420,10 @@ describe('SimulationEngine — Phase 26: Episode trajectory', () => {
 
     const ep = engine.getSnapshot().stats.latestEpisodeStats!
     expect(ep.terminationReason).toBe('bomb')
+    // Phase 34: the Goal is never reached (Bomb ends the Episode first), so mask stays "0".
     expect(ep.trajectory).toEqual([
-      { state: '0,3', action: 0, nextState: '0,2', reward: -1, done: false },
-      { state: '0,2', action: 0, nextState: '0,1', reward: -7, done: true },
+      { state: '0,3,0', action: 0, nextState: '0,2,0', reward: -1, done: false },
+      { state: '0,2,0', action: 0, nextState: '0,1,0', reward: -7, done: true },
     ])
   })
 
@@ -1449,14 +1457,16 @@ describe('SimulationEngine — Phase 26: Episode trajectory', () => {
     while (engine.getSnapshot().episode === 0) engine.step()
 
     const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    // Phase 34: State is "x,y,mask" — the Goal is only reached on the 4th transition, so
+    // every occurrence up to then keeps mask "0"; the final nextState becomes "1,0,1".
     expect(ep.trajectory).toEqual([
-      { state: '0,0', action: 0, nextState: '0,0', reward: -1, done: false }, // up: boundary bounce
-      { state: '0,0', action: 1, nextState: '0,0', reward: -1, done: false }, // down: boundary bounce
-      { state: '0,0', action: 2, nextState: '0,0', reward: -1, done: false }, // left: boundary bounce
-      { state: '0,0', action: 3, nextState: '1,0', reward: 10, done: true }, // right: reaches Goal
+      { state: '0,0,0', action: 0, nextState: '0,0,0', reward: -1, done: false }, // up: boundary bounce
+      { state: '0,0,0', action: 1, nextState: '0,0,0', reward: -1, done: false }, // down: boundary bounce
+      { state: '0,0,0', action: 2, nextState: '0,0,0', reward: -1, done: false }, // left: boundary bounce
+      { state: '0,0,0', action: 3, nextState: '1,0,1', reward: 10, done: true }, // right: reaches Goal
     ])
     expect(ep.trajectory.length).toBe(4)
-    // The Set-based uniqueStates count correctly collapses the 3 repeat visits to '0,0'
+    // The Set-based uniqueStates count correctly collapses the 3 repeat visits to '0,0,0'
     // down to 2 distinct States — proving trajectory (length 4) and uniqueStates (2) are
     // genuinely different pieces of information, neither derivable from the other alone.
     expect(ep.uniqueStates).toBe(2)
@@ -1766,5 +1776,80 @@ describe('SimulationEngine — Phase 28: Greedy Policy execution (run({ greedy: 
 
     expect(engine.getSnapshot().status).toBe('idle')
     expect(engine.getSnapshot().agentSnapshot.kind).toBe('Q')
+  })
+})
+
+// Phase 34 — State Representation (Markov) fix, end-to-end through the real
+// Environment + Agent + Algorithm + Engine pipeline. Maps onto Phase 34's required
+// Test 6 (Q-Learning regression), Test 12 (Trajectory preserves dynamic State), and
+// Test 13 (uniqueStates distinguishes same position + different Goal-collection mask).
+describe('SimulationEngine — Phase 34: State Representation (Markov) end-to-end', () => {
+  // width=3, height=1, start=(0,0), goals=(1,0)=A,(2,0)=B, alpha=1 (exact overwrite,
+  // no floating-point ambiguity)/epsilon=0 (pure argmax, ties go to the lowest action
+  // index — same deterministic-tie-break technique the existing "bounce" fixtures above
+  // already use). Hand-traced action-by-action below; each step's Q(state,·) at
+  // decision time is noted so the exact deterministic path is auditable line by line.
+  const config = {
+    width: 3,
+    height: 1,
+    start: { x: 0, y: 0 },
+    goals: [{ x: 1, y: 0 }, { x: 2, y: 0 }],
+    walls: [],
+    stepReward: -1,
+    wallPenalty: -1,
+    goalReward: 10,
+    terminalCells: [],
+    bombs: [],
+    bombPenalty: -9,
+  }
+
+  it('produces the exact deterministic 12-step trajectory, with every State carrying the correct Goal-collection mask', () => {
+    const { source } = createManualTimerSource()
+    const engine = new SimulationEngine({ timerSource: source, envConfig: config, hyperparams: { alpha: 1, gamma: 0.9, epsilon: 0 } })
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.trajectory).toEqual([
+      // Q(0,0,0,·) unseen -> tie -> up: OOB, bounces back to (0,0), mask still 0.
+      { state: '0,0,0', action: 0, nextState: '0,0,0', reward: -1, done: false },
+      // Q(0,0,0,·)=[-1,0,0,0] -> down: OOB, bounces back.
+      { state: '0,0,0', action: 1, nextState: '0,0,0', reward: -1, done: false },
+      // Q(0,0,0,·)=[-1,-1,0,0] -> left: OOB, bounces back.
+      { state: '0,0,0', action: 2, nextState: '0,0,0', reward: -1, done: false },
+      // Q(0,0,0,·)=[-1,-1,-1,0] -> right: collects Goal A -> mask 0 -> 1.
+      { state: '0,0,0', action: 3, nextState: '1,0,1', reward: 10, done: false },
+      // Q(1,0,1,·) unseen -> up: OOB, bounces back at the new mask.
+      { state: '1,0,1', action: 0, nextState: '1,0,1', reward: -1, done: false },
+      // Q(1,0,1,·)=[-1,0,0,0] -> down: OOB, bounces back.
+      { state: '1,0,1', action: 1, nextState: '1,0,1', reward: -1, done: false },
+      // Q(1,0,1,·)=[-1,-1,0,0] -> left: ordinary cell (0,0), but mask carries over as 1
+      // — the SAME position (0,0) visited earlier at mask 0 is now revisited at mask 1.
+      { state: '1,0,1', action: 2, nextState: '0,0,1', reward: -1, done: false },
+      // Q(0,0,1,·) unseen (a genuinely different State from "0,0,0" despite same position).
+      { state: '0,0,1', action: 0, nextState: '0,0,1', reward: -1, done: false },
+      { state: '0,0,1', action: 1, nextState: '0,0,1', reward: -1, done: false },
+      { state: '0,0,1', action: 2, nextState: '0,0,1', reward: -1, done: false },
+      // Q(0,0,1,·)=[-1,-1,-1,0] -> right: revisits Goal A (already collected) -> plain
+      // stepReward, mask unchanged (still 1).
+      { state: '0,0,1', action: 3, nextState: '1,0,1', reward: -1, done: false },
+      // Back at "1,0,1" (2nd visit) — Q(1,0,1,·)=[-1,-1,-1,0] -> right: collects Goal B
+      // (the final Goal) -> mask 1 -> 3 (full), Episode ends.
+      { state: '1,0,1', action: 3, nextState: '2,0,3', reward: 10, done: true },
+    ])
+    expect(ep.steps).toBe(12)
+    expect(ep.terminationReason).toBe('goal')
+
+    // Test 13 — uniqueStates: 4 distinct States ("0,0,0" / "1,0,1" / "0,0,1" / "2,0,3")
+    // even though only 3 distinct grid POSITIONS are ever visited — (0,0) legitimately
+    // counts twice because it was visited under two different Goal-collection masks.
+    expect(ep.uniqueStates).toBe(4)
+
+    // Test 6 — Q-Learning regression: the update rule itself is unchanged (verified by
+    // inspecting the actual learned values it produced for the new-format keys).
+    const qTable = engine.getSnapshot().agentSnapshot.kind === 'Q' ? engine.getSnapshot().agentSnapshot.qTable : {}
+    expect(qTable['0,0,0']).toEqual([-1, -1, -1, 10]) // right -> collected Goal A there
+    expect(qTable['1,0,1']).toEqual([-1, -1, -1, 10]) // right (2nd visit, same mask) -> collected the final Goal
+    expect(qTable['0,0,1']).toEqual([-1, -1, -1, -1]) // distinct slot from '0,0,0' — no aliasing, despite the same position
   })
 })

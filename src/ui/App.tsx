@@ -350,7 +350,13 @@ function App() {
             t={t}
             locale={locale}
           />
-          <QValueBars selectedState={selectedState} agentSnapshot={snapshot.agentSnapshot} t={t} locale={locale} />
+          <QValueBars
+            selectedState={selectedState}
+            currentState={snapshot.currentState}
+            agentSnapshot={snapshot.agentSnapshot}
+            t={t}
+            locale={locale}
+          />
           <StatsPanel
             episode={snapshot.episode}
             stats={snapshot.stats}

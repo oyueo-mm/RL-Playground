@@ -22,7 +22,7 @@ describe('environment registry', () => {
       bombs: [],
       bombPenalty: -10,
     })
-    expect(env.getState()).toBe('0,0')
+    expect(env.getState()).toBe('0,0,0') // Phase 34: State is "x,y,mask"; mask=0 (nothing collected yet)
     expect(env.getRenderModel()).toMatchObject({ width: 3, height: 3, goals: ['2,2'] })
   })
 

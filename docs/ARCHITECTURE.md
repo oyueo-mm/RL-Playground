@@ -153,7 +153,13 @@ docs/
 
 ```ts
 // core/environments/Environment.ts
-type StateKey = string; // 환경별 State를 직렬화한 고유 키 (예: GridWorld는 "x,y")
+type StateKey = string; // 환경별 State를 직렬화한 고유 키
+// (예: GridWorld는 "x,y,mask" — Agent 위치 + 이번 Episode에서 수집한 Goal 집합을 나타내는
+// bitmask. Phase 34: Multiple Goals 도입(Phase 30/32)으로 "같은 좌표라도 남은 Goal
+// 구성이 다르면 실제로는 다른 State"라는 사실이 기존 "x,y"만으로는 표현되지 않아
+// Q-table에서 서로 다른 상황의 값이 섞이는 문제가 있었다(Phase 33 감사에서 실제 코드
+// 실행으로 확인). Q-Learning/SARSA의 update 공식 자체는 변경되지 않았다 — State가 어떤
+// 문자열이든 그대로 key로 사용할 뿐이다.)
 
 interface StepResult {
   nextState: StateKey;

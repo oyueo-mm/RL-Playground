@@ -198,13 +198,13 @@ describe('SimulationEngine + SARSA — terminal transition (Phase 8 §15)', () =
 
     // episode must have auto-reset (ARCHITECTURE.md §7 / SimulationEngine.finishEpisode()).
     expect(snapshot.episode).toBe(1)
-    expect(snapshot.currentState).toBe('0,0')
+    expect(snapshot.currentState).toBe('0,0,0') // Phase 34: reset() also clears the Goal mask
 
     // The next step must perform a *fresh* selectAction() rather than reusing a stale
     // pendingAction from before the reset — verified indirectly: it must not throw and
     // must produce a new transition starting from the reset start state.
     engine.step()
-    expect(engine.getSnapshot().lastTransition!.state).toBe('0,0')
+    expect(engine.getSnapshot().lastTransition!.state).toBe('0,0,0') // Phase 34: mask cleared by reset()
   })
 })
 
@@ -286,5 +286,45 @@ describe('SimulationEngine + Q-Learning — unaffected by SARSA (Phase 8 §14 re
     // definition still declares no pickNextAction — the one fact Engine relies on to
     // never populate pendingAction for it (SimulationEngine.ts performOneStep()).
     expect(getAlgorithm('q-learning').pickNextAction).toBeUndefined()
+  })
+})
+
+// Phase 34 Test 7 — SARSA regression with the new "x,y,mask" State Representation.
+// width=1, height=4, start=(0,3), 3 Goals stacked along the only column: (0,2)/(0,1)/
+// (0,0). alpha=0/epsilon=0 ties every step to the lowest-index action ("up"), producing
+// a fully deterministic 3-step path that collects all 3 Goals in order — same
+// "always up" technique the existing Phase 26 corridor fixtures already use, extended to
+// multiple Goals so each transition's mask segment is exercised end-to-end through
+// SARSA's on-policy pendingAction/pickNextAction wiring (unchanged by this Phase).
+describe('SimulationEngine + SARSA — Phase 34: multi-Goal State Representation', () => {
+  it('collects all 3 Goals in a deterministic path, with every trajectory State carrying the correct mask', () => {
+    const engine = new SimulationEngine({
+      algorithmId: 'sarsa',
+      envConfig: {
+        width: 1,
+        height: 4,
+        start: { x: 0, y: 3 },
+        goals: [{ x: 0, y: 2 }, { x: 0, y: 1 }, { x: 0, y: 0 }],
+        walls: [],
+        stepReward: -1,
+        wallPenalty: -1,
+        goalReward: 10,
+        terminalCells: [],
+        bombs: [],
+        bombPenalty: -9,
+      },
+      hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 },
+    })
+
+    while (engine.getSnapshot().episode === 0) engine.step()
+
+    const ep = engine.getSnapshot().stats.latestEpisodeStats!
+    expect(ep.trajectory).toEqual([
+      { state: '0,3,0', action: 0, nextState: '0,2,1', reward: 10, done: false }, // collect Goal A
+      { state: '0,2,1', action: 0, nextState: '0,1,3', reward: 10, done: false }, // collect Goal B
+      { state: '0,1,3', action: 0, nextState: '0,0,7', reward: 10, done: true }, // collect Goal C (final)
+    ])
+    expect(ep.terminationReason).toBe('goal')
+    expect(engine.getSnapshot().lastTdInfo!.algorithm).toBe('sarsa')
   })
 })

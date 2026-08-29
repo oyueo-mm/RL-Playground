@@ -161,6 +161,28 @@ describe('StatsPanel — Phase 21: Episode Statistics', () => {
     expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('2 / 2')
   })
 
+  // Phase 34 — `goals` (from EnvRenderModel) stays a plain "x,y" position list, but
+  // `trajectory[].nextState` is now the richer "x,y,mask" RL State (GridWorldEnv.ts's
+  // file header). This pins down that the Goals Collected count still matches correctly
+  // against the new format instead of silently always reading 0 (the exact regression
+  // this Phase's own production-browser verification caught before this fix).
+  it('Phase 34: counts correctly when trajectory.nextState carries a Goal-collection mask suffix', () => {
+    const ep = episodeStats({
+      trajectory: [
+        { state: '0,0,0', action: 3, nextState: '1,0,1', reward: 10, done: false },
+        { state: '1,0,1', action: 3, nextState: '2,0,3', reward: 10, done: true },
+      ],
+    })
+    render(
+      <StatsPanel
+        episode={1}
+        stats={stats({ latestEpisodeStats: ep, episodeStatsHistory: [ep] })}
+        goals={['1,0', '2,0']}
+      />,
+    )
+    expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('2 / 2')
+  })
+
   it('shows the Goal/Other termination labels correctly too', () => {
     const { rerender } = render(
       <StatsPanel episode={1} stats={stats({ latestEpisodeStats: episodeStats({ terminationReason: 'goal' }) })} />,

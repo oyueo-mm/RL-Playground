@@ -83,6 +83,19 @@ function defaultHyperparams(algorithm: Algorithm): Hyperparams {
   return hp
 }
 
+/**
+ * Phase 34 — a `StateKey` is the RL-facing State (e.g. GridWorld's `"x,y,mask"`, per
+ * GridWorldEnv.ts's file header) while `EnvRenderModel`'s position arrays (`bombs`/
+ * `goals`/`walls`/`start`) deliberately stay plain grid-cell coordinates. This strips any
+ * suffix beyond the first two comma-separated components back off, so a `StateKey` can be
+ * compared against those position-only arrays again. A no-op for an Environment whose
+ * State genuinely is just "x,y" (nothing to strip).
+ */
+function statePosition(state: StateKey): StateKey {
+  const [x, y] = state.split(',')
+  return `${x},${y}`
+}
+
 export interface SimulationEngineOptions {
   envId?: string
   envConfig?: unknown
@@ -396,11 +409,17 @@ export class SimulationEngine {
    * true via a Bomb (handled above) or every Goal being collected — `terminalCells`
    * (Post-MVP FR-9) is not reachable through any current UI path (every fixture in this
    * codebase uses `[]`), so any other terminal transition is a Goal termination.
+   *
+   * Phase 34: `transition.nextState` is now `"x,y,mask"` (State Representation fix, see
+   * GridWorldEnv.ts's file header) while `renderModel.bombs`/`.goals` remain pure `"x,y"`
+   * position keys (rendering-only, deliberately unchanged) — so a raw `.includes()` no
+   * longer matches even when the position IS a bomb. `statePosition()` strips the mask
+   * suffix back off before comparing, restoring the original position-only comparison.
    */
   private classifyTermination(transition: Transition): EpisodeTerminationReason {
     const renderModel = this.environment.getRenderModel()
     if (renderModel.kind !== 'grid') return 'other'
-    if (renderModel.bombs.includes(transition.nextState)) return 'bomb'
+    if (renderModel.bombs.includes(statePosition(transition.nextState))) return 'bomb'
     return 'goal'
   }
 

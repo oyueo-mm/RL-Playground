@@ -42,9 +42,21 @@ export interface StatsPanelProps {
   goals?: StateKey[]
 }
 
-/** Phase 30 — distinct Goal StateKeys visited at least once in this Episode's trajectory. */
+/**
+ * Phase 30 — distinct Goal positions visited at least once in this Episode's trajectory.
+ *
+ * Phase 34: `goals` (from `EnvRenderModel.goals`) stays a plain "x,y" position list, but
+ * `trajectory[].nextState` is now the richer RL State "x,y,mask" (GridWorldEnv.ts's file
+ * header) — a raw membership check would never match. `statePosition()` strips the mask
+ * segment back off before comparing, restoring the original position-only comparison.
+ */
+function statePosition(state: StateKey): StateKey {
+  const [x, y] = state.split(',')
+  return `${x},${y}`
+}
+
 function collectedGoalCount(stats: EpisodeStats, goals: StateKey[]): number {
-  const visited = new Set(stats.trajectory.map((t) => t.nextState))
+  const visited = new Set(stats.trajectory.map((t) => statePosition(t.nextState)))
   return goals.filter((g) => visited.has(g)).length
 }
 
