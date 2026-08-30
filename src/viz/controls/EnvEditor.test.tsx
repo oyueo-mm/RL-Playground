@@ -826,3 +826,61 @@ describe('EnvEditor — Import/Export (Phase 46)', () => {
     expect(screen.getByTestId('env-editor-import').textContent).toBe('환경 불러오기')
   })
 })
+
+// Phase 52 — the Draft preview grid (cellSize=32, unresponsive before this Phase) overflowed
+// this panel's own max-w-lg (512px) box once `draft.width * 32 > 512`, i.e. any Draft wider
+// than 16 cells — reproduced via real-browser measurement: 16x16 (512px) fit exactly,
+// 17x17 (544px) didn't, spilling into the right column's Stats panel. jsdom has no real CSS
+// box model (getBoundingClientRect always returns zeros), so the actual "does this overlap
+// the Stats panel" question can only be answered by a real browser (verified via
+// Playwright — see the Phase 52 report). What's guarded here, same convention as the
+// App.test.tsx Phase 16/37/42 suites, is the specific CSS mechanism the fix depends on:
+// the wrapper's maxWidth style tracks `draft.width * 32` (so it never becomes a hard 512px
+// ceiling glued to the SVG regardless of Draft size — it's a per-width computed cap, same
+// as grid-stack's own `width * CELL_SIZE`), and the SVG itself carries the same
+// `w-full h-auto` responsive-sizing classes the live Grid already uses.
+describe('EnvEditor — Draft preview responsive sizing (Phase 52)', () => {
+  function draftGridWrapper(): HTMLElement {
+    return within(screen.getByTestId('env-editor-grid')).getByTestId('grid-svg').parentElement!
+  }
+
+  it('16x16: wrapper maxWidth is exactly 512px (16 * 32) — the Draft preview\'s own natural full size', () => {
+    renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-width-input'), { target: { value: '16' } })
+    fireEvent.change(screen.getByTestId('env-editor-height-input'), { target: { value: '16' } })
+    expect(draftGridWrapper().style.maxWidth).toBe('512px')
+  })
+
+  it.each([17, 18, 20])('%ix%i: wrapper maxWidth grows past 512px (the panel itself still caps rendered width via max-w-lg + w-full h-auto)', (size) => {
+    renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-width-input'), { target: { value: String(size) } })
+    fireEvent.change(screen.getByTestId('env-editor-height-input'), { target: { value: String(size) } })
+    expect(draftGridWrapper().style.maxWidth).toBe(`${size * 32}px`)
+  })
+
+  it('the Draft preview GridSvg carries the responsive w-full/h-auto classes at every size, not just small ones', () => {
+    renderEditor()
+    for (const size of [7, 16, 17, 20]) {
+      fireEvent.change(screen.getByTestId('env-editor-width-input'), { target: { value: String(size) } })
+      fireEvent.change(screen.getByTestId('env-editor-height-input'), { target: { value: String(size) } })
+      const svg = within(screen.getByTestId('env-editor-grid')).getByTestId('grid-svg')
+      expect(svg.getAttribute('class')).toBe('block h-auto w-full')
+      // Intrinsic pixel size (what h-auto's aspect ratio scales against) is untouched.
+      expect(svg.getAttribute('width')).toBe(String(size * 32))
+    }
+  })
+
+  it('a large Draft (20x20) is still fully operable — Start/Goal/Wall/Bomb clicks and Apply all still work', () => {
+    const { onApply } = renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-width-input'), { target: { value: '20' } })
+    fireEvent.change(screen.getByTestId('env-editor-height-input'), { target: { value: '20' } })
+    fireEvent.click(screen.getByTestId('env-editor-mode-goal'))
+    fireEvent.click(within(screen.getByTestId('env-editor-grid')).getByTestId('cell-19,19'))
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+
+    expect(onApply).toHaveBeenCalledTimes(1)
+    const config = onApply.mock.calls[0][0]
+    expect(config.width).toBe(20)
+    expect(config.height).toBe(20)
+  })
+})

@@ -404,7 +404,28 @@ export function EnvEditor({
 
       <div data-testid="env-editor-grid">
         <p className="mb-1 text-xs text-gray-500">{t.envEditor.draftPreview}</p>
-        <GridSvg renderModel={draftToRenderModel(draft)} cellSize={32} onStateSelect={handleCellClick} />
+        {/*
+          Phase 52 — the Draft preview's raw SVG (cellSize=32, unconstrained) is exactly
+          `draft.width * 32` px wide with no responsive scaling, so once that exceeds this
+          panel's own `max-w-lg` (512px minus this div's padding), it silently overflowed
+          the panel's box and spilled into the right column's Stats panel — reproduced via
+          real-browser measurement: 16×16 = 512px fits, 17×17 = 544px doesn't (the exact
+          "16 vs 17" threshold reported). `App.tsx`'s live Grid already solved this same
+          shape of problem (Phase 37) with a maxWidth-capped wrapper + a responsive
+          `w-full h-auto` SVG — reused verbatim here rather than inventing a second
+          technique: the wrapper caps preferred width at the Draft's own natural full
+          size (so small Drafts render unchanged, exactly as before), while `w-full
+          h-auto` lets the SVG shrink to fit whatever width is actually available once
+          that cap would otherwise exceed the panel.
+        */}
+        <div className="w-full" style={{ maxWidth: draft.width * 32 }}>
+          <GridSvg
+            renderModel={draftToRenderModel(draft)}
+            cellSize={32}
+            onStateSelect={handleCellClick}
+            className="block h-auto w-full"
+          />
+        </div>
       </div>
 
       {errors.length > 0 && (

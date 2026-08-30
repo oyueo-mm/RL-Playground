@@ -969,12 +969,23 @@ describe('App (integration — Phase 37: responsive Grid, structural)', () => {
     expect(screen.getByTestId('policy-overlay').getAttribute('class')).toBe('absolute inset-0 h-auto w-full')
   })
 
-  it('EnvEditor\'s Draft preview GridSvg is unaffected (no className, fixed cellSize=32, unrelated to the live Grid\'s responsive sizing)', () => {
+  // Phase 52 — previously the Draft preview GridSvg carried no className at all (a fixed
+  // cellSize=32 render, unrelated to the live Grid's own responsive sizing). That turned
+  // out to be exactly the Phase 52 bug's root cause: with no CSS-responsive scaling and no
+  // maxWidth-capped wrapper, a Draft wider than 16 cells (16*32=512px, this panel's own
+  // max-w-lg cap) rendered its raw, unscaled SVG past the panel's box and into the right
+  // column's Stats panel (reproduced via real-browser measurement: 16x16 fit, 17x17
+  // didn't). Fixed by giving the Draft preview the SAME `w-full h-auto` responsive-SVG
+  // treatment + maxWidth-capped wrapper the live Grid already had since Phase 37 — this
+  // test's title/assertions are updated to match that fix, not a new premise.
+  it('EnvEditor\'s Draft preview GridSvg carries the same responsive sizing classes as the live GridSvg (Phase 52)', () => {
     render(<App />)
     fireEvent.click(screen.getByTestId('toggle-env-editor'))
 
     const draftSvg = within(screen.getByTestId('env-editor-grid')).getByTestId('grid-svg')
-    expect(draftSvg.getAttribute('class')).toBeNull()
+    expect(draftSvg.getAttribute('class')).toBe('block h-auto w-full')
+    // The intrinsic pixel size (viewBox/width/height attributes) is untouched — only the
+    // CSS-rendered size becomes responsive, exactly like the live Grid's own GridSvg.
     expect(draftSvg.getAttribute('width')).toBe(String(createDefaultGridWorldConfig().width * 32))
   })
 })
