@@ -1,143 +1,372 @@
 # RL Playground
 
-브라우저에서 강화학습 알고리즘의 내부 동작(State / Action / Reward / TD Target / TD Error /
-Value·Q-value / Policy)을 직접 관찰하고 조작할 수 있는 인터랙티브 Playground.
+강화학습의 학습 과정을 직접 보고, 조작하고, 이해하기 위한 **Interactive Reinforcement Learning Simulator**입니다.
 
-시뮬레이션(GridWorld, Q-Learning/SARSA, 상태 머신 등)은 순수 TypeScript로 구현되어
-React·DOM에 의존하지 않으며, 서버나 외부 API 없이 정적 파일만으로 브라우저에서 완결됩니다.
+[Live Demo](https://oyueo-mm.github.io/RL-Playground/)
 
-**Live Demo**: https://oyueo-mm.github.io/RL-Playground/
+---
 
-## 주요 기능
+# Why I Made This
 
-- **Environment**: GridWorld (Wall / Start / Goal(복수 지정 가능) / Bomb / Grid 크기 편집
-  가능 — Bomb는 진입 시 penalty reward를 받고 Episode가 즉시 종료되는 위험 State). Step
-  Reward/Wall Penalty(벽·경계 충돌 시 별도 페널티)/Goal Reward/Bomb Penalty를 모두
-  독립적으로 편집 가능. 여러 Goal을 배치하면 **모든 Goal을 한 번씩 방문해야 Episode가
-  종료**되며(Bomb는 즉시 종료), 각 Goal의 보상은 최초 방문 시에만 지급(재방문은 무보상).
-  Goal을 수집하면 Episode가 끝날 때까지 해당 Goal은 Grid에서 사라지고 빈 칸으로 표시됨
-  (Environment 설정 자체는 변경되지 않으며, Episode/Simulation Reset 시 모두 복원). GridWorld의
-  State는 Agent의 위치뿐 아니라 해당 Episode 동안 수집한 Goal 상태까지 함께 표현하므로
-  (Q-Learning/SARSA의 학습 공식 자체는 그대로), 같은 좌표라도 남은 Goal 구성이 다르면
-  서로 다른 State/Q-value로 정확히 구분됨
-  Environment Editor에 미리 만들어진 **Preset**(Simple Corridor/Maze/Bomb Field/Multi
-  Goal/Treasure Hunt) 선택 기능 제공 — 선택해도 Draft만 바뀌고, Apply 전까지 자유롭게 더
-  수정 가능
-- **Algorithm**: Q-Learning, SARSA (ε-greedy 행동 선택, on/off-policy TD control) — UI
-  Selector로 전환 가능(IDLE 상태에서만, 전환 시 새 학습 실험으로 초기화). Epsilon(탐험률)/
-  Alpha(학습률)/Gamma(할인율, 0~2.0 — 1을 넘는 값도 실험적으로 허용) 모두 실행 중 UI에서
-  실시간 조절 가능
-- **학습 제어**: Step / Run / Run Episode(실행할 Episode 수 제한 없음) / Pause / Resume / Reset,
-  4단계 Speed(Slow/Normal/Fast/Very Fast) / Run Greedy Policy(학습 없이 현재 Q-table
-  기준 항상 greedy action만 실행 — 실행 중 사용자의 실제 ε 설정을 읽거나 바꾸지 않음)
-- **관찰**:
-  - Inspector — State/Action/Reward/TD Target(수식 포함)/TD Error, Q-value 갱신 전→후 값
-  - Q-value 막대그래프 (State 선택 시)
-  - Policy Overlay — 각 State의 greedy action을 화살표로 표시
-  - Value Heatmap — 각 State의 V(s)=max Q(s,·)를 색상으로 표시
-  - Statistics — Episode / Total Reward / Episode Length / Success Rate, 그리고 Episode
-    단위 상세 통계(Steps/Termination/Exploration·Exploitation/Exploration Rate/Average
-    Reward/Unique States)와 최근 Episode 기록 테이블 — 기록의 각 행을 선택(클릭 또는
-    키보드)하면 해당 Episode의 상세(Episode Detail)를 확인할 수 있음
-  - Termination Reasons — 지금까지 완료된 전체 Episode의 종료 원인(Goal/Bomb/Other)
-    분포를 막대그래프로 표시(선택된 Episode와 무관하게 항상 전체 History 기준)
-  - Reward Chart — Episode별 보상 추이 SVG 라인 차트(X/Y축 실제 숫자 눈금 표시), 선택된
-    Episode의 지점을 강조 표시
-  - Learning Progress — Total Reward / Steps 두 가지 지표를 나란히 비교하는 추이 차트
-    (X/Y축 숫자 눈금 포함), Episode History 선택과 연동되어 동일 Episode가 함께 강조 표시됨
-  - Episode Trajectory — 선택한 Episode에서 Agent가 실제로 방문한 State/Action/Reward
-    순서를 Grid 위 경로 오버레이와 Step 단위 상세 테이블로 확인(반복 방문 State도 순서
-    그대로 보존, 매우 긴 Episode는 처음 50개만 표시 후 전체 보기 가능) — "Show/Hide
-    Episode Path" 토글로 Grid 위 경로 오버레이만 켜고 끌 수 있음(기본값 ON, 선택된
-    Episode와 무관하게 독립적으로 동작; 표/차트 등 다른 데이터는 항상 그대로 표시)
-  - Episode Detail — Goal이 2개 이상인 Environment에서는 "N / M Goals Collected" 표시
-- **Environment Editor**: Grid 크기 변경, Wall/Goal(복수) 추가·삭제, Start 지정, Step
-  Reward/Wall Penalty/Goal Reward/Bomb Penalty 편집, Preset 선택 — Draft 편집 후
-  Apply해야 실제 시뮬레이션에 반영(적용 시 학습 상태 전체 초기화, 취소 시 미반영).
-  "Reset Environment" 버튼으로 편집 중인 Draft만 기본 환경으로 되돌릴 수 있음(Apply 전까지
-  실제 시뮬레이션에는 영향 없음 — Simulation Reset과는 별개의 동작)
+강화학습을 공부하면서 가장 어려운 부분 중 하나는 **알고리즘이 실제로 어떻게 학습되는지 이해하는 것**이라고 생각했습니다.
 
-## v1.6 범위
+Q-Learning이나 SARSA를 공부하면
 
-**포함(구현 완료)**: 위 "주요 기능" 전체(Algorithm Selector UI, Bomb Environment, Episode
-Statistics/Selection, Learning Progress, Episode Trajectory, Gamma 0~2.0, Step/Wall/Goal
-Reward 편집, Multiple Goals, Episode Path Toggle, Environment Presets, 수집한 Goal의 Grid
-제거, Environment Editor Reset 포함).
+* State
+* Action
+* Reward
+* Q-value
+* TD Target
+* TD Error
+* Policy
 
-**v1.4 이후 추가된 사항**: State가 Agent 위치뿐 아니라 해당 Episode 동안 수집한 Goal
-상태까지 포함하도록 개선되어, Multiple Goal 환경에서 같은 좌표라도 남은 Goal 구성이
-다르면 Q-value가 서로 섞이지 않고 정확히 구분됨(위 "주요 기능"에 이미 반영). Policy/Value
-Overlay가 현재 Goal 수집 상태 기준으로 셀당 정확히 하나의 화살표/값만 표시. Greedy 정책
-실행 중에도 Inspector에서 State/Action/Reward 확인 가능(TD 정보는 학습이 일어나지 않으므로
-표시하지 않음). Q-value 막대그래프에서 Greedy Action 행 강조 표시. Gamma 설명 텍스트
-길이에 따라 슬라이더 위치가 흔들리던 레이아웃 문제 수정. Episode History에 클릭 안내
-문구 추가. Greedy 정책이 종료되지 않는 환경(예: 사방이 벽으로 막힌 State)에서 학습된
-Q-table을 보존한 채 실행을 중단하고 처음으로 되돌릴 수 있는 Stop & Restart 기능 추가.
-Grid 위 Agent marker가 셀 클릭을 가로채던 문제와, 20×20 등 큰 Grid에서 좁은 화면(768px)에
-발생하던 가로 스크롤 문제 수정. Multiple Goal 환경에서 동일 위치를 서로 다른 Goal 수집
-상태로 재방문할 때 Episode Trajectory의 마커가 겹치던 문제 수정.
+같은 개념과 수식을 배우게 됩니다.
 
-**Post-MVP(현재는 없음, 의도적으로 제외)**:
+하지만 수식만 보고 있으면,
 
-- 셀별 커스텀 Reward / 임의 Terminal 지정 편집
-- Environment 설정 JSON export/import
-- Q-value 변화 이력 스파크라인
-- Episode 간 비교(Episode Comparison) 뷰
+> "그래서 이 값들이 실제 학습 과정에서 어떻게 변하는 거지?"
 
-**Future(설계만 되어 있고 구현 안 됨)**: TD(0), Softmax/UCB 정책, 새로운 Environment 등.
+라는 생각이 들 수 있습니다.
 
-자세한 범위 구분은 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §11과
-[`docs/ROADMAP.md`](docs/ROADMAP.md)를 참고하세요.
+실제로 강화학습을 어려워하는 사람을 보면서,
 
-## 실행 방법
+**"강화학습이 학습되는 과정을 직접 볼 수 있다면 조금 더 쉽게 이해할 수 있지 않을까?"**
 
-```bash
-npm install
-npm run dev      # 개발 서버 (http://localhost:5173)
-npm run test     # Vitest — 37 test files / 724 tests
-npm run lint     # ESLint
-npm run build    # 프로덕션 빌드 (dist/)
-npm run preview  # 빌드 결과를 로컬에서 정적으로 서빙
+라는 생각이 들었고, 그 아이디어에서 이 프로젝트를 시작했습니다.
+
+Agent가 GridWorld를 돌아다니면서 어떤 행동을 선택하고, Reward를 받고, Q-value를 업데이트하고, 점점 더 나은 Policy를 만들어가는 과정을 직접 관찰할 수 있도록 만들었습니다.
+
+그리고 사실 이것과 별개로,
+
+**강화학습 시뮬레이터 자체가 굉장히 재미있어 보였습니다.**
+
+Agent를 직접 움직여보고, 환경을 만들고, 보상과 패널티를 바꿔보고, 학습 과정을 눈으로 확인하는 것이 흥미로웠습니다.
+
+그래서 단순히 강화학습 알고리즘을 구현하는 것보다,
+
+> **"강화학습을 직접 가지고 놀면서 이해할 수 있는 공간을 만들어보자."**
+
+라는 방향으로 프로젝트를 발전시켰습니다.
+
+---
+
+# How I Made This
+
+이 프로젝트는 **Claude와 함께 개발했습니다.**
+
+아이디어와 요구사항을 정리하고, 프로젝트 구조를 설계한 뒤 Claude와 함께 구현과 디버깅, 테스트, 리팩터링을 반복하는 방식으로 개발했습니다.
+
+단순히 코드를 생성하는 데 그치지 않고,
+
+**기획 → 설계 → 구현 → 테스트 → 문제 발견 → 수정 → 검증**
+
+의 과정을 반복하면서 프로젝트를 만들어갔습니다.
+
+특히 강화학습의 핵심 로직과 UI를 분리하는 것을 중요하게 생각했습니다.
+
+전체 구조는 다음과 같습니다.
+
+```text
+Environment
+      ↓
+    Agent
+      ↓
+  Algorithm
+      ↓
+Simulation Engine
+      ↓
+Visualization
+      ↓
+     UI
 ```
 
-## 기술 스택
+강화학습의 핵심 로직은 React나 DOM에 의존하지 않는 **순수 TypeScript**로 구현했습니다.
 
-React 19 + TypeScript, Vite, Tailwind CSS 4, Vitest + Testing Library. 차트/그리드
-시각화는 별도 라이브러리 없이 순수 SVG로 구현. 상태관리는 커스텀 `SimulationEngine`
-클래스 + `useSyncExternalStore` 훅(별도 상태관리 라이브러리 없음).
+이를 통해 RL 시뮬레이션 자체와 UI를 분리하고, 핵심 로직을 UI 없이 독립적으로 테스트할 수 있도록 구성했습니다.
 
-## 아키텍처
+React에서는 `useSyncExternalStore`를 이용하여 `SimulationEngine`의 상태를 구독하는 방식으로 연결했습니다.
 
-```
-Environment → Agent → Algorithm → Simulation Engine → Visualization → UI
-```
+## Tech Stack
 
-```
-src/
-  core/   RL 로직 (Environment/Agent/Algorithm/SimulationEngine, React·DOM 비의존)
-  viz/    시각화 컴포넌트 (Grid, Overlay, 차트, 컨트롤)
-  ui/     App 조립, Engine ↔ React 연결 훅
-```
+### Frontend
 
-`src/core/**`는 React/DOM에 의존하지 않는다 — `eslint.config.js`가 이를 린트 규칙으로
-강제하며, Node 환경(Vitest)에서 UI 없이 단독으로 테스트됩니다. UI는 `useSyncExternalStore`
-기반 훅으로 `SimulationEngine`의 `EngineSnapshot`을 구독하는 것이 유일한 연결 지점입니다.
+* **React 19**
+* **TypeScript**
+* **Vite**
+* **Tailwind CSS 4**
 
-자세한 설계 문서는 [`docs/`](docs) 참고:
+### Reinforcement Learning
 
-- [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md) — 기능/사용자 시나리오
-- [ARCHITECTURE.md](docs/ARCHITECTURE.md) — 모듈 구조와 데이터 흐름
-- [ROADMAP.md](docs/ROADMAP.md) — 단계별 개발 순서
-- [LEGACY_ANALYSIS.md](docs/LEGACY_ANALYSIS.md) — 참고용 레퍼런스 저장소 분석
-- [DESIGN_REVIEW.md](docs/DESIGN_REVIEW.md) — 설계 검증 기록
+* **Q-Learning**
+* **SARSA**
+* **ε-greedy Policy**
+* **Temporal Difference Learning**
+* **GridWorld Environment**
 
-## 테스트
+### Visualization
 
-`npm run test` 기준 **37 test files / 724 tests** 전부 통과(Core 순수 함수/클래스 단위
-테스트부터 실제 Engine을 사용하는 브라우저 통합 테스트까지 포함).
+* **SVG**
+* 별도의 Chart / Visualization Library 없이 직접 구현
 
-## 배포
+Grid, Q-value Chart, Reward Chart, Learning Progress Chart, Policy Overlay, Value Heatmap 등을 SVG 기반으로 구현했습니다.
 
-빌드 산출물(`npm run build` → `dist/`)은 정적 파일뿐이며 백엔드·데이터베이스·환경 변수가
-필요 없습니다. 어떤 정적 웹 호스팅에도 `dist/` 내용을 그대로 올리면 동작합니다(하위
-경로에 배포하는 경우에만 `vite.config.ts`에 `base` 옵션 설정 필요).
+### State Management
+
+* **SimulationEngine**
+* **useSyncExternalStore**
+
+별도의 상태관리 라이브러리를 사용하지 않고 Simulation Engine을 중심으로 시뮬레이션 상태를 관리합니다.
+
+### Testing
+
+* **Vitest**
+* **Testing Library**
+* **ESLint**
+
+현재 `npm run test` 기준으로 **37개의 test files / 724개의 tests**를 포함하고 있습니다.
+
+---
+
+# Features
+
+## 1. GridWorld Environment
+
+강화학습을 실행할 환경을 직접 구성할 수 있습니다.
+
+* Grid 크기 변경
+* Start 지정
+* Wall 배치
+* 여러 개의 Goal 배치
+* Bomb 배치
+* Step Reward 설정
+* Wall Penalty 설정
+* Goal Reward 설정
+* Bomb Penalty 설정
+
+환경을 직접 만들어 Agent가 어떤 행동을 학습하게 될지 실험할 수 있습니다.
+
+### Multiple Goals
+
+하나의 Goal뿐만 아니라 여러 개의 Goal을 배치할 수 있습니다.
+
+Agent가 모든 Goal을 방문하면 Episode가 종료되며, 이미 수집한 Goal은 해당 Episode 동안 Grid에서 사라집니다.
+
+또한 State에는 Agent의 위치뿐만 아니라 **현재까지 수집한 Goal의 상태**도 포함됩니다.
+
+따라서 같은 위치에 다시 도착하더라도 남아있는 Goal이 다르다면 서로 다른 State로 구분됩니다.
+
+---
+
+## 2. Environment Presets
+
+환경을 직접 만드는 것뿐만 아니라 미리 구성된 Preset을 사용할 수도 있습니다.
+
+* Simple Corridor
+* Maze
+* Bomb Field
+* Multi Goal
+* Treasure Hunt
+
+Preset을 선택한 뒤에도 실제 적용하기 전에 자유롭게 수정할 수 있습니다.
+
+---
+
+## 3. Q-Learning & SARSA
+
+현재 두 가지 대표적인 TD Control 알고리즘을 지원합니다.
+
+* **Q-Learning**
+* **SARSA**
+
+두 알고리즘을 동일한 환경에서 실행하면서 On-Policy와 Off-Policy의 차이를 직접 관찰할 수 있습니다.
+
+또한 다음 Hyperparameter를 직접 조절할 수 있습니다.
+
+* **Epsilon** — Exploration Rate
+* **Alpha** — Learning Rate
+* **Gamma** — Discount Factor
+
+---
+
+## 4. Step-by-Step Learning
+
+학습을 단순히 자동으로 돌리는 것뿐만 아니라 Agent의 행동을 하나씩 확인할 수 있습니다.
+
+* Step
+* Run
+* Run Episode
+* Pause
+* Resume
+* Reset
+* Stop & Restart
+
+또한 학습 속도를
+
+**Slow → Normal → Fast → Very Fast**
+
+로 변경할 수 있습니다.
+
+---
+
+## 5. Greedy Policy
+
+학습이 끝난 뒤 현재 Q-table을 이용해 Agent가 어떤 행동을 선택하는지 확인할 수 있습니다.
+
+`Run Greedy Policy`를 실행하면 Exploration 없이 현재 학습된 Q-value를 기반으로 가장 좋은 Action을 선택합니다.
+
+이를 통해
+
+> **"지금까지 학습한 결과만 가지고 Agent가 실제로 어떻게 행동하는가?"**
+
+를 확인할 수 있습니다.
+
+---
+
+## 6. RL Inspector
+
+현재 Transition에서 강화학습 알고리즘 내부에서 어떤 계산이 일어났는지 확인할 수 있습니다.
+
+* State
+* Action
+* Reward
+* TD Target
+* TD Error
+* Q-value Before
+* Q-value After
+
+특히 TD Target과 TD Error를 함께 보여주기 때문에 Q-value가 왜 변화했는지 단계별로 확인할 수 있습니다.
+
+---
+
+## 7. Q-value Visualization
+
+현재 State에서 Agent가 각각의 Action을 얼마나 좋게 평가하고 있는지 막대그래프로 확인할 수 있습니다.
+
+이를 통해
+
+**"Agent가 지금 이 State에서 어떤 행동을 가장 좋다고 생각하고 있는가?"**
+
+를 직관적으로 확인할 수 있습니다.
+
+---
+
+## 8. Policy Overlay
+
+Grid 위에 현재 Policy가 선택하는 Greedy Action을 방향 화살표로 표시합니다.
+
+학습이 진행될수록 각각의 State에서 Agent가 어떤 행동을 선택하게 되는지 한눈에 확인할 수 있습니다.
+
+---
+
+## 9. Value Heatmap
+
+각 State의 Value를
+
+`V(s) = max Q(s, a)`
+
+로 계산하여 Grid 위에 Heatmap으로 표시합니다.
+
+이를 통해 Agent가 학습하면서 어떤 State를 가치 있는 위치로 인식하게 되는지 확인할 수 있습니다.
+
+---
+
+## 10. Episode Statistics
+
+각 Episode의 학습 결과를 기록하고 분석할 수 있습니다.
+
+주요 통계:
+
+* Episode
+* Total Reward
+* Episode Length
+* Success Rate
+* Steps
+* Termination
+* Exploration / Exploitation
+* Exploration Rate
+* Average Reward
+* Unique States
+
+Episode History에서 특정 Episode를 선택하면 해당 Episode의 상세 정보를 확인할 수 있습니다.
+
+---
+
+## 11. Reward Chart
+
+Episode가 진행될수록 Total Reward가 어떻게 변화하는지 SVG Line Chart로 확인할 수 있습니다.
+
+이를 통해 Agent의 학습이 실제로 진행되고 있는지 시각적으로 확인할 수 있습니다.
+
+---
+
+## 12. Learning Progress
+
+학습 과정에서
+
+* Total Reward
+* Steps
+
+두 지표의 변화를 함께 확인할 수 있습니다.
+
+Episode History와 연동되어 특정 Episode의 데이터를 직접 확인할 수도 있습니다.
+
+---
+
+## 13. Termination Analysis
+
+Episode가 어떤 이유로 종료되었는지 전체 History를 기반으로 분석합니다.
+
+* Goal
+* Bomb
+* Other
+
+이를 통해 Agent가 목표를 얼마나 잘 달성하고 있는지, 위험한 State에서 얼마나 자주 종료되는지 등을 확인할 수 있습니다.
+
+---
+
+## 14. Episode Trajectory
+
+특정 Episode에서 Agent가 실제로 어떤 경로를 이동했는지 확인할 수 있습니다.
+
+Grid 위에 실제 이동 경로를 표시하고 각 Step의
+
+`State → Action → Reward`
+
+를 확인할 수 있습니다.
+
+반복해서 방문한 State 역시 실제 방문 순서 그대로 기록됩니다.
+
+또한 Grid 위의 Episode Path Overlay는 별도로 켜고 끌 수 있습니다.
+
+---
+
+# Project Goal
+
+이 프로젝트의 목표는 복잡한 강화학습 알고리즘을 단순히 구현하는 것이 아닙니다.
+
+강화학습을 공부할 때 흔히 볼 수 있는
+
+**수식 → 코드 → 결과**
+
+사이의 간극을 줄이고,
+
+**Agent가 행동하고 → Reward를 받고 → 값을 업데이트하고 → Policy를 변화시키는 과정**
+
+전체를 직접 관찰할 수 있도록 만드는 것이 목표입니다.
+
+그리고 무엇보다,
+
+**강화학습을 어렵게 공부하는 것이 아니라 직접 실험하면서 가지고 놀 수 있는 환경**
+
+을 만드는 것을 목표로 했습니다.
+
+---
+
+# Project
+
+**RL Playground**
+
+Interactive Reinforcement Learning Simulator
+
+[GitHub Repository](https://github.com/oyueo-mm/RL-Playground)
+[Live Demo](https://oyueo-mm.github.io/RL-Playground/)
