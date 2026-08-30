@@ -929,7 +929,15 @@ describe('App (integration — Phase 37: responsive Grid, structural)', () => {
     expect(svg.getAttribute('viewBox')).toBe(`0 0 ${width} ${height}`)
   })
 
+  // Phase 54: `liveCellSize` only shrinks below the fixed CELL_SIZE(48) once the
+  // viewport is too SHORT for the grid's full height to fit (see the dedicated Phase 54
+  // describe block below) — on a tall-enough viewport (mocked here so this test's own
+  // result doesn't depend on jsdom's default window.innerHeight), a 20x20 Grid still
+  // renders at exactly its old fixed full size, proving the mechanism is unaffected
+  // when there's no vertical pressure to shrink into.
   it('a large (20x20) Grid renders with the same responsive mechanism as the default Grid (not a special-cased path)', () => {
+    const originalInnerHeight = window.innerHeight
+    Object.defineProperty(window, 'innerHeight', { value: 2000, writable: true, configurable: true })
     engine.reset({
       envConfig: {
         width: 20,
@@ -951,6 +959,8 @@ describe('App (integration — Phase 37: responsive Grid, structural)', () => {
     const svg = screen.getByTestId('grid-svg')
     expect(svg.getAttribute('width')).toBe('960')
     expect(svg.getAttribute('height')).toBe('960')
+
+    Object.defineProperty(window, 'innerHeight', { value: originalInnerHeight, writable: true, configurable: true })
   })
 
   // `absolute inset-0` alone only positions these overlay SVGs at the container's
@@ -987,6 +997,105 @@ describe('App (integration — Phase 37: responsive Grid, structural)', () => {
     // The intrinsic pixel size (viewBox/width/height attributes) is untouched — only the
     // CSS-rendered size becomes responsive, exactly like the live Grid's own GridSvg.
     expect(draftSvg.getAttribute('width')).toBe(String(createDefaultGridWorldConfig().width * 32))
+  })
+})
+
+// Phase 54 — a large Grid (e.g. 20x20 @ 48px/cell = 960px tall) could exceed a short
+// viewport's visible HEIGHT even though the pre-existing horizontal shrink (Phase 37)
+// already kept it from overflowing sideways — there was no equivalent vertical
+// mechanism at all before this Phase. `liveCellSize` (App.tsx) adds one: the cell size
+// used for the live Grid shrinks (never below MIN_CELL_SIZE=24, never above the fixed
+// CELL_SIZE=48) so the whole grid fits within `window.innerHeight - 92 - 40` px. jsdom
+// has no real CSS box model, so "does the grid visually fit on screen" can only be
+// answered by a real browser (verified via Playwright — see the Phase 54 report); what's
+// guarded here, same convention as every prior responsive-layout suite in this file, is
+// the specific formula/mechanism the fix depends on.
+describe('App (integration — Phase 54: viewport-height-aware Grid cell size)', () => {
+  function withWindowInnerHeight<T>(height: number, fn: () => T): T {
+    const original = window.innerHeight
+    Object.defineProperty(window, 'innerHeight', { value: height, writable: true, configurable: true })
+    try {
+      return fn()
+    } finally {
+      Object.defineProperty(window, 'innerHeight', { value: original, writable: true, configurable: true })
+    }
+  }
+
+  function reset20x20() {
+    engine.reset({
+      envConfig: {
+        width: 20,
+        height: 20,
+        start: { x: 0, y: 0 },
+        goal: { x: 19, y: 19 },
+        walls: [],
+        stepReward: -0.1,
+        goalReward: 10,
+        terminalCells: [],
+        bombs: [],
+        bombPenalty: -10,
+      },
+    })
+  }
+
+  it('a short viewport shrinks a 20x20 Grid\'s cell size below the fixed 48px default', () => {
+    withWindowInnerHeight(700, () => {
+      reset20x20()
+      render(<App />)
+      // available = 700 - 92 - 40 = 568; fit = floor(568/20) = 28
+      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('560px') // 20 * 28
+      expect(screen.getByTestId('grid-svg').getAttribute('width')).toBe('560')
+      expect(screen.getByTestId('grid-svg').getAttribute('height')).toBe('560')
+    })
+  })
+
+  it('the same short viewport does NOT shrink a small (7x7) Grid — it already fits at the full 48px default', () => {
+    withWindowInnerHeight(700, () => {
+      // 7x7 is the default env (createDefaultGridWorldConfig()) — engine already starts there.
+      render(<App />)
+      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('336px') // 7 * 48, unchanged
+      expect(screen.getByTestId('grid-svg').getAttribute('width')).toBe('336')
+    })
+  })
+
+  it('cell size never shrinks below MIN_CELL_SIZE(24) even on an extremely short viewport', () => {
+    withWindowInnerHeight(200, () => {
+      reset20x20()
+      render(<App />)
+      // available = 200 - 92 - 40 = 68; fit = floor(68/20) = 3, clamped up to the 24px floor
+      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('480px') // 20 * 24
+      expect(screen.getByTestId('grid-svg').getAttribute('width')).toBe('480')
+    })
+  })
+
+  it('cell size never exceeds the fixed 48px default even on a very tall viewport', () => {
+    withWindowInnerHeight(4000, () => {
+      reset20x20()
+      render(<App />)
+      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('960px') // 20 * 48
+    })
+  })
+
+  it('the Value/Policy overlays track the same shrunk cell size as the live Grid', () => {
+    withWindowInnerHeight(700, () => {
+      reset20x20()
+      render(<App />)
+      fireEvent.click(screen.getByTestId('toggle-policy'))
+      fireEvent.click(screen.getByTestId('toggle-value'))
+
+      expect(screen.getByTestId('value-heatmap').getAttribute('width')).toBe('560')
+      expect(screen.getByTestId('policy-overlay').getAttribute('width')).toBe('560')
+    })
+  })
+
+  it('the Step Viewer wrapper mirrors grid-stack\'s maxWidth exactly, including at this new shrunk size (Phase 49\'s invariant preserved)', () => {
+    withWindowInnerHeight(700, () => {
+      reset20x20()
+      render(<App />)
+      const stepViewerWrapper = screen.getByTestId('step-viewer-empty').parentElement!
+      expect(stepViewerWrapper.style.maxWidth).toBe('560px')
+      expect(stepViewerWrapper.style.maxWidth).toBe(screen.getByTestId('grid-stack').style.maxWidth)
+    })
   })
 })
 

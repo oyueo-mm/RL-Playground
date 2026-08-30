@@ -21,11 +21,28 @@ import { LearningProgress } from '../viz/panels/LearningProgress'
 import { EpisodeTrajectory } from '../viz/panels/EpisodeTrajectory'
 import { EpisodeStepViewer } from '../viz/panels/EpisodeStepViewer'
 import { EnvEditor } from '../viz/controls/EnvEditor'
+import { computeResponsiveCellSize } from '../viz/grid/responsiveCellSize'
 import { engine } from './engine'
 import { useSimulationEngine } from './hooks/useSimulationEngine'
+import { useViewportHeight } from './hooks/useViewportHeight'
 import { translations, type Locale } from './i18n'
 
 const CELL_SIZE = 48
+// Phase 54 — a large Grid (e.g. 20x20 @ 48px/cell = 960px tall) can exceed a short
+// viewport's visible height even though the pre-existing horizontal shrink (Phase 37)
+// already keeps it from overflowing sideways — the vertical dimension had no equivalent
+// mechanism at all. MIN_CELL_SIZE is a floor so an extreme case (very large grid, very
+// short viewport) never shrinks cells past legibility/click-target size.
+const MIN_CELL_SIZE = 24
+// Measured via real-browser getBoundingClientRect(): the Grid's own top edge sits
+// ~92px below the viewport top (the h1/language-selector row above it) — consistent
+// across every tested viewport width, since that row's height doesn't depend on
+// viewport width. GRID_VERTICAL_MARGIN reserves a further ~40px so the grid doesn't sit
+// flush against the very bottom edge of the viewport. Together, subtracting both from
+// `window.innerHeight` gives the actual pixel budget the grid can render within while
+// still fitting on screen without vertical scrolling.
+const GRID_TOP_OFFSET = 92
+const GRID_VERTICAL_MARGIN = 40
 
 function App() {
   const snapshot = useSimulationEngine(engine)
@@ -86,6 +103,23 @@ function App() {
   // the existing LanguageSelector, this only changes what a first-ever visit starts on.
   const [locale, setLocale] = useState<Locale>('ko')
   const t = translations[locale]
+
+  // Phase 54 — see the responsiveCellSize.ts / useViewportHeight.ts comments for the
+  // full reasoning. `liveCellSize` replaces the fixed `CELL_SIZE` constant everywhere
+  // the live Grid is actually rendered below; it's still exactly `CELL_SIZE` (48) for
+  // any grid that already fits the viewport (every previously-verified size/viewport
+  // combination is therefore rendered identically to before), and only shrinks once a
+  // tall-enough grid on a short-enough viewport would otherwise not fit.
+  const viewportHeight = useViewportHeight()
+  const liveCellSize =
+    snapshot.envRenderModel.kind === 'grid'
+      ? computeResponsiveCellSize({
+          defaultCellSize: CELL_SIZE,
+          minCellSize: MIN_CELL_SIZE,
+          gridHeightCells: snapshot.envRenderModel.height,
+          availableHeightPx: viewportHeight - GRID_TOP_OFFSET - GRID_VERTICAL_MARGIN,
+        })
+      : CELL_SIZE
 
   const handleSpeedChange = (next: SpeedSetting) => {
     engine.setSpeed(next)
@@ -176,13 +210,14 @@ function App() {
               // below that cap on narrow viewports instead of overflowing. All three
               // overlay layers below are `absolute inset-0`, so they automatically track
               // whatever size this container actually ends up rendering at — no changes
-              // needed there.
-              style={{ maxWidth: snapshot.envRenderModel.width * CELL_SIZE }}
+              // needed there. Phase 54: `liveCellSize` (not the fixed `CELL_SIZE`) —
+              // "natural full-size" itself is now viewport-height-aware, see above.
+              style={{ maxWidth: snapshot.envRenderModel.width * liveCellSize }}
               data-testid="grid-stack"
             >
               <GridSvg
                 renderModel={snapshot.envRenderModel}
-                cellSize={CELL_SIZE}
+                cellSize={liveCellSize}
                 selectedState={selectedState}
                 onStateSelect={handleStateSelect}
                 // Phase 37: `viewBox` (already set, matching the intrinsic pixel size)
@@ -200,7 +235,7 @@ function App() {
                   renderModel={snapshot.envRenderModel}
                   agentSnapshot={snapshot.agentSnapshot}
                   currentState={snapshot.currentState}
-                  cellSize={CELL_SIZE}
+                  cellSize={liveCellSize}
                   // Phase 37: `absolute inset-0` alone only POSITIONS this SVG at the
                   // container's top-left corner — verified via real-browser measurement
                   // that it does NOT stretch a replaced element (an SVG with explicit
@@ -218,7 +253,7 @@ function App() {
                   renderModel={snapshot.envRenderModel}
                   agentSnapshot={snapshot.agentSnapshot}
                   currentState={snapshot.currentState}
-                  cellSize={CELL_SIZE}
+                  cellSize={liveCellSize}
                   className="absolute inset-0 h-auto w-full"
                 />
               )}
@@ -235,7 +270,7 @@ function App() {
                   renderModel={snapshot.envRenderModel}
                   episodeStatsHistory={snapshot.stats.episodeStatsHistory}
                   selectedEpisode={selectedEpisode}
-                  cellSize={CELL_SIZE}
+                  cellSize={liveCellSize}
                   className="absolute inset-0 h-auto w-full"
                   ariaLabel={`${t.episodeTrajectory.ariaLabelPrefix} ${selectedEpisode ?? ''}`}
                   // Phase 46 — Step Viewer support: truncates the drawn path to the
@@ -265,7 +300,11 @@ function App() {
             fix concerns the RIGHT column's width, which this move doesn't touch).
           */}
           {snapshot.envRenderModel.kind === 'grid' && (
-            <div className="w-full" style={{ maxWidth: snapshot.envRenderModel.width * CELL_SIZE }}>
+            // Phase 54: `liveCellSize`, matching grid-stack's own wrapper above exactly
+            // — the Step Viewer's width stays pixel-for-pixel aligned with the Grid's
+            // actual rendered width, including when the Grid has shrunk to fit a short
+            // viewport's height.
+            <div className="w-full" style={{ maxWidth: snapshot.envRenderModel.width * liveCellSize }}>
               <EpisodeStepViewer
                 episode={selectedEpisodeStats}
                 step={effectiveStep}
