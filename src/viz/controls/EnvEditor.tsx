@@ -252,6 +252,9 @@ export function EnvEditor({
     treasureHunt: t.envEditor.presetTreasureHunt,
     obstacleCourse: t.envEditor.presetObstacleCourse,
     complexMaze: t.envEditor.presetComplexMaze,
+    deadEndMaze: t.envEditor.presetDeadEndMaze,
+    multipleRoute: t.envEditor.presetMultipleRoute,
+    riskyPath: t.envEditor.presetRiskyPath,
   }
 
   // Phase 56 §4 — a short one-line description shown under the selector, so a user
@@ -267,6 +270,9 @@ export function EnvEditor({
     treasureHunt: t.envEditor.presetTreasureHuntDescription,
     obstacleCourse: t.envEditor.presetObstacleCourseDescription,
     complexMaze: t.envEditor.presetComplexMazeDescription,
+    deadEndMaze: t.envEditor.presetDeadEndMazeDescription,
+    multipleRoute: t.envEditor.presetMultipleRouteDescription,
+    riskyPath: t.envEditor.presetRiskyPathDescription,
   }
 
   return (

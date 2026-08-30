@@ -141,3 +141,87 @@ describe('ENVIRONMENT_PRESETS — Phase 56 new presets, individually', () => {
     }
   })
 })
+
+describe('ENVIRONMENT_PRESETS — Phase 58 new presets, individually', () => {
+  function presetById(id: string) {
+    const preset = ENVIRONMENT_PRESETS.find((p) => p.id === id)
+    if (!preset) throw new Error(`preset "${id}" not found`)
+    return preset
+  }
+
+  it('deadEndMaze: has at least one genuine dead-end cell (open, but only ONE open neighbor)', () => {
+    const { draft } = presetById('deadEndMaze')
+    const wallSet = new Set(draft.walls.map((w) => `${w.x},${w.y}`))
+    const openNeighborCount = (x: number, y: number) =>
+      [[0, -1], [0, 1], [-1, 0], [1, 0]].filter(([dx, dy]) => {
+        const nx = x + dx, ny = y + dy
+        if (nx < 0 || nx >= draft.width || ny < 0 || ny >= draft.height) return false
+        return !wallSet.has(`${nx},${ny}`)
+      }).length
+
+    let deadEndCount = 0
+    for (let y = 0; y < draft.height; y++) {
+      for (let x = 0; x < draft.width; x++) {
+        if (wallSet.has(`${x},${y}`)) continue
+        if (openNeighborCount(x, y) === 1) deadEndCount++
+      }
+    }
+    // At least the two purpose-built pockets — Start/Goal themselves are excluded from
+    // counting as "dead ends" only incidentally (they have >1 open neighbor by design).
+    expect(deadEndCount).toBeGreaterThanOrEqual(2)
+    expect(isReachable(draft)).toBe(true)
+  })
+
+  it('multipleRoute: a freestanding Wall island (touches none of the Grid\'s edges) — a real route CHOICE, not a forced single detour', () => {
+    const { draft } = presetById('multipleRoute')
+    for (const w of draft.walls) {
+      expect(w.x).toBeGreaterThan(0)
+      expect(w.x).toBeLessThan(draft.width - 1)
+      expect(w.y).toBeGreaterThan(0)
+      expect(w.y).toBeLessThan(draft.height - 1)
+    }
+    expect(isReachable(draft)).toBe(true)
+  })
+
+  it('riskyPath: the direct Start-Goal row is lined with Bombs, AND a Bomb-free detour route exists', () => {
+    const { draft } = presetById('riskyPath')
+    const directRowBombs = draft.bombs.filter((b) => b.y === draft.start.y)
+    expect(directRowBombs.length).toBeGreaterThan(0)
+
+    // A Bomb-free path exists: BFS treating Bombs as impassable too (in addition to
+    // Walls) — proving there's a genuine SAFE alternative, not just "the only route
+    // happens to be risky."
+    const wallSet = new Set(draft.walls.map((w) => `${w.x},${w.y}`))
+    const bombSet = new Set(draft.bombs.map((b) => `${b.x},${b.y}`))
+    const goalSet = new Set(draft.goals.map((g) => `${g.x},${g.y}`))
+    const visited = new Set<string>([`${draft.start.x},${draft.start.y}`])
+    const queue = [draft.start]
+    let safeRouteExists = false
+    while (queue.length > 0) {
+      const pos = queue.shift()!
+      if (goalSet.has(`${pos.x},${pos.y}`)) { safeRouteExists = true; break }
+      for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
+        const next = { x: pos.x + dx, y: pos.y + dy }
+        const key = `${next.x},${next.y}`
+        if (next.x < 0 || next.x >= draft.width || next.y < 0 || next.y >= draft.height) continue
+        if (wallSet.has(key) || bombSet.has(key) || visited.has(key)) continue
+        visited.add(key)
+        queue.push(next)
+      }
+    }
+    expect(safeRouteExists).toBe(true)
+    // ...and the risky direct route (Bombs are passable, not blocking) is ALSO reachable.
+    expect(isReachable(draft)).toBe(true)
+  })
+
+  it('all three new presets round-trip through draftToGridWorldConfig() -> validateDraft() cleanly', async () => {
+    const { draftToGridWorldConfig, validateDraft } = await import('./envEditorDraft')
+    for (const id of ['deadEndMaze', 'multipleRoute', 'riskyPath']) {
+      const { draft } = presetById(id)
+      const config = draftToGridWorldConfig(draft)
+      expect(config.width).toBe(draft.width)
+      expect(config.goals).toEqual(draft.goals)
+      expect(validateDraft(draft)).toEqual([])
+    }
+  })
+})

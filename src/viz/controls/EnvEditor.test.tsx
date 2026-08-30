@@ -549,7 +549,8 @@ describe('EnvEditor — Environment Presets (Phase 30)', () => {
   it('every built-in Preset passes validateDraft() (no errors) as loaded, before any further edit', () => {
     const { onApply } = renderEditor()
     // Phase 56 — 'basic'/'obstacleCourse'/'complexMaze' added to this exact list.
-    for (const id of ['basic', 'corridor', 'maze', 'bombField', 'multiGoal', 'treasureHunt', 'obstacleCourse', 'complexMaze']) {
+    // Phase 58 — 'deadEndMaze'/'multipleRoute'/'riskyPath' added.
+    for (const id of ['basic', 'corridor', 'maze', 'bombField', 'multiGoal', 'treasureHunt', 'obstacleCourse', 'complexMaze', 'deadEndMaze', 'multipleRoute', 'riskyPath']) {
       fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: id } })
       expect(screen.queryByTestId('env-editor-errors')).toBeNull()
     }
@@ -652,6 +653,83 @@ describe('EnvEditor — Phase 56: expanded Environment Presets', () => {
     const result = parseEnvImport(exported)
     expect(result.ok).toBe(true)
     if (result.ok) expect(result.draft).toEqual(basicPreset.draft)
+  })
+})
+
+// Phase 58 — three new Presets (deadEndMaze/multipleRoute/riskyPath) added alongside the
+// existing eight, following the exact same wiring pattern as the Phase 56 block above.
+describe('EnvEditor — Phase 58: expanded Environment Presets', () => {
+  it('the new preset options exist in the selector alongside the previous eight', () => {
+    renderEditor()
+    const select = screen.getByTestId('env-editor-preset-select')
+    const optionValues = Array.from(select.querySelectorAll('option')).map((o) => (o as HTMLOptionElement).value)
+    expect(optionValues).toEqual(
+      expect.arrayContaining(['deadEndMaze', 'multipleRoute', 'riskyPath']),
+    )
+  })
+
+  it('"deadEndMaze" applies an environment with Walls forming dead-end pockets', () => {
+    const { onApply } = renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'deadEndMaze' } })
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+    const config = onApply.mock.calls[0][0]
+    expect(config.walls.length).toBeGreaterThan(0)
+    expect(config.goals.length).toBeGreaterThanOrEqual(1)
+  })
+
+  it('"multipleRoute" applies an environment with a freestanding Wall island (no walls on the outer border)', () => {
+    const { onApply } = renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'multipleRoute' } })
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+    const config = onApply.mock.calls[0][0]
+    expect(config.walls.length).toBeGreaterThan(0)
+    for (const w of config.walls) {
+      expect(w.x).toBeGreaterThan(0)
+      expect(w.x).toBeLessThan(config.width - 1)
+      expect(w.y).toBeGreaterThan(0)
+      expect(w.y).toBeLessThan(config.height - 1)
+    }
+  })
+
+  it('"riskyPath" applies an environment where Bombs sit on the direct Start-Goal row', () => {
+    const { onApply } = renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'riskyPath' } })
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+    const config = onApply.mock.calls[0][0]
+    expect(config.bombs.length).toBeGreaterThan(0)
+    expect(config.bombs.some((b: { y: number }) => b.y === config.start.y)).toBe(true)
+  })
+
+  it('selecting "multipleRoute" reflects it in the Draft preview Grid (cell count matches width*height)', () => {
+    renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'multipleRoute' } })
+    const cellCount = within(screen.getByTestId('env-editor-grid')).getAllByTestId(/^cell-/).length
+    expect(cellCount).toBe(9 * 9)
+  })
+
+  it('shows a short description under the selector for "riskyPath", in English and Korean', () => {
+    renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'riskyPath' } })
+    expect(screen.getByTestId('env-editor-preset-description').textContent).toBe(
+      'A short route runs through Bombs while a longer detour stays safe — see how the reward structure shapes which path is learned.',
+    )
+    cleanup()
+
+    renderEditor({ t: translations.ko, locale: 'ko' })
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'riskyPath' } })
+    expect(screen.getByTestId('env-editor-preset-description').textContent).toBe(
+      '짧지만 위험한 경로와 길지만 안전한 경로 중, 보상 구조가 경로 선택에 미치는 영향을 관찰할 수 있습니다.',
+    )
+  })
+
+  it('Export -> Import round-trips a new Preset (deadEndMaze) correctly, same as any other Draft', async () => {
+    const { serializeEnvExport, parseEnvImport } = await import('./envEditorIO')
+    const { ENVIRONMENT_PRESETS } = await import('./environmentPresets')
+    const preset = ENVIRONMENT_PRESETS.find((p) => p.id === 'deadEndMaze')!
+    const exported = serializeEnvExport(preset.draft)
+    const result = parseEnvImport(exported)
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.draft).toEqual(preset.draft)
   })
 })
 

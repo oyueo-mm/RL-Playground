@@ -159,4 +159,79 @@ export const ENVIRONMENT_PRESETS: EnvironmentPreset[] = [
       bombPenalty: -15,
     }),
   },
+  // Phase 58 — three additions, each a genuinely different learning experience from
+  // every existing preset. Deliberately NOT adding an "Open Field", "Zigzag/Winding", or
+  // second "Large Showcase" preset — 'basic' (no obstacles at all), 'maze' (three
+  // staggered gap-rows forcing repeated direction changes), and 'complexMaze' (15x15,
+  // Multi-Goal + Walls + Bombs) already fill those exact roles; adding near-duplicates
+  // would violate this Phase's own "의미 없는 유사 preset을 대량으로 추가하지 않는다"
+  // instruction rather than satisfy it.
+  {
+    // Phase 58 — a real dead-end: two small 1-cell pockets, each reachable only from a
+    // single open neighbor (walled on the other 3 sides), so entering one means the
+    // agent must back out the exact way it came before the real route continues. This is
+    // a genuinely different experience from every existing preset — 'maze' only ever
+    // forces a direction CHANGE (every gap eventually leads somewhere), it has no cell
+    // that's a true trap. The main route itself stays simple (a single divider Wall with
+    // one gap, same technique as 'obstacleCourse') so the dead ends are what stands out,
+    // not incidental maze complexity.
+    id: 'deadEndMaze',
+    draft: draft({
+      width: 9,
+      height: 7,
+      start: { x: 0, y: 3 },
+      goals: [{ x: 8, y: 3 }],
+      walls: [
+        // Divider: blocks the x=4 column everywhere except the y=0 gap.
+        { x: 4, y: 1 }, { x: 4, y: 2 }, { x: 4, y: 3 }, { x: 4, y: 4 }, { x: 4, y: 5 }, { x: 4, y: 6 },
+        // Dead-end pocket at (2,5): open only from (2,4) above.
+        { x: 1, y: 5 }, { x: 3, y: 5 }, { x: 2, y: 6 },
+        // Dead-end pocket at (6,2): open only from (6,3) below.
+        { x: 5, y: 2 }, { x: 7, y: 2 }, { x: 6, y: 1 },
+      ],
+      wallPenalty: -0.2,
+    }),
+  },
+  {
+    // Phase 58 — an open field with a single freestanding Wall "island" in the middle
+    // (touching none of the Grid's edges), so the agent has a genuine CHOICE of routes
+    // around it (over the top or under the bottom) rather than a single forced detour —
+    // distinct from 'obstacleCourse' (exactly one gap, no real choice) and from 'maze'
+    // (a fixed sequence of forced turns). Both routes are viable and roughly comparable
+    // in length, making the shortest-vs-longer-path difference easy to observe.
+    id: 'multipleRoute',
+    draft: draft({
+      width: 9,
+      height: 9,
+      start: { x: 0, y: 4 },
+      goals: [{ x: 8, y: 4 }],
+      walls: [
+        { x: 3, y: 3 }, { x: 4, y: 3 }, { x: 5, y: 3 },
+        { x: 3, y: 4 }, { x: 4, y: 4 }, { x: 5, y: 4 },
+        { x: 3, y: 5 }, { x: 4, y: 5 }, { x: 5, y: 5 },
+      ],
+    }),
+  },
+  {
+    // Phase 58 — the direct Start-to-Goal row is the shortest path but is lined with
+    // Bombs; the only Bomb-free route is a detour through the (walled-off, only reachable
+    // via the far left/right edge columns) rows above/below. Unlike 'bombField' (an open
+    // field where avoiding scattered Bombs costs almost nothing extra), the Walls here
+    // structurally force a real short-risky vs. long-safe trade-off — the reward
+    // structure (bombPenalty vs. the extra steps' stepReward cost), not just distance,
+    // determines which route a trained policy actually prefers.
+    id: 'riskyPath',
+    draft: draft({
+      width: 9,
+      height: 9,
+      start: { x: 0, y: 4 },
+      goals: [{ x: 8, y: 4 }],
+      bombs: [{ x: 2, y: 4 }, { x: 3, y: 4 }, { x: 4, y: 4 }, { x: 5, y: 4 }, { x: 6, y: 4 }],
+      walls: [
+        { x: 1, y: 3 }, { x: 2, y: 3 }, { x: 3, y: 3 }, { x: 4, y: 3 }, { x: 5, y: 3 }, { x: 6, y: 3 }, { x: 7, y: 3 },
+        { x: 1, y: 5 }, { x: 2, y: 5 }, { x: 3, y: 5 }, { x: 4, y: 5 }, { x: 5, y: 5 }, { x: 6, y: 5 }, { x: 7, y: 5 },
+      ],
+      bombPenalty: -12,
+    }),
+  },
 ]

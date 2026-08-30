@@ -240,6 +240,15 @@ export interface Dictionary {
     presetTreasureHuntDescription: string
     presetObstacleCourseDescription: string
     presetComplexMazeDescription: string
+    /** Phase 58 — two small dead-end pockets off the main route. */
+    presetDeadEndMaze: string
+    /** Phase 58 — a freestanding Wall island offering a genuine choice of routes. */
+    presetMultipleRoute: string
+    /** Phase 58 — a short Bomb-lined route vs. a longer Bomb-free detour. */
+    presetRiskyPath: string
+    presetDeadEndMazeDescription: string
+    presetMultipleRouteDescription: string
+    presetRiskyPathDescription: string
     draftPreview: string
     apply: string
     applyConfirm: string
@@ -405,6 +414,12 @@ const en: Dictionary = {
     presetTreasureHuntDescription: 'Multiple Goals, Walls, and Bombs together — a realistic combined challenge.',
     presetObstacleCourseDescription: 'A wall blocks the direct path, leaving exactly one way around.',
     presetComplexMazeDescription: 'A large 15x15 showcase: multiple Goals, Walls, and Bombs at once.',
+    presetDeadEndMaze: 'Dead End Maze',
+    presetMultipleRoute: 'Multiple Route',
+    presetRiskyPath: 'Risky Path',
+    presetDeadEndMazeDescription: 'Dead ends branch off the main route — watch the agent explore a wrong path and learn to correct it.',
+    presetMultipleRouteDescription: 'Several viable routes exist between Start and Goal — compare the shortest path against longer alternatives.',
+    presetRiskyPathDescription: 'A short route runs through Bombs while a longer detour stays safe — see how the reward structure shapes which path is learned.',
     draftPreview: 'Draft preview (not applied yet)',
     apply: 'Apply Environment',
     applyConfirm: 'Applying this environment will reset the current Q-table, episode count, and statistics. Continue?',
@@ -556,6 +571,12 @@ const ko: Dictionary = {
     presetTreasureHuntDescription: '여러 Goal과 Wall, Bomb이 함께 있는 실전형 복합 환경',
     presetObstacleCourseDescription: '벽을 우회하여 Goal에 도달해야 하는 환경',
     presetComplexMazeDescription: '여러 갈림길과 막다른 길이 있는 15×15 종합 showcase 환경',
+    presetDeadEndMaze: '막다른 길 미로',
+    presetMultipleRoute: '다중 경로',
+    presetRiskyPath: '위험 경로',
+    presetDeadEndMazeDescription: '막다른 길이 여러 곳에 있어 탐색과 잘못된 경로 수정 과정을 관찰할 수 있습니다.',
+    presetMultipleRouteDescription: 'Start와 Goal 사이에 여러 경로가 존재해 최단 경로와 비최단 경로의 차이를 관찰할 수 있습니다.',
+    presetRiskyPathDescription: '짧지만 위험한 경로와 길지만 안전한 경로 중, 보상 구조가 경로 선택에 미치는 영향을 관찰할 수 있습니다.',
     draftPreview: '초안 미리보기 (아직 적용되지 않음)',
     apply: '환경 적용',
     applyConfirm: '이 환경을 적용하면 현재 Q-table, 에피소드 수, 통계가 초기화됩니다. 계속하시겠습니까?',
