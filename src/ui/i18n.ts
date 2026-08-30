@@ -28,7 +28,13 @@ export interface Dictionary {
     reset: string
     /** Phase 15 — label for the Episode count input, next to Train. */
     episodeCount: string
-    /** Phase 28 — "Run Greedy Policy" button label. */
+    /** Phase 28 — display label for the button that runs the current greedy policy
+     * (pure argmax, no exploration, no learning — see App.tsx's `onRunGreedy`). Phase 56
+     * renamed the DISPLAYED text from "탐욕 정책 실행"/"Run Greedy Policy" to
+     * "학습 결과 보기"/"View Learned Result" so a first-time user immediately understands
+     * this shows the trained policy's behavior, not a technical "greedy" term — the
+     * underlying action (`engine.run({ episodes: 1, greedy: true })`), testid
+     * (`playback-run-greedy`), and this Dictionary key name are all unchanged. */
     runGreedy: string
     /** Phase 36 — stops any in-flight run (primarily for aborting a stuck/looping
      * Greedy run — Scheduler has no built-in max-step limit) and returns the
@@ -211,11 +217,29 @@ export interface Dictionary {
     /** Phase 30 — Environment Preset selector. */
     preset: string
     presetCustom: string
+    /** Phase 56 — a genuinely obstacle-free tutorial environment (distinct from
+     * `presetCorridor` below, which already has boundary Walls). */
+    presetBasic: string
     presetCorridor: string
     presetMaze: string
     presetBombField: string
     presetMultiGoal: string
     presetTreasureHunt: string
+    /** Phase 56 — a single Wall forming exactly one required detour. */
+    presetObstacleCourse: string
+    /** Phase 56 — the large (15x15) showcase preset combining Multi-Goal + Walls + Bombs. */
+    presetComplexMaze: string
+    /** Phase 56 — a short one-line description of the currently selected Preset, shown
+     * under the selector (omitted entirely for `presetCustom`, which has nothing to
+     * describe). Keyed the same way `presetLabel` is in EnvEditor.tsx. */
+    presetBasicDescription: string
+    presetCorridorDescription: string
+    presetMazeDescription: string
+    presetBombFieldDescription: string
+    presetMultiGoalDescription: string
+    presetTreasureHuntDescription: string
+    presetObstacleCourseDescription: string
+    presetComplexMazeDescription: string
     draftPreview: string
     apply: string
     applyConfirm: string
@@ -262,7 +286,7 @@ const en: Dictionary = {
     resume: 'Resume',
     reset: 'Reset',
     episodeCount: 'Episodes',
-    runGreedy: 'Run Greedy Policy',
+    runGreedy: 'View Learned Result',
     restartEpisode: 'Stop & Restart',
   },
   overlay: { policy: 'Policy', value: 'Value' },
@@ -365,11 +389,22 @@ const en: Dictionary = {
     goalReward: 'Goal Reward',
     preset: 'Preset',
     presetCustom: 'Custom',
+    presetBasic: 'Basic',
     presetCorridor: 'Simple Corridor',
-    presetMaze: 'Maze',
+    presetMaze: 'Maze Exploration',
     presetBombField: 'Bomb Field',
-    presetMultiGoal: 'Multi Goal',
+    presetMultiGoal: 'Multi-Goal',
     presetTreasureHunt: 'Treasure Hunt',
+    presetObstacleCourse: 'Obstacle Course',
+    presetComplexMaze: 'Complex Maze',
+    presetBasicDescription: 'An open field with a single Goal — a tutorial-friendly starting point.',
+    presetCorridorDescription: 'A narrow 1-wide corridor with no choices — the simplest possible path.',
+    presetMazeDescription: 'Several zigzagging walls, forcing repeated direction changes to reach the Goal.',
+    presetBombFieldDescription: 'Bombs scattered near the direct path — rewards a risk-averse policy.',
+    presetMultiGoalDescription: 'Three Goals with no obstacles — every Goal must be collected to finish.',
+    presetTreasureHuntDescription: 'Multiple Goals, Walls, and Bombs together — a realistic combined challenge.',
+    presetObstacleCourseDescription: 'A wall blocks the direct path, leaving exactly one way around.',
+    presetComplexMazeDescription: 'A large 15x15 showcase: multiple Goals, Walls, and Bombs at once.',
     draftPreview: 'Draft preview (not applied yet)',
     apply: 'Apply Environment',
     applyConfirm: 'Applying this environment will reset the current Q-table, episode count, and statistics. Continue?',
@@ -400,7 +435,7 @@ const ko: Dictionary = {
     resume: '재개',
     reset: '초기화',
     episodeCount: '에피소드 수',
-    runGreedy: '탐욕 정책 실행',
+    runGreedy: '학습 결과 보기',
     restartEpisode: '중지 후 처음으로',
   },
   overlay: { policy: '정책', value: '가치' },
@@ -505,11 +540,22 @@ const ko: Dictionary = {
     goalReward: '목표 보상',
     preset: '프리셋',
     presetCustom: '사용자 지정',
+    presetBasic: '기본 환경',
     presetCorridor: '단순 복도',
-    presetMaze: '미로',
+    presetMaze: '미로 탐험',
     presetBombField: '폭탄 지대',
     presetMultiGoal: '다중 목표',
     presetTreasureHunt: '보물 찾기',
+    presetObstacleCourse: '장애물 회피',
+    presetComplexMaze: '복합 미로',
+    presetBasicDescription: '장애물 없이 Goal 하나만 있는 환경 — 처음 시작하기 좋은 튜토리얼용 환경',
+    presetCorridorDescription: '선택의 여지가 없는 1칸 폭의 복도 — 가장 단순한 경로',
+    presetMazeDescription: '여러 번 방향을 바꿔야 Goal에 도달할 수 있는 지그재그 미로',
+    presetBombFieldDescription: '직선 경로 주변에 폭탄이 흩어져 있어 위험을 회피하는 정책이 유리한 환경',
+    presetMultiGoalDescription: '장애물 없이 Goal이 3개 — 모든 Goal을 수집해야 Episode가 종료됨',
+    presetTreasureHuntDescription: '여러 Goal과 Wall, Bomb이 함께 있는 실전형 복합 환경',
+    presetObstacleCourseDescription: '벽을 우회하여 Goal에 도달해야 하는 환경',
+    presetComplexMazeDescription: '여러 갈림길과 막다른 길이 있는 15×15 종합 showcase 환경',
     draftPreview: '초안 미리보기 (아직 적용되지 않음)',
     apply: '환경 적용',
     applyConfirm: '이 환경을 적용하면 현재 Q-table, 에피소드 수, 통계가 초기화됩니다. 계속하시겠습니까?',

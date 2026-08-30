@@ -347,12 +347,15 @@ describe('PlaybackControls — Phase 28/46: Run Greedy Policy', () => {
     expect(within(buttonRow).queryByTestId('playback-run-greedy')).toBeTruthy()
   })
 
+  // Phase 56 — label renamed ("탐욕 정책 실행"/"Run Greedy Policy" -> "학습 결과 보기"/
+  // "View Learned Result"); the underlying action/testid are unchanged (see the other
+  // tests in this describe block, all still passing unmodified).
   it('shows the translated label in English (default) and Korean', () => {
     const { rerender, ...props } = renderControls({ status: 'idle', onRunGreedy: vi.fn() })
-    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('Run Greedy Policy')
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('View Learned Result')
 
     rerender(<PlaybackControls {...props} onRunGreedy={vi.fn()} t={translations.ko} />)
-    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('탐욕 정책 실행')
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('학습 결과 보기')
   })
 })
 

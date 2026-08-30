@@ -2740,15 +2740,20 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     engine.pause() // don't leave a scheduled callback dangling past the test
   })
 
-  it('J/I. Run Greedy Policy label translates to Korean and back to English', () => {
+  // Phase 56 — the DISPLAYED label changed ("탐욕 정책 실행"/"Run Greedy Policy" ->
+  // "학습 결과 보기"/"View Learned Result") so a first-time user immediately understands
+  // this shows the trained policy's behavior; the testid, the underlying
+  // engine.run({episodes:1, greedy:true}) action, and every other Greedy behavior test
+  // below are all unchanged.
+  it('J/I. View Learned Result label translates to Korean and back to English', () => {
     render(<App />)
-    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('Run Greedy Policy')
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('View Learned Result')
 
     fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
-    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('탐욕 정책 실행')
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('학습 결과 보기')
 
     fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'en' } })
-    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('Run Greedy Policy')
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('View Learned Result')
   })
 
   it('Phase 28 §9: the real default locale (no forced switch) is Korean', () => {

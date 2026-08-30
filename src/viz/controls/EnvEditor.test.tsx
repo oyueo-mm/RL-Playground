@@ -548,7 +548,8 @@ describe('EnvEditor — Environment Presets (Phase 30)', () => {
 
   it('every built-in Preset passes validateDraft() (no errors) as loaded, before any further edit', () => {
     const { onApply } = renderEditor()
-    for (const id of ['corridor', 'maze', 'bombField', 'multiGoal', 'treasureHunt']) {
+    // Phase 56 — 'basic'/'obstacleCourse'/'complexMaze' added to this exact list.
+    for (const id of ['basic', 'corridor', 'maze', 'bombField', 'multiGoal', 'treasureHunt', 'obstacleCourse', 'complexMaze']) {
       fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: id } })
       expect(screen.queryByTestId('env-editor-errors')).toBeNull()
     }
@@ -573,6 +574,84 @@ describe('EnvEditor — Environment Presets (Phase 30)', () => {
     fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'maze' } })
     fireEvent.click(screen.getByTestId('env-editor-apply'))
     expect(Object.keys(onApply.mock.calls[0][0])).not.toContain('algorithmId')
+  })
+})
+
+// Phase 56 §2/§3/§4 — three new Presets (basic/obstacleCourse/complexMaze) added
+// alongside the existing five, plus a short description line shown under the selector.
+describe('EnvEditor — Phase 56: expanded Environment Presets', () => {
+  it('the new preset options exist in the selector alongside the original five', () => {
+    renderEditor()
+    const select = screen.getByTestId('env-editor-preset-select')
+    const optionValues = Array.from(select.querySelectorAll('option')).map((o) => (o as HTMLOptionElement).value)
+    expect(optionValues).toEqual(
+      expect.arrayContaining(['custom', 'basic', 'corridor', 'maze', 'bombField', 'multiGoal', 'treasureHunt', 'obstacleCourse', 'complexMaze']),
+    )
+  })
+
+  it('"basic" applies a small open-field environment with no Walls/Bombs', () => {
+    const { onApply } = renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'basic' } })
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+    const config = onApply.mock.calls[0][0]
+    expect(config.walls).toEqual([])
+    expect(config.bombs).toEqual([])
+    expect(config.goals.length).toBe(1)
+  })
+
+  it('"obstacleCourse" applies an environment where the Start row is blocked by a Wall', () => {
+    const { onApply } = renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'obstacleCourse' } })
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+    const config = onApply.mock.calls[0][0]
+    expect(config.walls.length).toBeGreaterThan(0)
+    expect(config.walls.some((w: { y: number }) => w.y === config.start.y)).toBe(true)
+  })
+
+  it('"complexMaze" applies a large (15x15+) Multi-Goal environment with Walls and Bombs', () => {
+    const { onApply } = renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'complexMaze' } })
+    fireEvent.click(screen.getByTestId('env-editor-apply'))
+    const config = onApply.mock.calls[0][0]
+    expect(config.width).toBeGreaterThanOrEqual(15)
+    expect(config.goals.length).toBeGreaterThanOrEqual(3)
+    expect(config.walls.length).toBeGreaterThan(0)
+    expect(config.bombs.length).toBeGreaterThan(0)
+  })
+
+  it('selecting each new Preset reflects it in the Draft preview Grid (cell count matches width*height)', () => {
+    renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'complexMaze' } })
+    const cellCount = within(screen.getByTestId('env-editor-grid')).getAllByTestId(/^cell-/).length
+    expect(cellCount).toBe(15 * 15)
+  })
+
+  it('shows a short description under the selector for a built-in Preset, in English and Korean', () => {
+    renderEditor()
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'obstacleCourse' } })
+    expect(screen.getByTestId('env-editor-preset-description').textContent).toBe(
+      'A wall blocks the direct path, leaving exactly one way around.',
+    )
+    cleanup()
+
+    renderEditor({ t: translations.ko, locale: 'ko' })
+    fireEvent.change(screen.getByTestId('env-editor-preset-select'), { target: { value: 'obstacleCourse' } })
+    expect(screen.getByTestId('env-editor-preset-description').textContent).toBe('벽을 우회하여 Goal에 도달해야 하는 환경')
+  })
+
+  it('shows NO description for "Custom" (nothing to describe)', () => {
+    renderEditor()
+    expect(screen.queryByTestId('env-editor-preset-description')).toBeNull()
+  })
+
+  it('Export -> Import round-trips a new Preset (basic) correctly, same as any other Draft', async () => {
+    const { serializeEnvExport, parseEnvImport } = await import('./envEditorIO')
+    const { ENVIRONMENT_PRESETS } = await import('./environmentPresets')
+    const basicPreset = ENVIRONMENT_PRESETS.find((p) => p.id === 'basic')!
+    const exported = serializeEnvExport(basicPreset.draft)
+    const result = parseEnvImport(exported)
+    expect(result.ok).toBe(true)
+    if (result.ok) expect(result.draft).toEqual(basicPreset.draft)
   })
 })
 

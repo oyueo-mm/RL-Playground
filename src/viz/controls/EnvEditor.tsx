@@ -244,11 +244,29 @@ export function EnvEditor({
 
   const presetLabel: Record<string, string> = {
     custom: t.envEditor.presetCustom,
+    basic: t.envEditor.presetBasic,
     corridor: t.envEditor.presetCorridor,
     maze: t.envEditor.presetMaze,
     bombField: t.envEditor.presetBombField,
     multiGoal: t.envEditor.presetMultiGoal,
     treasureHunt: t.envEditor.presetTreasureHunt,
+    obstacleCourse: t.envEditor.presetObstacleCourse,
+    complexMaze: t.envEditor.presetComplexMaze,
+  }
+
+  // Phase 56 §4 — a short one-line description shown under the selector, so a user
+  // faced with a longer Preset list can tell what each one actually does without having
+  // to select it first. `custom` has no entry (nothing to describe — it's just "whatever
+  // the Draft currently is"), so the description line is omitted entirely for it.
+  const presetDescription: Record<string, string> = {
+    basic: t.envEditor.presetBasicDescription,
+    corridor: t.envEditor.presetCorridorDescription,
+    maze: t.envEditor.presetMazeDescription,
+    bombField: t.envEditor.presetBombFieldDescription,
+    multiGoal: t.envEditor.presetMultiGoalDescription,
+    treasureHunt: t.envEditor.presetTreasureHuntDescription,
+    obstacleCourse: t.envEditor.presetObstacleCourseDescription,
+    complexMaze: t.envEditor.presetComplexMazeDescription,
   }
 
   return (
@@ -310,6 +328,11 @@ export function EnvEditor({
           ))}
         </select>
       </label>
+      {presetDescription[presetId] && (
+        <p className="text-xs text-gray-500" data-testid="env-editor-preset-description">
+          {presetDescription[presetId]}
+        </p>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-1">
