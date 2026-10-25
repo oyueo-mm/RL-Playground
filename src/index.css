@@ -397,23 +397,6 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .probability-bar span { display: block; height: 100%; background: #568963; }
 .guide-sources { border-top: 1px solid #dce5d7; margin-top: 28px; font-size: 11px; }
 .guide-sources a { text-decoration: underline; color: #326e4f; }
-@media (max-width: 760px) {
-  .tooltip-anchor > button { min-height: 30px; padding: 4px 6px; font-size: 10px; }
-  .tool-buttons { flex-wrap: wrap; justify-content: center; }
-  .tool-buttons .tooltip-anchor button { width: 29px; font-size: 15px; }
-  .preset-drawer.map-gallery { position: absolute; top: 45px; right: 6px; bottom: 6px; height: auto; width: min(350px, calc(100% - 12px)); max-width: none; z-index: 21; border: 1px solid #d5e0cd; border-radius: 8px; box-shadow: -6px 0 25px #203a2420; }
-  .guide-page { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; height: calc(100dvh - 120px); }
-  .guide-heading { padding-bottom: 10px; }
-  .guide-heading h2 { font-size: 23px; }
-  .chapter-navigation { flex-direction: row; overflow-x: auto; max-width: 100%; }
-  .chapter-navigation button { flex-shrink: 0; padding: 8px; font-size: 11px; }
-  .guide-content { padding-right: 4px; }
-  .guide-content h2 { font-size: 21px; }
-  .guide-content p { font-size: 13px; }
-  .transition-diagram { gap: 3px; }
-  .transition-diagram span { font-size: 10px; padding: 6px 3px; }
-  .calculation-results { grid-template-columns: 1fr; }
-}
 
 /* Complex environments: compact diagnostics, consistent SVG tools, and one reading flow. */
 .resource-alert { position: absolute; left: 14px; right: 14px; bottom: 48px; z-index: 24; padding: 10px; border: 1px solid #d5b76d; background: #fff9e8; border-radius: 6px; font-size: 12px; }
@@ -439,3 +422,55 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .gallery-filters details label { display: flex; justify-content: space-between; margin: 7px 0; gap: 8px; }
 .gallery-filters select { width: 150px; max-width: 65%; border: 1px solid #d4dfcd; padding: 3px; }
 .gallery-filters details button { padding: 5px 0; color: #326e4f; text-decoration: underline; }
+.hero-layout { align-items: start; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 24px 0 30px; gap: 36px; }
+.hero-copy { padding-top: 0; }
+.home-page .hero-copy h2 { font-size: clamp(34px, 3.7vw, 58px); }
+.hero-copy .hero-kicker { margin-bottom: 16px; }
+.algorithm-tags { margin-top: 23px; }
+.hero-layout .demo-card { max-width: 490px; padding: 18px; }
+.hero-layout .demo-heading { letter-spacing: .5px; }
+.scenario-tabs { display: flex; flex-wrap: wrap; gap: 4px; margin: 12px 0 0; }
+.scenario-tabs button { padding: 5px 7px; font-size: 10px; border: 1px solid #dbe5d5; border-radius: 4px; color: #687d60; }
+.scenario-tabs button[aria-pressed=true] { background: #e4efdc; border-color: #a9c09a; color: #326e4f; }
+.demo-card .demo-tabs { margin: 12px 0; }
+.scenario-grid { width: 100%; max-width: 340px; margin: 0 auto 14px; background: #fff; border: 1px solid #d5dfcd; }
+.scenario-grid > svg { display: block; width: 100%; height: auto; }
+.scenario-grid [data-testid=agent-marker] { transition: cx .4s ease, cy .4s ease; }
+.scenario-grid.is-teleport [data-testid=agent-marker] { transition: none; }
+.home-feature-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; border-top: 1px solid #dce5d7; padding: 20px 0; }
+.home-feature-links button { text-align: left; padding: 8px 0; }
+.home-feature-links strong { display: block; font-size: 14px; color: #346748; margin-bottom: 8px; }
+.home-feature-links span { font-size: 12px; line-height: 1.8; color: #758770; }
+.home-feature-links button:hover strong { text-decoration: underline; }
+.home-page .home-footer { margin-top: 0; padding: 20px 0; }
+.guide-mode { height: 100dvh; overflow: hidden; }
+.guide-mode .topbar { height: 42px; }
+.guide-mode .page-content { height: calc(100dvh - 42px); max-width: none; padding: 0; }
+.guide-page { display: block; height: 100%; min-height: 0; overflow-y: auto; padding: 24px 32px 160px; overscroll-behavior: contain; }
+.guide-heading { margin-bottom: 14px; padding-bottom: 14px; }
+.guide-heading h2 { font-size: 25px; }
+.chapter-navigation { position: sticky; top: -1px; z-index: 2; display: flex; flex-direction: row; flex-wrap: wrap; gap: 3px; padding: 6px 0; background: #f8faf8f5; border-bottom: 1px solid #dce5d7; margin-bottom: 22px; }
+.chapter-navigation button { font-size: 11px; padding: 7px 9px; gap: 6px; }
+.guide-content { overflow: visible; padding: 0; }
+.guide-content section { scroll-margin-top: 85px; }
+@media (max-width: 760px) {
+  .tooltip-anchor > button { min-height: 30px; padding: 4px 6px; font-size: 10px; }
+  .tool-buttons { flex-wrap: wrap; justify-content: center; }
+  .tool-buttons .tooltip-anchor button { width: 29px; font-size: 15px; }
+  .preset-drawer.map-gallery { position: absolute; top: 45px; right: 6px; bottom: 6px; height: auto; width: min(350px, calc(100% - 12px)); max-width: none; z-index: 21; border: 1px solid #d5e0cd; border-radius: 8px; box-shadow: -6px 0 25px #203a2420; }
+  .guide-page { padding: 18px 18px 160px; height: 100%; }
+  .guide-heading { padding-bottom: 10px; }
+  .guide-heading h2 { font-size: 23px; }
+  .chapter-navigation { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; max-width: 100%; }
+  .chapter-navigation button { flex-shrink: 0; padding: 8px; font-size: 11px; }
+  .guide-content { padding-right: 4px; }
+  .guide-content h2 { font-size: 21px; }
+  .guide-content p { font-size: 13px; }
+  .transition-diagram { gap: 3px; }
+  .transition-diagram span { font-size: 10px; padding: 6px 3px; }
+  .calculation-results { grid-template-columns: 1fr; }
+  .hero-layout { grid-template-columns: 1fr; gap: 22px; padding: 18px 0; }
+  .hero-layout .demo-card { justify-self: stretch; max-width: none; padding: 14px; }
+  .home-feature-links { grid-template-columns: 1fr; gap: 0; }
+  .tool-buttons .tooltip-anchor button { min-width: 32px; min-height: 34px; }
+}

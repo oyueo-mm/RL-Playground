@@ -46,7 +46,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', close)
   }, [mobileOpen])
   const experimentVisible = page === 'environment' || page === 'editor' || page === 'results'
-  return <div className={`app-shell ${experimentVisible ? 'lab-mode' : ''} ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+  return <div className={`app-shell ${experimentVisible ? 'lab-mode' : page === 'guide' ? 'guide-mode' : ''} ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
     <a href="#page-content" className="skip-link">{locale === 'ko' ? '본문으로 이동' : 'Skip to content'}</a>
     {mobileOpen && <button className="sidebar-backdrop" aria-label={locale === 'ko' ? '메뉴 닫기' : 'Close menu'} onClick={() => setMobileOpen(false)} />}
     <aside className="sidebar" id="sidebar">
@@ -62,7 +62,7 @@ export default function App() {
       <header className="topbar"><div className="breadcrumb"><button id="mobile-menu" aria-label={l.menu} aria-expanded={mobileOpen} aria-controls="sidebar" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><span>Workspace</span><span>/</span><strong>{l[page]}</strong></div></header>
       <main id="page-content" className="page-content" tabIndex={-1}>
         <h1 ref={heading} tabIndex={-1} className="sr-only">{page === 'home' ? l.title : l[page]}</h1>
-        {page === 'home' && <Home locale={locale} onStart={() => navigate('environment')} onGuide={() => navigate('guide')} />}
+        {page === 'home' && <Home locale={locale} onEditor={() => navigate('editor')} onStart={() => navigate('environment')} onGuide={() => navigate('guide')} />}
         {page === 'guide' && <AlgorithmGuide locale={locale} onStart={() => navigate('environment')} />}
         <div hidden={!experimentVisible} className="experiment-workspace" data-testid="experiment-workspace"><Simulator locale={locale} section={section} active={experimentVisible} presetsOpen={presetsOpen} onClosePresets={() => setPresetsOpen(false)} /></div>
       </main>

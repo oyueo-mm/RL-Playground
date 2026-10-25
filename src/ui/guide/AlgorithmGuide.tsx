@@ -5,12 +5,12 @@ import { UpdateCalculator } from './UpdateCalculator'
 
 export function AlgorithmGuide({ locale, onStart }: { locale: Locale; onStart: () => void }) {
   const [chapter, setChapter] = useState(0)
-  const content = useRef<HTMLElement>(null)
+  const content = useRef<HTMLDivElement>(null)
   const ko = locale === 'ko'
-  return <div className="guide-page">
+  return <div className="guide-page" ref={content}>
     <header className="guide-heading"><span>RL / FIELD NOTES</span><h2>{ko ? '알고리즘 가이드' : 'Algorithm guide'}</h2><p>{ko ? '개념에서 계산으로, 계산에서 실험으로.' : 'From concepts to calculations to experiments.'}</p></header>
-    <nav className="chapter-navigation" aria-label={ko ? '단원 목차' : 'Chapter contents'}>{chapterTitles[locale].map((title, index) => <button key={index} aria-current={chapter === index ? 'step' : undefined} aria-controls={`chapter-${index}`} onClick={() => { setChapter(index); content.current?.scrollTo?.(0, 0) }}><small>0{index + 1}</small>{title}</button>)}</nav>
-    <article ref={content} className="guide-content">
+    <nav className="chapter-navigation" aria-label={ko ? '단원 목차' : 'Chapter contents'}>{chapterTitles[locale].map((title, index) => <button key={index} aria-current={chapter === index ? 'step' : undefined} aria-controls={`chapter-${index}`} onClick={() => { setChapter(index); content.current?.scrollTo?.(0, content.current.querySelector('.guide-heading')?.clientHeight ?? 0) }}><small>0{index + 1}</small>{title}</button>)}</nav>
+    <article className="guide-content">
       {lessons[locale].map((lesson, index) => <section id={`chapter-${index}`} key={index} hidden={chapter !== index}>
         <span className="section-number">0{index + 1} / 06</span><h2>{chapterTitles[locale][index]}</h2><p className="lesson-intro">{lesson.intro}</p>
         {index === 0 && <><div className="transition-diagram" role="img" aria-label="State → Action → Environment → Reward and next state"><span>sₜ<br />{ko ? '상태' : 'State'}</span><b>→</b><span>aₜ<br />{ko ? '행동' : 'Action'}</span><b>→</b><span>{ko ? '환경' : 'Environment'}</span><b>→</b><span>rₜ₊₁, sₜ₊₁<br />{ko ? '피드백' : 'Feedback'}</span></div><p className="math-formula">Gₜ = Rₜ₊₁ + γRₜ₊₂ + γ²Rₜ₊₃ + …</p></>}
