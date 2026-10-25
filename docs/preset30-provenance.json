@@ -1,0 +1,15 @@
+{
+  "archive": "RL_Playground_30_Reworked_Presets.zip",
+  "sha256": "df3b07ce5e6b49a9a078b216b6816c579477beb40ad40e7ee620cf3192e8bbcc",
+  "bytes": 826694,
+  "files": 102,
+  "crcErrors": null,
+  "allFileHashesMatch": true,
+  "runtimeMapAndSolutionBytesMatch": 60,
+  "pngDecoded": 36,
+  "htmlMapsAndSolutionsMatch": 30,
+  "reportRecords": {
+    "개편후_30개_검증.json": 30,
+    "기존_20개_전수_감사.json": 20
+  }
+}

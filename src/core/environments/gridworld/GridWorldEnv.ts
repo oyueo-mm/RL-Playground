@@ -176,6 +176,24 @@ export class GridWorldEnv implements Environment {
     return this.stateKeyFor(this.agent)
   }
 
+  /** Independent episode state; immutable configuration/indices may be shared by auditors. */
+  fork(): GridWorldEnv {
+    const copy = Object.assign(Object.create(GridWorldEnv.prototype) as GridWorldEnv, this)
+    copy.agent = { ...this.agent }
+    copy.collectedGoals = new Set(this.collectedGoals)
+    copy.collapsed = new Set(this.collapsed)
+    copy.openGroups = new Set(this.openGroups)
+    return copy
+  }
+
+  /** A sufficient, conservative proof only: no action changes the complete state. */
+  isImmobile(): boolean {
+    if (this.isTerminal(this.getState())) return false
+    const key = this.getState()
+    for (let action = 0; action < 4; action++) if (this.fork().step(action).nextState !== key) return false
+    return true
+  }
+
   getActionSpace(): number {
     return ACTION_SPACE
   }

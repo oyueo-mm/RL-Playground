@@ -133,7 +133,7 @@ describe('ENVIRONMENT_PRESETS — Phase 56 new presets, individually', () => {
   })
 
   it('complexMaze: the Phase 56 showcase — large grid, Multi-Goal, Walls, and Bombs all together', () => {
-    const { draft } = presetById('20_final_proving_grounds')
+    const { draft } = presetById('23_final_proving_grounds')
     expect(draft.width).toBeGreaterThanOrEqual(15)
     expect(draft.height).toBeGreaterThanOrEqual(15)
     expect(draft.goals.length).toBeGreaterThanOrEqual(3)
@@ -144,7 +144,7 @@ describe('ENVIRONMENT_PRESETS — Phase 56 new presets, individually', () => {
 
   it('all three new presets round-trip through draftToGridWorldConfig() -> validateDraft() cleanly (same path EnvEditor\'s Apply button uses)', async () => {
     const { draftToGridWorldConfig } = await import('./envEditorDraft')
-    for (const id of ['01_meadow_walk', '03_one_switch_one_door', '20_final_proving_grounds']) {
+    for (const id of ['01_meadow_walk', '03_one_switch_one_door', '23_final_proving_grounds']) {
       const { draft } = presetById(id)
       const config = draftToGridWorldConfig(draft)
       expect(config.width).toBe(draft.width)
@@ -161,7 +161,7 @@ describe('ENVIRONMENT_PRESETS — Phase 58 new presets, individually', () => {
   }
 
   it('Forked Village provides branching choices and a verified route to all goals', () => {
-    const { draft } = presetById('06_forked_village')
+    const { draft } = presetById('07_forked_village')
     expect(draft.goals).toHaveLength(4)
     expect(allGoalsReachable(draft)).toBe(true)
   })
@@ -178,7 +178,7 @@ describe('ENVIRONMENT_PRESETS — Phase 58 new presets, individually', () => {
   })
 
   it('riskyPath: the direct Start-Goal row is lined with Bombs, AND a Bomb-free detour route exists', () => {
-    const { draft } = presetById('07_marsh_detour')
+    const { draft } = presetById('08_marsh_detour')
     const directRowBombs = draft.bombs.filter((b) => b.y === draft.start.y)
     expect(directRowBombs.length).toBeGreaterThan(0)
 
@@ -210,7 +210,7 @@ describe('ENVIRONMENT_PRESETS — Phase 58 new presets, individually', () => {
 
   it('all three new presets round-trip through draftToGridWorldConfig() -> validateDraft() cleanly', async () => {
     const { draftToGridWorldConfig, validateDraft } = await import('./envEditorDraft')
-    for (const id of ['06_forked_village', '01_meadow_walk', '07_marsh_detour']) {
+    for (const id of ['07_forked_village', '01_meadow_walk', '08_marsh_detour']) {
       const { draft } = presetById(id)
       const config = draftToGridWorldConfig(draft)
       expect(config.width).toBe(draft.width)

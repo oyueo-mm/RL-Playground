@@ -5,9 +5,9 @@ import { GridWorldEnv } from '../../core/environments/gridworld/GridWorldEnv'
 import { parseEnvImport, serializeEnvExport } from './envEditorIO'
 
 describe('Expanded presets', () => {
-  it('replaces all legacy IDs with exactly twenty numbered official maps', () => {
-    expect(ENVIRONMENT_PRESETS).toHaveLength(20)
-    expect(ENVIRONMENT_PRESETS.map(p => p.id.slice(0,2))).toEqual(Array.from({ length: 20 }, (_, i) => String(i+1).padStart(2,'0')))
+  it('replaces all legacy IDs with exactly thirty numbered official maps', () => {
+    expect(ENVIRONMENT_PRESETS).toHaveLength(30)
+    expect(ENVIRONMENT_PRESETS.map(p => p.id.slice(0,2))).toEqual(Array.from({ length: 30 }, (_, i) => String(i+1).padStart(2,'0')))
   })
   it.each(ENVIRONMENT_PRESETS.slice(10))('$id is valid, described, serializable and solvable with complete dynamic-state BFS', preset => {
     expect(validateDraft(preset.draft)).toEqual([])

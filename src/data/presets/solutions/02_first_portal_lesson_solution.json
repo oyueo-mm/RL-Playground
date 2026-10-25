@@ -1,15 +1,9 @@
 {
-  "map": "First Portal Lesson",
-  "goalOrder": [
-    [
-      5,
-      1
-    ],
-    [
-      6,
-      6
-    ]
-  ],
+  "id": "02_first_portal_lesson",
+  "name": {
+    "ko": "첫 포털 수업",
+    "en": "First Portal Lesson"
+  },
   "steps": 15,
   "actions": [
     3,
@@ -28,14 +22,28 @@
     3,
     3
   ],
+  "goalOrder": [
+    [
+      5,
+      1
+    ],
+    [
+      6,
+      6
+    ]
+  ],
+  "events": {
+    "portal": 4,
+    "move": 9,
+    "goal": 1,
+    "success": 1
+  },
   "legend": {
     "0": "up",
     "1": "down",
     "2": "left",
     "3": "right"
   },
-  "events": {
-    "portal": 4,
-    "goal": 2
-  }
+  "verifiedBy": "python_exact_transition_replica",
+  "warning": "재구현한 전이 규칙 검증이며 브라우저 실제 GridWorldEnv 테스트는 별도 필요"
 }

@@ -1,0 +1,225 @@
+{
+  "01_meadow_walk": {
+    "status": "complete",
+    "losingStates": 0,
+    "gimmicks": {}
+  },
+  "02_first_portal_lesson": {
+    "status": "complete",
+    "losingStates": 0,
+    "gimmicks": {
+      "portal": "bypass-found"
+    }
+  },
+  "03_one_switch_one_door": {
+    "status": "complete",
+    "losingStates": 0,
+    "gimmicks": {
+      "switch": "required-proven"
+    }
+  },
+  "04_fragile_bridge": {
+    "status": "complete",
+    "losingStates": 0,
+    "gimmicks": {
+      "fragile": "bypass-found"
+    }
+  },
+  "05_arrow_alley": {
+    "status": "complete",
+    "losingStates": 0,
+    "gimmicks": {}
+  },
+  "06_garden_of_choices": {
+    "status": "complete",
+    "losingStates": 0,
+    "gimmicks": {}
+  },
+  "07_forked_village": {
+    "status": "complete",
+    "losingStates": 0,
+    "gimmicks": {}
+  },
+  "08_marsh_detour": {
+    "status": "complete",
+    "losingStates": 0,
+    "gimmicks": {}
+  },
+  "09_twin_portal_plaza": {
+    "status": "complete",
+    "losingStates": 0,
+    "gimmicks": {
+      "portal": "bypass-found"
+    }
+  },
+  "10_lab_corridors": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "required-proven"
+    }
+  },
+  "11_ruin_retrieval": {
+    "status": "complete",
+    "losingStates": 624,
+    "gimmicks": {
+      "fragile": "required-proven"
+    }
+  },
+  "12_clockwork_village": {
+    "status": "complete",
+    "losingStates": 0,
+    "gimmicks": {
+      "switch": "required-proven"
+    }
+  },
+  "13_crossroads_expedition": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "incomplete",
+      "portal": "incomplete",
+      "fragile": "incomplete"
+    }
+  },
+  "14_portal_city": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "portal": "incomplete"
+    }
+  },
+  "15_power_control_zone": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "required-proven"
+    }
+  },
+  "16_crumbling_canyon": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "fragile": "bypass-found"
+    }
+  },
+  "17_one_way_circuit": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "portal": "incomplete"
+    }
+  },
+  "18_shattered_quarter": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "required-proven",
+      "portal": "incomplete",
+      "fragile": "incomplete"
+    }
+  },
+  "19_multi_goal_expedition": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "portal": "incomplete",
+      "fragile": "incomplete"
+    }
+  },
+  "20_sealed_research_base": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "incomplete",
+      "portal": "incomplete"
+    }
+  },
+  "21_collapsing_archipelago": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "incomplete",
+      "portal": "incomplete",
+      "fragile": "incomplete"
+    }
+  },
+  "22_warp_nexus": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "portal": "incomplete"
+    }
+  },
+  "23_final_proving_grounds": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "required-proven",
+      "portal": "incomplete",
+      "fragile": "incomplete"
+    }
+  },
+  "24_the_sealed_observatory": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "required-proven",
+      "portal": "incomplete",
+      "fragile": "incomplete"
+    }
+  },
+  "25_obsidian_citadel": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "required-proven",
+      "portal": "incomplete",
+      "fragile": "incomplete"
+    }
+  },
+  "26_abyssal_fortress": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "required-proven",
+      "portal": "incomplete",
+      "fragile": "incomplete"
+    }
+  },
+  "27_fractured_metropolis": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "required-proven",
+      "portal": "incomplete",
+      "fragile": "incomplete"
+    }
+  },
+  "28_nemesis_complex": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "incomplete",
+      "portal": "incomplete",
+      "fragile": "incomplete"
+    }
+  },
+  "29_empire_of_oblivion": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "required-proven",
+      "portal": "incomplete",
+      "fragile": "incomplete"
+    }
+  },
+  "30_the_endless_labyrinth": {
+    "status": "incomplete",
+    "losingStates": null,
+    "gimmicks": {
+      "switch": "required-proven",
+      "portal": "incomplete"
+    }
+  }
+}

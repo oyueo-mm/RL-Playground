@@ -1,0 +1,43 @@
+{
+  "id": "01_meadow_walk",
+  "name": {
+    "ko": "초원 산책",
+    "en": "Meadow Walk"
+  },
+  "steps": 10,
+  "actions": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "goalOrder": [
+    [
+      6,
+      6
+    ],
+    [
+      6,
+      1
+    ]
+  ],
+  "events": {
+    "move": 8,
+    "goal": 1,
+    "success": 1
+  },
+  "legend": {
+    "0": "up",
+    "1": "down",
+    "2": "left",
+    "3": "right"
+  },
+  "verifiedBy": "python_exact_transition_replica",
+  "warning": "재구현한 전이 규칙 검증이며 브라우저 실제 GridWorldEnv 테스트는 별도 필요"
+}

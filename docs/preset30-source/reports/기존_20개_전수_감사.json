@@ -1,0 +1,372 @@
+[
+  {
+    "old_id": 1,
+    "name": "초원 산책",
+    "original_tier": "쉬움",
+    "dimensions": [
+      8,
+      8
+    ],
+    "original_solution_steps": 10,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 10,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 2,
+    "name": "첫 포털 수업",
+    "original_tier": "쉬움",
+    "dimensions": [
+      8,
+      8
+    ],
+    "original_solution_steps": 15,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 11,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 3,
+    "name": "문 하나의 비밀",
+    "original_tier": "쉬움",
+    "dimensions": [
+      9,
+      9
+    ],
+    "original_solution_steps": 15,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": false,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 15,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 4,
+    "name": "조심조심 다리",
+    "original_tier": "쉬움",
+    "dimensions": [
+      9,
+      9
+    ],
+    "original_solution_steps": 15,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": false,
+    "relaxed_shortest": 15,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 5,
+    "name": "화살표 골목",
+    "original_tier": "쉬움",
+    "dimensions": [
+      8,
+      10
+    ],
+    "original_solution_steps": 17,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 17,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 6,
+    "name": "갈림길 마을",
+    "original_tier": "보통",
+    "dimensions": [
+      10,
+      10
+    ],
+    "original_solution_steps": 33,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 33,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 7,
+    "name": "습지 우회로",
+    "original_tier": "보통",
+    "dimensions": [
+      10,
+      10
+    ],
+    "original_solution_steps": 21,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 21,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 8,
+    "name": "이중 포털 광장",
+    "original_tier": "보통",
+    "dimensions": [
+      10,
+      10
+    ],
+    "original_solution_steps": 25,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 22,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 9,
+    "name": "연구소 동선",
+    "original_tier": "보통",
+    "dimensions": [
+      11,
+      11
+    ],
+    "original_solution_steps": 38,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": false,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 27,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 10,
+    "name": "유적 회수 작전",
+    "original_tier": "보통",
+    "dimensions": [
+      11,
+      11
+    ],
+    "original_solution_steps": 24,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": false,
+    "relaxed_shortest": 24,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 11,
+    "name": "교차로 원정",
+    "original_tier": "어려움",
+    "dimensions": [
+      20,
+      20
+    ],
+    "original_solution_steps": 114,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 10,
+    "all_goals_reachable_without_switch": false,
+    "all_goals_reachable_without_fragile": true,
+    "relaxed_shortest": 106,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 12,
+    "name": "포털 도시",
+    "original_tier": "어려움",
+    "dimensions": [
+      18,
+      18
+    ],
+    "original_solution_steps": 48,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 35,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 13,
+    "name": "전력 제어 구역",
+    "original_tier": "어려움",
+    "dimensions": [
+      18,
+      18
+    ],
+    "original_solution_steps": 88,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": false,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 64,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 14,
+    "name": "붕괴 협곡",
+    "original_tier": "어려움",
+    "dimensions": [
+      16,
+      18
+    ],
+    "original_solution_steps": 58,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": true,
+    "relaxed_shortest": 39,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 15,
+    "name": "편도 순환선",
+    "original_tier": "어려움",
+    "dimensions": [
+      17,
+      17
+    ],
+    "original_solution_steps": 66,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 46,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 16,
+    "name": "다중 목표 원정대",
+    "original_tier": "매우 어려움",
+    "dimensions": [
+      20,
+      20
+    ],
+    "original_solution_steps": 81,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": true,
+    "relaxed_shortest": 77,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 17,
+    "name": "봉인된 연구기지",
+    "original_tier": "매우 어려움",
+    "dimensions": [
+      20,
+      20
+    ],
+    "original_solution_steps": 152,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": false,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 85,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 18,
+    "name": "붕괴하는 군도",
+    "original_tier": "매우 어려움",
+    "dimensions": [
+      20,
+      20
+    ],
+    "original_solution_steps": 78,
+    "witness_replay_valid": true,
+    "blocked_arrows": [],
+    "possible_static_prison_cells": 0,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": true,
+    "relaxed_shortest": 57,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 19,
+    "name": "왜곡된 차원문",
+    "original_tier": "매우 어려움",
+    "dimensions": [
+      20,
+      20
+    ],
+    "original_solution_steps": 50,
+    "witness_replay_valid": true,
+    "blocked_arrows": [
+      [
+        5,
+        5
+      ]
+    ],
+    "possible_static_prison_cells": 2,
+    "all_goals_reachable_without_switch": null,
+    "all_goals_reachable_without_fragile": null,
+    "relaxed_shortest": 50,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  },
+  {
+    "old_id": 20,
+    "name": "최종 시험장",
+    "original_tier": "매우 어려움",
+    "dimensions": [
+      20,
+      20
+    ],
+    "original_solution_steps": 116,
+    "witness_replay_valid": true,
+    "blocked_arrows": [
+      [
+        11,
+        7
+      ]
+    ],
+    "possible_static_prison_cells": 1,
+    "all_goals_reachable_without_switch": true,
+    "all_goals_reachable_without_fragile": false,
+    "relaxed_shortest": 81,
+    "relaxed_solver_status": "relaxed",
+    "limitations": "정적 휴리스틱은 완전한 동적 상태 검증이나 난이도 확정을 대체하지 않음"
+  }
+]

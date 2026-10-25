@@ -8,10 +8,10 @@ import { copyFeatures, validateFeatures } from '../../core/environments/gridworl
 import type { EnvRenderModel } from '../../core/types/render'
 import { parseStateKey, toStateKey } from '../grid/stateKey'
 
-// PRODUCT_SPEC.md FR-4 already documents "3~20" as the example Grid size range — reused
-// here rather than inventing a new range.
+// Editors support independent dimensions through 64; legacy small engine fixtures
+// may still use dimensions 1–2, while the user-facing editor minimum remains 3.
 export const MIN_SIZE = 3
-export const MAX_SIZE = 20
+export const MAX_SIZE = 64
 
 const DEFAULT_CONFIG = createDefaultGridWorldConfig()
 

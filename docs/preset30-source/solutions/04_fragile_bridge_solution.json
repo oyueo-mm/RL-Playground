@@ -1,0 +1,49 @@
+{
+  "id": "04_fragile_bridge",
+  "name": {
+    "ko": "조심조심 다리",
+    "en": "Fragile Bridge"
+  },
+  "steps": 15,
+  "actions": [
+    1,
+    3,
+    3,
+    3,
+    3,
+    3,
+    3,
+    0,
+    0,
+    2,
+    0,
+    0,
+    0,
+    0,
+    3
+  ],
+  "goalOrder": [
+    [
+      7,
+      7
+    ],
+    [
+      7,
+      1
+    ]
+  ],
+  "events": {
+    "move": 12,
+    "goal": 1,
+    "fragile": 1,
+    "success": 1
+  },
+  "legend": {
+    "0": "up",
+    "1": "down",
+    "2": "left",
+    "3": "right"
+  },
+  "verifiedBy": "python_exact_transition_replica",
+  "warning": "재구현한 전이 규칙 검증이며 브라우저 실제 GridWorldEnv 테스트는 별도 필요"
+}

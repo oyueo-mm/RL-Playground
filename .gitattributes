@@ -3,3 +3,6 @@ src/data/presets/maps/*.json -text
 src/data/presets/solutions/*.json -text
 src/data/presets/catalog.json -text
 docs/preset-source/** -text
+docs/preset30-source/** -text
+# Preserve the supplied Markdown hard line breaks byte-for-byte.
+docs/preset30-source/reports/*.md -whitespace

@@ -66,9 +66,5 @@
         }
       ]
     }
-  ],
-  "oneWays": [],
-  "fragiles": [],
-  "switches": [],
-  "toggleWalls": []
+  ]
 }

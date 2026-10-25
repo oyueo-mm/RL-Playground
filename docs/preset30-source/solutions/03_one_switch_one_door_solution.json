@@ -1,0 +1,49 @@
+{
+  "id": "03_one_switch_one_door",
+  "name": {
+    "ko": "문 하나의 비밀",
+    "en": "One Switch, One Door"
+  },
+  "steps": 15,
+  "actions": [
+    0,
+    3,
+    0,
+    0,
+    0,
+    1,
+    1,
+    3,
+    1,
+    3,
+    3,
+    1,
+    1,
+    3,
+    3
+  ],
+  "goalOrder": [
+    [
+      2,
+      1
+    ],
+    [
+      7,
+      6
+    ]
+  ],
+  "events": {
+    "move": 12,
+    "switch": 1,
+    "goal": 1,
+    "success": 1
+  },
+  "legend": {
+    "0": "up",
+    "1": "down",
+    "2": "left",
+    "3": "right"
+  },
+  "verifiedBy": "python_exact_transition_replica",
+  "warning": "재구현한 전이 규칙 검증이며 브라우저 실제 GridWorldEnv 테스트는 별도 필요"
+}

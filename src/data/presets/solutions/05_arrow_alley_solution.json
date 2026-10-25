@@ -1,19 +1,9 @@
 {
-  "map": "Arrow Alley",
-  "goalOrder": [
-    [
-      6,
-      8
-    ],
-    [
-      6,
-      1
-    ],
-    [
-      2,
-      2
-    ]
-  ],
+  "id": "05_arrow_alley",
+  "name": {
+    "ko": "화살표 골목",
+    "en": "Arrow Alley"
+  },
   "steps": 17,
   "actions": [
     3,
@@ -34,13 +24,31 @@
     2,
     1
   ],
+  "goalOrder": [
+    [
+      6,
+      8
+    ],
+    [
+      6,
+      1
+    ],
+    [
+      2,
+      2
+    ]
+  ],
+  "events": {
+    "move": 14,
+    "goal": 2,
+    "success": 1
+  },
   "legend": {
     "0": "up",
     "1": "down",
     "2": "left",
     "3": "right"
   },
-  "events": {
-    "goal": 3
-  }
+  "verifiedBy": "python_exact_transition_replica",
+  "warning": "재구현한 전이 규칙 검증이며 브라우저 실제 GridWorldEnv 테스트는 별도 필요"
 }

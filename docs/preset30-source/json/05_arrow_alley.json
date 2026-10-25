@@ -1,0 +1,81 @@
+{
+  "version": 2,
+  "type": "gridworld",
+  "width": 8,
+  "height": 10,
+  "start": {
+    "x": 1,
+    "y": 8
+  },
+  "goals": [
+    {
+      "x": 6,
+      "y": 1
+    },
+    {
+      "x": 2,
+      "y": 2
+    },
+    {
+      "x": 6,
+      "y": 8
+    }
+  ],
+  "walls": [
+    {
+      "x": 3,
+      "y": 2
+    },
+    {
+      "x": 4,
+      "y": 2
+    },
+    {
+      "x": 3,
+      "y": 3
+    },
+    {
+      "x": 4,
+      "y": 3
+    },
+    {
+      "x": 2,
+      "y": 5
+    },
+    {
+      "x": 4,
+      "y": 6
+    },
+    {
+      "x": 5,
+      "y": 6
+    }
+  ],
+  "bombs": [],
+  "stepReward": -0.1,
+  "wallPenalty": -1,
+  "goalReward": 10,
+  "bombPenalty": -10,
+  "oneWays": [
+    {
+      "x": 2,
+      "y": 8,
+      "direction": 3
+    },
+    {
+      "x": 3,
+      "y": 8,
+      "direction": 3
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "direction": 0
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "direction": 0
+    }
+  ]
+}

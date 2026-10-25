@@ -47,10 +47,5 @@
   "stepReward": -0.1,
   "wallPenalty": -1,
   "goalReward": 10,
-  "bombPenalty": -10,
-  "portals": [],
-  "oneWays": [],
-  "fragiles": [],
-  "switches": [],
-  "toggleWalls": []
+  "bombPenalty": -10
 }

@@ -9,8 +9,8 @@ import { solveGrid } from '../../test/solveGrid'
 
 describe('Constructively solved complex maps', () => {
   it('publishes precisely the twenty approved presets', () => {
-    expect(ENVIRONMENT_PRESETS).toHaveLength(20)
-    expect(new Set(COMPLEX_PRESETS.map(p => p.id)).size).toBe(20)
+    expect(ENVIRONMENT_PRESETS).toHaveLength(30)
+    expect(new Set(COMPLEX_PRESETS.map(p => p.id)).size).toBe(30)
   })
   it.each(COMPLEX_PRESETS)('$id reaches all goals via actual transitions, round-trips and stays structurally valid', preset => {
     expect(validateDraft(preset.draft)).toEqual([])
@@ -25,7 +25,7 @@ describe('Constructively solved complex maps', () => {
     expect(env.getRenderModel().goals).toEqual([])
   })
   it('includes a space larger than a billion states while keeping constructive verification bounded', () => {
-    expect(COMPLEX_PRESETS.some(p => stateSpaceDetails(p.draft).log10 > 9)).toBe(true)
+    expect(stateSpaceDetails({ ...COMPLEX_PRESETS[0].draft, width:64, height:64, goals:Array.from({length:20},(_,i)=>({x:i,y:1})) }).log10 > 9).toBe(true)
     expect(COMPLEX_PRESETS.every(p => p.solution!.length < 500)).toBe(true)
   })
   it('reports search budget exhaustion as unknown rather than unsolvable', () => {

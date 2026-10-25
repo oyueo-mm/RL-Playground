@@ -53,8 +53,8 @@ export function validateFeatures(map: Pick<GridWorldConfig, 'width' | 'height' |
   const errors: string[] = []
   try { readFeatures(map as unknown as Record<string, unknown>) } catch (error) { return [(error as Error).message] }
   const positions = featurePositions(map)
+  if (!Number.isInteger(map.width) || !Number.isInteger(map.height) || map.width < 1 || map.height < 1 || map.width > 64 || map.height > 64) errors.push('Feature maps require integer dimensions between 1 and 64.')
   if (!positions.length && !map.portals?.length) return errors
-  if (!Number.isInteger(map.width) || !Number.isInteger(map.height) || map.width < 1 || map.height < 1 || map.width > 20 || map.height > 20) errors.push('Feature maps require integer dimensions between 1 and 20.')
   if (!map.goals.length) errors.push('At least one Goal is required.')
   const base = [map.start, ...map.goals, ...map.walls, ...map.bombs]
   if (base.some(pos => !isPosition(pos) || pos.x < 0 || pos.y < 0 || pos.x >= map.width || pos.y >= map.height)) errors.push('Base element coordinates are outside the map or invalid.')

@@ -56,7 +56,6 @@
   "wallPenalty": -1,
   "goalReward": 10,
   "bombPenalty": -10,
-  "portals": [],
   "oneWays": [
     {
       "x": 2,
@@ -78,8 +77,5 @@
       "y": 3,
       "direction": 0
     }
-  ],
-  "fragiles": [],
-  "switches": [],
-  "toggleWalls": []
+  ]
 }
