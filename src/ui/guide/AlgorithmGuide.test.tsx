@@ -11,7 +11,7 @@ afterEach(cleanup)
 describe('Algorithm curriculum', () => {
   it.each(['ko', 'en'] as const)('has six navigable %s lessons, formulas, calculator and lab action', locale => {
     const start = vi.fn(); render(<AlgorithmGuide locale={locale} onStart={start} />)
-    const chapters = screen.getByRole('navigation').querySelectorAll('button')
+    const chapters = screen.getByRole('navigation', { name: locale === 'ko' ? '단원 목차' : 'Chapter contents' }).querySelectorAll('button')
     expect(chapters).toHaveLength(6)
     chapters.forEach((button, index) => { fireEvent.click(button); expect(document.getElementById(`chapter-${index}`)?.hidden).toBe(false) })
     fireEvent.click(chapters[4])
