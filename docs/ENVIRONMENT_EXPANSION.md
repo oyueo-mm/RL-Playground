@@ -1,5 +1,7 @@
 # 환경 시스템 확장 및 UI 개선
 
+> 이 문서는 당시 구현 기록입니다. 상태 공간 262,144 제한은 이후 제거됐습니다. 현재 자원 정책·25개 프리셋·성능 검증은 [복합 환경 개선 보고서](COMPLEX_ENVIRONMENT_UPGRADE.md)를 참고하세요.
+
 검증일: 2026-10-25. 작업 브랜치: `feat/home-redesign`. 시작 커밋: `d6701f6`.
 기존 React/Vite UI, GridWorldEnv, SimulationEngine/Scheduler 및 Q-Learning/SARSA를 확장했다.
 

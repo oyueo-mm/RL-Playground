@@ -206,3 +206,7 @@ GitHub Pages에서 정적 웹 애플리케이션으로 제공됩니다. 시뮬�
 사이드바 프리셋 패널, 통합 학습·시각화 설정, 설명형 Tooltip, 편집 Undo/Redo 및
 6개 단원의 한국어·영어 알고리즘 가이드는 [UI/UX 개선 보고서](docs/UX_WORKFLOW_REDESIGN.md)를 참고하세요.
 
+최신 복잡한 환경 지원은 [복합 환경 개선 보고서](docs/COMPLEX_ENVIRONMENT_UPGRADE.md)를 참고하세요.
+이론 상태 수는 적용 제한이 아닌 경고이며, 실제 Q 행/기록 스텝 예산과 시간 제한으로 학습을 관리합니다.
+25개 프리셋, 드래그·덮어쓰기·자동 연결, 실제 규칙 홈 시연과 재현 가능한 `npm run benchmark` 결과를 포함합니다.
+

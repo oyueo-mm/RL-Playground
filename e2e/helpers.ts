@@ -37,4 +37,3 @@ export async function expectFits(page: Page, scope = 'learning-grid') {
   }).toBe(true)
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1 && document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
 }
-
