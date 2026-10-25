@@ -13,6 +13,16 @@ beforeEach(() => { engine.reset({ envConfig: createDefaultGridWorldConfig() }); 
 afterEach(() => { cleanup(); engine.reset(); vi.useRealTimers(); vi.restoreAllMocks() })
 const click = (id: string) => fireEvent.click(screen.getByTestId(id))
 const editor = () => within(screen.getByTestId('env-editor'))
+
+it('navigates after confirmed apply while keeping editor Undo history mounted',()=>{
+  vi.spyOn(window,'confirm').mockReturnValue(true)
+  render(<App/>);click('nav-editor')
+  fireEvent.click(editor().getByTestId('cell-1,1'));fireEvent.click(editor().getByTestId('env-editor-apply'))
+  expect(screen.getByTestId('nav-environment').getAttribute('aria-current')).toBe('page')
+  expect(within(screen.getByTestId('learning-grid')).getByTestId('cell-1,1').getAttribute('data-cell-kind')).toBe('wall')
+  click('nav-editor');fireEvent.click(editor().getByTestId('editor-undo'))
+  expect(editor().getByTestId('cell-1,1').getAttribute('data-cell-kind')).toBe('empty')
+})
 const cell = (key: string) => editor().getByTestId(`cell-${key}`)
 const wall = (key: string) => cell(key).getAttribute('data-cell-kind') === 'wall'
 
@@ -22,7 +32,7 @@ describe('Preset and settings workflow', () => {
     const before = engine.getSnapshot()
     click('nav-presets')
     expect(document.getElementById('preset-panel')).toBeTruthy()
-    expect(screen.getAllByTestId(/^preset-(?!search)/)).toHaveLength(20)
+    expect(screen.getAllByTestId(/^preset-(?!search)/)).toHaveLength(30)
     click('preset-03_one_switch_one_door')
     expect(engine.getSnapshot()).toEqual(before)
     click('toggle-analysis')

@@ -68,7 +68,7 @@ export function GridDemo({ locale, onExperiment }: { locale: Locale; onExperimen
     return () => { media?.removeEventListener('change', reduce); document.removeEventListener('visibilitychange', visibility); observer?.disconnect() }
   }, [])
   return <section ref={root} className="demo-card demo-gallery" aria-label={ko ? '강화학습 설명용 시연' : 'Reinforcement learning illustrative demo'}>
-    <div className="demo-heading"><span>20 WORLDS / EXPLORE</span><span className="demo-label">{ko ? '설명용 시연' : 'SCRIPTED DEMO'}</span></div>
+    <div className="demo-heading"><span>30 WORLDS / EXPLORE</span><span className="demo-label">{ko ? '설명용 시연' : 'SCRIPTED DEMO'}</span></div>
     <div className="demo-grid-gallery">{views.map((view,index) => <DemoCard key={index} view={view} locale={locale} onOpen={setPreview} />)}</div>
     <div className="demo-playback"><button onClick={() => setPlaying(!playing)}>{playing ? ko ? '일시정지' : 'Pause' : ko ? '시연 재생' : 'Play demo'}</button><button onClick={() => { playback.shuffle(performance.now()); setViews(playback.views()) }}>{ko ? '맵 섞기' : 'Shuffle maps'}</button><button onClick={() => { setPlaying(false); playback.tick(performance.now(), true); setViews(playback.views()) }}>{ko ? '한 칸 이동' : 'Step'}</button><details><summary>{ko ? '시연 안내' : 'About these demos'}</summary><p>{ko ? '실제 환경 전이로 검증한 성공 경로입니다. 실제 학습 결과가 아닙니다.' : 'Success paths verified by actual transitions, not Q-Learning/SARSA training results.'}</p></details></div>
     {preview && <Preview view={preview} locale={locale} onClose={() => setPreview(null)} onExperiment={onExperiment} />}

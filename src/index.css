@@ -542,3 +542,53 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .demo-gallery { --mini-size: clamp(140px, calc((100dvh - 400px) / 2), 250px); }
 .mini-demo button.scenario-grid { margin-inline: auto; }
 @media (max-width: 1100px) { .demo-gallery { --mini-size: 250px; } }
+.camera-viewport { overflow: hidden; position: relative; touch-action: none; }
+.camera-drawing { position: absolute; left: 50%; top: 50%; flex: none; }
+.camera-minimap { position: absolute; left: 10px; bottom: 10px; width: 90px; height: 70px; border: 1px solid #b9cbb1; background: #f8fbf5ee; pointer-events: none; overflow: hidden; }
+.preset-drawer.map-gallery { position: fixed; inset: 0; z-index: 100; width: auto; height: auto; padding: 24px; border: 0; background: #f8faf5; }
+.preset-drawer .gallery-body { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); overflow: hidden; }
+.preset-drawer .gallery-thumbnails { grid-template-columns: repeat(3,minmax(0,1fr)); }
+.preset-drawer .gallery-thumbnails img { width: 100%; height: 150px; object-fit: contain; background: #fff; }
+.preset-drawer .gallery-preview { max-height: none; height: 100%; padding: 18px; background: white; border: 1px solid #d5e0cd; border-radius: 10px; }
+.preset-drawer .gallery-preview > svg { width: 100%; max-height: 55vh; }
+.difficulty-tabs { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 12px; }
+.difficulty-tabs button { padding: 9px 14px; border: 1px solid #d2dfcc; border-radius: 8px; min-height: 42px; }
+.difficulty-tabs button[aria-selected=true] { background: #326e4f; color: white; }
+.element-palette { width: 100%; display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.element-palette .tool-buttons { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; }
+.element-palette .tool-buttons > small { width: 100%; font-size: 10px; color: #6c8064; }
+.element-palette .tool-buttons > button { display: flex; gap: 4px; align-items: center; min-height: 42px; padding: 6px 8px; }
+.element-palette .tool-buttons > button span { font-size: 11px; }
+.editor-toolbar { width: min(1020px,calc(100% - 28px)); }
+.element-palette .tool-buttons .tooltip-anchor > button { width: auto; min-width: 48px; min-height: 48px; display: flex; flex-direction: column; gap: 3px; padding: 5px 7px; border: 1px solid transparent; border-radius: 6px; }
+.element-palette .tool-buttons .tooltip-anchor > button span { font-size: 11px; white-space: nowrap; }
+.audit-summary { padding: 9px; background: #f1f5e9; border-radius: 6px; font-size: 12px; line-height: 1.7; }
+.audit-summary small { display: block; margin-top: 5px; }
+.gallery-filters > label { display: flex; flex-direction: column; align-items: stretch; gap: 6px; }
+.gallery-filters > label input { width: 100%; min-width: 0; box-sizing: border-box; }
+.palette-help { font-size: 11px; color: #52684d; width: 100%; margin: 0; }
+.analysis-drawer { position: relative; overflow: auto; width: var(--analysis-size,365px); max-width: 70%; }
+.panel-resize { position: sticky; top: 0; float: left; margin-left: -14px; width: 12px; height: 60px; cursor: ew-resize; touch-action: none; background: #d8e4d0; border-radius: 6px; z-index: 2; }
+.panel-resize:focus-visible { outline: 2px solid #326e4f; }
+.policy-loop-notice { position: absolute; bottom: 14px; left: 14px; z-index: 13; max-width: 80%; padding: 10px; background: #fff3d8; border-radius: 6px; font-size: 12px; }
+@media(min-width:1600px) { .preset-drawer .gallery-thumbnails { grid-template-columns: repeat(4,minmax(0,1fr)); } }
+@media(max-width:760px) {
+  .preset-drawer.map-gallery { inset: 0; padding: 14px; }
+  .preset-drawer .gallery-body { display: flex; flex-direction: column-reverse; gap: 10px; }
+  .preset-drawer .gallery-preview { height: 42%; flex-shrink: 0; padding: 10px; }
+  .preset-drawer .gallery-preview > svg { max-height: 140px; }
+  .preset-drawer .gallery-thumbnails { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .preset-drawer .gallery-thumbnails img { height: 110px; }
+  .difficulty-tabs { gap: 4px; }
+  .difficulty-tabs button { padding: 6px 9px; font-size: 11px; }
+  .fullscreen-simulator > .analysis-drawer { height: var(--analysis-size,40%); max-width: none; min-height: 100px; padding-top: 6px; }
+  .panel-resize { float: none; margin: 0 auto 6px; width: 90px; height: 20px; cursor: ns-resize; text-align: center; }
+  .zoom-controls button { min-height: 40px; }
+  .camera-minimap { bottom: 58px; width: 70px; height: 50px; }
+  .editor-toolbar .element-palette { max-height: none; overflow: visible; }
+  .element-palette .tool-buttons > button { min-height: 44px; padding: 6px; }
+  .floating-toolbar { justify-content: flex-start; }
+  .mobile-language { top: 7px; right: 8px; bottom: auto; left: auto; }
+  .lab-mode .page-content { padding-top: 48px; box-sizing: border-box; }
+  .lab-mode .topbar { display: flex; top: 0; left: 0; right: 0; width: 100%; height: 48px; padding: 4px 8px; border: 0; border-bottom: 1px solid #d3dfcd; border-radius: 0; background: #f8faf5; }
+}

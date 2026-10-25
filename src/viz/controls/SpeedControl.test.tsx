@@ -26,10 +26,10 @@ describe('Speed slider', () => {
     }
     render(<Wired />)
     fireEvent.change(screen.getByRole('slider'), { target: { value: '100' } })
-    expect(screen.getByRole('slider').getAttribute('aria-valuetext')).toBe('매우 빠름, 100 스텝 / 프레임')
+    expect(screen.getByRole('slider').getAttribute('aria-valuetext')).toBe('매우 빠름, 100 스텝 / 배치')
     fireEvent.change(screen.getByRole('slider'), { target: { value: '82' } })
     expect((screen.getByRole('slider') as HTMLInputElement).value).toBe('82')
-    expect(screen.getByRole('slider').getAttribute('aria-valuetext')).toContain('1 스텝 / 프레임')
+    expect(screen.getByRole('slider').getAttribute('aria-valuetext')).toContain('1 스텝 / 배치')
     fireEvent.change(screen.getByRole('slider'), { target: { value: '1' } })
     expect(screen.getByRole('slider').getAttribute('aria-valuetext')).toBe('느림, 1000 ms / 스텝')
   })

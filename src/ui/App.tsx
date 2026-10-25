@@ -66,7 +66,7 @@ export default function App() {
         <h1 ref={heading} tabIndex={-1} className="sr-only">{page === 'home' ? l.title : l[page]}</h1>
         {page === 'home' && <Home locale={locale} onEditor={() => navigate('editor')} onStart={() => navigate('environment')} onGuide={() => navigate('guide')} onExperiment={preset => { if (window.confirm(translations[locale].envEditor.applyConfirm)) { engine.reset({ envConfig: draftToGridWorldConfig(preset.draft) }); navigate('environment') } }} />}
         {page === 'guide' && <AlgorithmGuide locale={locale} onStart={() => navigate('environment')} />}
-        <div hidden={!experimentVisible} className="experiment-workspace" data-testid="experiment-workspace"><Simulator locale={locale} section={section} active={experimentVisible} presetsOpen={presetsOpen} onClosePresets={() => setPresetsOpen(false)} /></div>
+        <div hidden={!experimentVisible} className="experiment-workspace" data-testid="experiment-workspace"><Simulator onApplied={() => navigate('environment')} locale={locale} section={section} active={experimentVisible} presetsOpen={presetsOpen} onClosePresets={() => setPresetsOpen(false)} /></div>
       </main>
     </div>
     <div className="mobile-language"><LanguageSelector locale={locale} onChange={setLocale} t={translations[locale]} /></div>

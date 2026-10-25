@@ -54,5 +54,5 @@ export function useElementDrag(draft: GridEditorDraft, enabled: boolean, onMove:
     },
     onPointerCancel: cancel,
   }
-  return { preview, interaction, consumeClick: () => { if (!suppressClick.current) return false; suppressClick.current = false; return true } }
+  return { preview, interaction, cancel, consumeClick: () => { if (!suppressClick.current) return false; suppressClick.current = false; return true } }
 }

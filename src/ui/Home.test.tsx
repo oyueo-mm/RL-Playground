@@ -117,6 +117,7 @@ describe('Fullscreen workspace', () => {
 
 describe('Home demonstration lifecycle', () => {
   it('loops, pauses, compares paths without touching the real engine and cleans up on navigation', () => {
+    vi.spyOn(Math,'random').mockReturnValue(.999999)
     const clear = vi.spyOn(window, 'clearInterval')
     render(<App />)
     const before = engine.getSnapshot()

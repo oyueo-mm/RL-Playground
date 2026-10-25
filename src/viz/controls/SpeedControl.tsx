@@ -7,9 +7,10 @@ export interface SpeedControlProps {
   speed: SpeedSetting
   onChange: (speed: SpeedSetting) => void
   t?: Dictionary
+  disabled?: boolean
 }
 
-export function SpeedControl({ speed, onChange, t = translations.en }: SpeedControlProps) {
+export function SpeedControl({ speed, onChange, disabled = false, t = translations.en }: SpeedControlProps) {
   const id = useId()
   // Several neighboring positions can map to the same integer batch size.
   // Keep the user's exact position so ArrowRight can cross those plateaus.
@@ -21,7 +22,7 @@ export function SpeedControl({ speed, onChange, t = translations.en }: SpeedCont
     : `${speed.stepsPerFrame} ${t.speed.batchUnit}`
   return <div className="speed-slider" data-testid="speed-control">
     <div className="speed-slider-heading"><label htmlFor={id}>{t.speed.label} <strong>{label}</strong></label><output htmlFor={id}>{detail}</output></div>
-    <input id={id} type="range" min={1} max={100} step={1} value={value} aria-valuetext={`${label}, ${detail}`} data-testid="speed-slider" onChange={event => {
+    <input disabled={disabled} id={id} type="range" min={1} max={100} step={1} value={value} aria-valuetext={`${label}, ${detail}`} data-testid="speed-slider" onChange={event => {
       const position = Number(event.target.value)
       const next = sliderToSpeed(position)
       setLastChoice({ speed: next, value: position })

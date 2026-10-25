@@ -25,6 +25,7 @@ import { useSimulationEngine } from './hooks/useSimulationEngine'
 import { translations, type Locale } from './i18n'
 
 
+import { PanelResizeHandle } from './PanelResizeHandle'
 import { GridViewport } from './GridViewport'
 import { TooltipButton } from './TooltipButton'
 import { toolbarTips } from './toolbarTips'
@@ -42,9 +43,10 @@ interface SimulatorProps {
   active?: boolean
   presetsOpen?: boolean
   onClosePresets?: () => void
+  onApplied?: () => void
 }
 
-export default function Simulator({ locale: sharedLocale, section = 'environment', active = true, presetsOpen = false, onClosePresets = () => {} }: SimulatorProps) {
+export default function Simulator({ locale: sharedLocale, section = 'environment', active = true, presetsOpen = false, onClosePresets = () => {}, onApplied }: SimulatorProps) {
   const snapshot = useSimulationEngine(engine)
   const [localLocale, setLocale] = useState<Locale>('ko')
   const locale = sharedLocale ?? localLocale
@@ -62,6 +64,8 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState<'learning' | 'visuals'>('learning')
   const [presetRequest, setPresetRequest] = useState<{ draft: GridEditorDraft } | null>(null)
+  const [cameraReset, setCameraReset] = useState(0)
+  const [applied, setApplied] = useState(false)
   const tips = toolbarTips[locale]
   useEffect(() => {
     if (snapshot.episode === 0 && snapshot.resources?.totalSteps === 0) { setSelectedState(null); setSelectedEpisode(null); setViewedStep(null) }
@@ -91,10 +95,12 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
   const analysisVisible = !presetsOpen && (section === 'results' || (section === 'environment' && analysisOpen))
   return <section className={`simulator fullscreen-simulator ${section === 'results' ? 'results-view' : ''}`} aria-label={ko ? '강화학습 실험실' : 'Reinforcement learning lab'}>
     {section !== 'editor' && snapshot.resources?.pauseReason && <Notice eventKey={`${snapshot.resources.pauseReason}:${snapshot.resources.budget.maxQStates}:${snapshot.resources.totalSteps}`} title={ko ? 'Q 상태 예산으로 학습 일시정지' : 'Training paused at Q row budget'} kind="warning" locale={locale} testId="resource-pause-reason"><button onClick={() => { setSettingsOpen(true); setSettingsTab('learning') }}>{ko ? '설정에서 예산 조절' : 'Adjust budget in settings'}</button></Notice>}
+    {section === 'environment' && applied && <Notice eventKey={String(cameraReset)} title={ko ? '환경이 적용되었습니다. 학습을 시작할 수 있습니다.' : 'Environment applied. You can start learning.'} locale={locale} kind="info" testId="environment-applied" />}
+    {section === 'environment' && snapshot.policyLoopDetected && <p className="policy-loop-notice" role="status">{ko ? '학습된 정책이 반복 경로에 진입했습니다.' : 'The learned policy entered a repeating path.'}</p>}
     <div className="environment-screen" hidden={section !== 'environment'} data-testid="learning-grid">
       <div className="workspace-stage">
         <FloatingToolbar active={active && section === 'environment'} label={ko ? '학습 컨트롤' : 'Learning controls'}>
-          <SpeedControl speed={speed} t={t} onChange={next => { engine.setSpeed(next); setSpeed(next) }} />
+          <SpeedControl disabled={snapshot.isGreedyRun} speed={snapshot.isGreedyRun ? { mode: 'interval', intervalMs: 250 } : speed} t={t} onChange={next => { engine.setSpeed(next); setSpeed(next) }} />
           <TooltipButton tip={tips.learn} className="toolbar-primary" disabled={!idle} onClick={() => engine.run({ episodes: episodeCount })} data-testid="playback-run-episode">{t.playback.learn}</TooltipButton>
           <TooltipButton tip={snapshot.status === 'paused' ? tips.resume : tips.pause} disabled={idle} onClick={() => snapshot.status === 'paused' ? engine.resume() : engine.pause()} data-testid={snapshot.status === 'paused' ? 'playback-resume' : 'playback-pause'}>{snapshot.status === 'paused' ? t.playback.resume : t.playback.pause}</TooltipButton>
           <TooltipButton tip={tips.stop} disabled={idle} onClick={() => engine.restartEpisode()} data-testid="playback-stop">{ko ? '학습 중단' : 'Stop'}</TooltipButton>
@@ -120,7 +126,7 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
           <button onClick={() => setShowPath(!showPath)} aria-pressed={showPath} data-testid="toggle-episode-path">{showPath ? t.episodePath.hide : t.episodePath.show}</button>
           <p>{ko ? '⋯ = Q값 동률, 아직 선호 행동 없음. 실제 탐욕 실행은 동률 중 가장 낮은 행동 인덱스를 선택합니다. 화살표 = 유일한 최댓값.' : '⋯ = tied Q-values, no unique preference. Greedy execution resolves ties by lowest action index. Arrows indicate a unique maximum.'}</p>
         </div></section>
-        <GridViewport width={model.width} height={model.height} active={active && section === 'environment'}>
+        <GridViewport agentPos={model.agentPos} resetKey={cameraReset} locale={locale} width={model.width} height={model.height} active={active && section === 'environment'}>
           <GridSvg renderModel={model} cellSize={48} selectedState={selectedState} onStateSelect={handleStateSelect} className="stage-grid" showAgent={false} />
           {showValue && <ValueHeatmap renderModel={model} agentSnapshot={snapshot.agentSnapshot} currentState={snapshot.currentState} cellSize={48} className="stage-overlay" />}
           {showPolicy && <PolicyOverlay renderModel={model} agentSnapshot={snapshot.agentSnapshot} currentState={snapshot.currentState} cellSize={48} className="stage-overlay" />}
@@ -129,8 +135,9 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
         </GridViewport>
       </div>
     </div>
-    <div hidden={section !== 'editor'} className="editor-screen" id="environment-editor"><DeferredPanel active={active && section === 'editor'}><EnvEditor fullscreen active={active && section === 'editor'} presetRequest={presetRequest} panelBlocked={presetsOpen} onOpenProperties={onClosePresets} currentRenderModel={model} locale={locale} t={t} onApply={config => { engine.reset({ envConfig: config }); clearSelections() }} /></DeferredPanel></div>
+    <div hidden={section !== 'editor'} className="editor-screen" id="environment-editor"><DeferredPanel active={active && section === 'editor'}><EnvEditor fullscreen active={active && section === 'editor'} presetRequest={presetRequest} panelBlocked={presetsOpen} onOpenProperties={onClosePresets} currentRenderModel={model} locale={locale} t={t} onApply={config => { engine.reset({ envConfig: config }); clearSelections(); setCameraReset(value => value+1); setApplied(true); onApplied?.() }} /></DeferredPanel></div>
     <aside id="analysis-panel" className="analysis-drawer" hidden={!analysisVisible} data-testid="analysis-panel" aria-label={ko ? '통계 및 분석' : 'Statistics & analysis'}>
+      {section !== 'results' && <PanelResizeHandle locale={locale}/>}
       <header><h2>{ko ? '통계 및 분석' : 'Statistics & analysis'}</h2>{section !== 'results' && <button onClick={() => { setAnalysisOpen(false); document.querySelector<HTMLButtonElement>('[data-testid=toggle-analysis]')?.focus() }} aria-label={ko ? '분석 닫기' : 'Close analysis'}>×</button>}</header>
       <DeferredPanel active={active && analysisVisible}><div className="analysis-content">
         <p className="retention-note">{ko ? '상세 경로는 보관 한도에 따라 정리됩니다. 요약 그래프는 최근 최대 10,000회이며 누적 학습량·성공률은 유지됩니다.' : 'Detailed paths expire at retention limits. Charts keep up to 10,000 recent summaries; lifetime totals and success rate remain.'}</p>

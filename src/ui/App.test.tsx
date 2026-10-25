@@ -419,14 +419,14 @@ describe('App (integration, real Engine — Phase 7 §15)', () => {
     expect(mainGrid().getAllByTestId(/^cell-/)).toHaveLength(100)
   })
 
-  it('6/7/8. Apply resets Episode/Total Reward/Success Rate/Reward History/Q-table, and Inspector returns to empty', () => {
+  it('6/7/8. Apply resets Episode/Total Reward/Success Rate/Reward History/Q-table, and Inspector returns to empty', async () => {
     render(<App />)
     // A large batch (rather than the "Very Fast" preset's 100/frame) so the episode is
     // virtually certain to finish within the single synchronous first batch, regardless
     // of how far epsilon=1 random exploration wanders on the default 7x7 grid.
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 5000 })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
-    expect(engine.getSnapshot().episode).toBeGreaterThan(0) // confirm learning actually happened first
+    await waitFor(()=>expect(engine.getSnapshot().episode).toBeGreaterThan(0)) // confirm learning actually happened first
 
     openEditor()
     fireEvent.click(editorGrid().getByTestId('cell-3,3'))
@@ -2335,7 +2335,7 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     expect(engine.getSnapshot().stats.episodeStatsHistory[0].episode).toBe(1) // not evicted
   })
 
-  it('G. Run Greedy Policy: epsilon=1.0 set, but the run is still fully greedy (no exploration), and epsilon stays 1.0 afterward', () => {
+  it('G. Run Greedy Policy: epsilon=1.0 set, but the run is still fully greedy (no exploration), and epsilon stays 1.0 afterward', async () => {
     engine.reset({ envConfig: corridorConfig })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
@@ -2343,7 +2343,7 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
 
     fireEvent.click(screen.getByTestId('playback-run-greedy'))
 
-    expect(engine.getSnapshot().status).toBe('idle')
+    await waitFor(()=>expect(engine.getSnapshot().status).toBe('idle'))
     const ep = engine.getSnapshot().stats.latestEpisodeStats!
     expect(ep.explorationCount).toBe(0)
     expect(ep.terminationReason).toBe('goal')
@@ -2648,7 +2648,7 @@ describe('App (integration, real Engine — Phase 36: Policy/Value dedup, Greedy
   })
 
   it('Stop & Restart aborts a stuck/looping Greedy run, returns the Agent to Start, and leaves the Q-table untouched', () => {
-    engine.reset({ envConfig: isolatedCellConfig, hyperparams: { alpha: 0.5, gamma: 0.9, epsilon: 0 } })
+    engine.reset({ envConfig: { ...createDefaultGridWorldConfig(), start:{x:0,y:5} }, hyperparams: { alpha: 0.5, gamma: 0.9, epsilon: 0 } })
     engine.setSpeed({ mode: 'interval', intervalMs: 100_000 }) // one synchronous step per click, no real-timer flush needed
     render(<App />)
 
@@ -2702,8 +2702,18 @@ describe('App (integration, real Engine — Phase 36: Policy/Value dedup, Greedy
     }
   })
 
+  it('a proven repeated full state stops policy playback automatically and leaves Q unchanged', () => {
+    engine.reset({envConfig:isolatedCellConfig})
+    const before=engine.getSnapshot().agentSnapshot
+    render(<App />)
+    fireEvent.click(screen.getByTestId('playback-run-greedy'))
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(screen.getByText('The learned policy entered a repeating path.')).toBeTruthy()
+    expect(engine.getSnapshot().agentSnapshot).toEqual(before)
+  })
+
   it('Stop & Restart button is disabled while idle and becomes enabled once a run starts', () => {
-    engine.reset({ envConfig: isolatedCellConfig })
+    engine.reset({ envConfig: { ...createDefaultGridWorldConfig(), start:{x:0,y:5} } })
     engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
     render(<App />)
 
