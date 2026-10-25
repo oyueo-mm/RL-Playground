@@ -60,6 +60,14 @@ export class Scheduler {
   private activeTimerKind: 'timeout' | 'frame' = 'timeout'
   private running = false
   private callbacks: SchedulerCallbacks | null = null
+  private turbo = false
+
+  /** Independent execution strategy; the user's normal speed is never overwritten. */
+  setTurbo(enabled: boolean): void {
+    if (this.turbo === enabled) return
+    this.turbo = enabled
+    if (this.running) { this.cancelActiveTimer(); this.generation++; this.armNext() }
+  }
 
   private readonly timerSource: TimerSource
   private speed: SpeedSetting
@@ -126,10 +134,10 @@ export class Scheduler {
       if (myGeneration !== this.generation) return // stale callback — superseded, do nothing
       this.runBatch()
     }
-    const fast = this.speed.mode === 'batch' && this.speed.stepsPerFrame >= 100
+    const fast = this.turbo || this.speed.mode === 'batch' && this.speed.stepsPerFrame >= 100
     this.activeTimerKind = this.speed.mode === 'interval' || fast ? 'timeout' : 'frame'
     this.activeTimerId = this.activeTimerKind === 'timeout'
-      ? this.timerSource.setTimeout(fire, this.speed.mode === 'interval' ? this.speed.intervalMs : 0)
+      ? this.timerSource.setTimeout(fire, this.turbo ? 0 : this.speed.mode === 'interval' ? this.speed.intervalMs : 0)
       : this.timerSource.requestAnimationFrame(fire)
   }
 
@@ -139,7 +147,16 @@ export class Scheduler {
     const myGeneration = this.generation
 
     let keepGoing = true
-    if (this.speed.mode === 'interval') {
+    if (this.turbo) {
+      const started = this.timerSource.now()
+      // Amortize clock reads; cap steps too for deterministic/frozen test clocks.
+      // Yield after ~8ms, retaining cancellation checks between every real TD step.
+      for (let i = 0; i < 50_000 && keepGoing; i++) {
+        keepGoing = callbacks.performUnit()
+        if (myGeneration !== this.generation) return
+        if ((i & 31) === 31 && this.timerSource.now() - started >= 8) break
+      }
+    } else if (this.speed.mode === 'interval') {
       keepGoing = callbacks.performUnit()
     } else {
       const started = this.timerSource.now()

@@ -1,3 +1,4 @@
+import type { TurboProgress, TurboRunState } from './turbo'
 // ARCHITECTURE.md §5 — wires Environment + Agent + Algorithm into a runnable engine.
 // performStep() (private `tick`/`performOneStep` below) is the single primitive shared
 // by step(), runEpisode(), and run(): they differ only in how many times it's called
@@ -152,6 +153,34 @@ export class SimulationEngine {
   // for why this is not the same as calling setHyperparams({ epsilon: 0 })).
   private savedTrainingSpeed: SpeedSetting | null = null
   private greedyRun = false
+  private turboActive = false
+  private turboRun: TurboRunState | null = null
+  private turboVisual: EngineSnapshot | null = null
+  private finishedTurbo: TurboProgress | undefined
+
+  private settleTurbo(state: TurboProgress['state']): void {
+    if (!this.turboRun) return
+    if (this.turboRun.state === 'running') this.turboRun.elapsedMs += Math.max(0, this.timer.now() - this.turboRun.activeSince)
+    this.turboRun.state = state
+    if (state === 'completed' || state === 'stopped') this.finishedTurbo = { ...this.turboProgress()!, active:false }
+  }
+
+  private turboProgress(): TurboProgress | undefined {
+    if (this.finishedTurbo) return this.finishedTurbo
+    const run = this.turboRun
+    if (!run) return undefined
+    const completedEpisodes = this.stats.episode - run.startEpisode
+    const totalSteps = this.totalSteps - run.startSteps
+    const successes = this.stats.successCount - run.startSuccesses
+    const elapsedMs = run.elapsedMs + (run.state === 'running' ? Math.max(0, this.timer.now() - run.activeSince) : 0)
+    const count = Math.min(100, completedEpisodes)
+    const recent = count ? this.stats.episodeStatsHistory.slice(-count) : []
+    return { state:run.state, active:this.turboActive, completedEpisodes, targetEpisodes:run.targetEpisodes,
+      progress:completedEpisodes / run.targetEpisodes, totalSteps, successes, successRate:completedEpisodes ? successes / completedEpisodes : 0,
+      elapsedMs, stepsPerSecond:elapsedMs ? totalSteps * 1000 / elapsedMs : 0, episodesPerSecond:elapsedMs ? completedEpisodes * 1000 / elapsedMs : 0,
+      recentEpisodes:recent.length, recentMeanReward:recent.length ? recent.reduce((n,e)=>n+e.totalReward,0)/recent.length : 0,
+      recentSuccessRate:recent.length ? recent.filter(e=>e.terminationReason==='goal').length/recent.length : 0 }
+  }
 
   private readonly emitter = new EventEmitter<EngineSnapshot>()
   private readonly scheduler: Scheduler
@@ -197,7 +226,16 @@ export class SimulationEngine {
     this.emitSnapshot()
   }
 
-  getUISnapshot(): EngineSnapshot { return this.snapshot(true) }
+  getUISnapshot(): EngineSnapshot {
+    if (!this.turboActive || !this.turboVisual) return this.snapshot(true)
+    // Reuse the last visual projection. No getRenderModel, visible Q keys,
+    // history projection, policy/value computation or per-step React publication.
+    const base = this.turboVisual
+    return { ...base, status:this.status, episode:this.stats.episode, stepInCurrentEpisode:this.stats.episodeLength,
+      hyperparams:{...this.hyperparams}, resources:this.getResourceMetrics(), turbo:this.turboProgress(),
+      stats:{...base.stats,totalReward:this.stats.totalReward,episodeReward:this.stats.episodeReward,episodeLength:this.stats.episodeLength,
+        successCount:this.stats.successCount,successRate:this.stats.successRate} }
+  }
   getSnapshot(): EngineSnapshot { return this.snapshot(false) }
 
   private snapshot(visible: boolean): EngineSnapshot {
@@ -224,16 +262,18 @@ export class SimulationEngine {
       stats: visible ? { ...this.stats, rewardHistory: this.projectedHistory!.rewards, episodeStatsHistory: this.projectedHistory!.episodes } : this.stats,
       hyperparams: this.hyperparams,
       isGreedyRun: this.greedyRun,
-    }) }
+    }), ...(this.turboRun ? {turbo:this.turboProgress()} : {}) }
   }
 
   private emitSnapshot(force = true): void {
-    // Legacy full subscriptions remain opt-in. React uses only the bounded projection.
-    if (this.emitter.size) this.emitter.emit(this.getSnapshot())
     const now = this.timer.now()
-    const interval = this.getResourceMetrics().level === 'high' ? 250 : 80
-    if (this.uiEmitter.size && (force || now - this.lastUIAt >= interval)) {
-      this.lastUIAt = now
+    const interval = this.turboActive ? 750 : this.getResourceMetrics().level === 'high' ? 250 : 80
+    const due = force || now - this.lastUIAt >= interval
+    if (this.turboActive && !due) return
+    if (due && (this.uiEmitter.size || this.turboActive)) this.lastUIAt = now
+    // Full diagnostic subscriptions remain opt-in, throttled in turbo too.
+    if (this.emitter.size) this.emitter.emit(this.getSnapshot())
+    if (this.uiEmitter.size && due) {
       this.rateWindow.updates++
       this.uiEmitter.emit(this.getUISnapshot())
     }
@@ -270,32 +310,48 @@ export class SimulationEngine {
    * learning run uses — greedy Episodes are recorded identically, just with
    * explorationRate always 0 (a true reflection of what happened, not a special case).
    */
-  run(options: { episodes: number; greedy?: boolean }): void {
-    if (!Number.isInteger(options.episodes) || options.episodes <= 0) {
+  run(options: { episodes: number; greedy?: boolean; turbo?: boolean }): void {
+    if (!Number.isSafeInteger(options.episodes) || options.episodes <= 0) {
       throw new Error('run({ episodes }) requires a positive integer episode count')
     }
-    this.startRun('episodes', options.episodes, options.greedy ?? false)
+    this.startRun('episodes', options.episodes, options.greedy ?? false, options.turbo ?? false)
   }
 
-  private startRun(mode: RunMode, episodes: number | null, greedy = false): void {
-    if (this.status === 'running') return // never spin up a duplicate Scheduler loop
+  private startRun(mode: RunMode, episodes: number | null, greedy = false, turbo = false): void {
+    if (this.status !== 'idle') return // Resume owns paused runs; never replace an in-flight run
     this.restoreTrainingSpeed()
+    this.turboRun = null
+    this.finishedTurbo = undefined
+    this.turboActive = false
+    this.turboVisual = null
+    if (turbo && !greedy) {
+      this.turboVisual = this.snapshot(true)
+      this.turboActive = true
+      this.turboRun = {state:'running',startEpisode:this.stats.episode,startSteps:this.totalSteps,startSuccesses:this.stats.successCount,
+        targetEpisodes:episodes!,elapsedMs:0,activeSince:this.timer.now()}
+    }
+    this.scheduler.setTurbo(this.turboActive)
     if (greedy) { this.pendingAction = null; this.savedTrainingSpeed = this.scheduler.getSpeed(); this.scheduler.setSpeed(sliderToSpeed(45)) }
     this.runMode = mode
     this.remainingEpisodes = episodes
     this.greedyRun = greedy
     this.resourcePauseReason = null
     this.status = 'running'
-    this.scheduler.start(this.schedulerCallbacks())
+    if (this.turboActive) this.emitSnapshot()
+    if (this.status === 'running') this.scheduler.start(this.schedulerCallbacks())
   }
 
   private schedulerCallbacks() {
-    let firstBatch = true
+    let firstBatch = !this.turboActive
     return {
       performUnit: () => this.schedulerTick(),
       afterBatch: () => { this.emitSnapshot(firstBatch); firstBatch = false },
       onStop: () => {
-        if (this.resourcePauseReason) { this.status = 'paused'; this.emitSnapshot(); return }
+        if (this.resourcePauseReason) { this.settleTurbo('paused'); this.status = 'paused'; this.emitSnapshot(); return }
+        this.settleTurbo('completed')
+        this.turboActive = false
+        this.turboVisual = null
+        this.scheduler.setTurbo(false)
         this.restoreTrainingSpeed()
         this.status = 'idle'
         this.runMode = null
@@ -327,6 +383,7 @@ export class SimulationEngine {
   pause(): void {
     if (this.status !== 'running') return
     this.scheduler.stop()
+    this.settleTurbo('paused')
     this.status = 'paused'
     this.emitSnapshot()
   }
@@ -334,8 +391,10 @@ export class SimulationEngine {
   resume(): void {
     if (this.status !== 'paused') return
     this.resourcePauseReason = null
+    if (this.turboActive && this.turboRun) { this.turboRun.state = 'running'; this.turboRun.activeSince = this.timer.now() }
     this.status = 'running'
-    this.scheduler.start(this.schedulerCallbacks())
+    if (this.turboActive) this.emitSnapshot()
+    if (this.status === 'running') this.scheduler.start(this.schedulerCallbacks())
   }
 
   private restoreTrainingSpeed(): void {
@@ -377,6 +436,8 @@ export class SimulationEngine {
 
   reset(overrides?: ResetOverrides): void {
     this.scheduler.stop() // invalidate any in-flight callback before anything else changes
+    this.scheduler.setTurbo(false)
+    this.turboActive = false; this.turboRun = null; this.turboVisual = null; this.finishedTurbo = undefined
 
     const envId = overrides?.envId ?? this.envId
     const envConfig = overrides?.envConfig ?? this.environment.getConfig()
@@ -435,6 +496,9 @@ export class SimulationEngine {
    */
   restartEpisode(): void {
     this.scheduler.stop() // invalidate any in-flight callback before anything else changes
+    if (this.turboActive) this.settleTurbo('stopped')
+    this.scheduler.setTurbo(false)
+    this.turboActive = false; this.turboVisual = null
     this.restoreTrainingSpeed()
     this.environment.reset()
     this.recordedSteps -= this.stats.episodeTrajectory.length

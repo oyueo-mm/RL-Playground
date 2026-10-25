@@ -89,6 +89,8 @@ export interface EngineStats {
 }
 
 export interface EngineSnapshot {
+  /** While active, UI consumers receive frozen visual fields plus fresh summaries. */
+  turbo?: import('./turbo').TurboProgress
   resources?: ResourceMetrics
   status: EngineStatus
   /**
