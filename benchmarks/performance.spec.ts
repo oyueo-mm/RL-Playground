@@ -95,20 +95,20 @@ test('all nine complex maps exceed 500000 steps with bounded retained heap', asy
   for (let index = 0; index < 9; index++) {
     await page.goto('./'); await page.reload()
     await page.evaluate(async () => {
-      for (const path of ['/RL-Playground/src/core/engine/SimulationEngine.ts', '/RL-Playground/src/viz/controls/complexPresets.ts', '/RL-Playground/src/viz/controls/envEditorDraft.ts']) await import(path)
+      for (const path of ['/RL-Playground/src/core/engine/SimulationEngine.ts', '/RL-Playground/src/viz/controls/environmentPresets.ts', '/RL-Playground/src/viz/controls/envEditorDraft.ts']) await import(path)
     })
     await cdp.send('HeapProfiler.collectGarbage'); const before = await cdp.send('Runtime.getHeapUsage')
     const result = await page.evaluate(async index => {
-      const enginePath = '/RL-Playground/src/core/engine/SimulationEngine.ts', presetPath = '/RL-Playground/src/viz/controls/complexPresets.ts', draftPath = '/RL-Playground/src/viz/controls/envEditorDraft.ts'
+      const enginePath = '/RL-Playground/src/core/engine/SimulationEngine.ts', presetPath = '/RL-Playground/src/viz/controls/environmentPresets.ts', draftPath = '/RL-Playground/src/viz/controls/envEditorDraft.ts'
       const { SimulationEngine } = await import(enginePath) as typeof import('../src/core/engine/SimulationEngine')
-      const { COMPLEX_PRESETS } = await import(presetPath) as typeof import('../src/viz/controls/complexPresets')
+      const { ENVIRONMENT_PRESETS } = await import(presetPath) as typeof import('../src/viz/controls/complexPresets')
       const { draftToGridWorldConfig } = await import(draftPath) as typeof import('../src/viz/controls/envEditorDraft')
-      const preset = COMPLEX_PRESETS[index]
+      const preset = [...ENVIRONMENT_PRESETS.slice(0,8), ENVIRONMENT_PRESETS.at(-1)!][index]
       let seed = 42
       const random = Math.random
       Math.random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296 }
       try {
-        const engine = new SimulationEngine({ envConfig: draftToGridWorldConfig(preset.draft), hyperparams: { alpha: .1, gamma: .9, epsilon: .3 } })
+        const engine = new SimulationEngine({ resourceBudget: { maxQStates: 1_000_000 }, envConfig: draftToGridWorldConfig(preset.draft), hyperparams: { alpha: .1, gamma: .9, epsilon: .3 } })
         const started = performance.now()
         for (let step = 0; step < 500100; step++) engine.step()
         const elapsedMs = performance.now() - started

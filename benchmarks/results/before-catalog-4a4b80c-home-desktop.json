@@ -1,0 +1,11 @@
+{
+  "project": "desktop",
+  "label": "before-catalog-4a4b80c",
+  "durationMs": 5000,
+  "intervals": 1,
+  "cells": 120,
+  "meanFrameGapMs": 16.870033670003565,
+  "p95FrameGapMs": 17.200000002980232,
+  "beforeGcBytes": 2448296,
+  "afterFiveCyclesGcBytes": 4047792
+}

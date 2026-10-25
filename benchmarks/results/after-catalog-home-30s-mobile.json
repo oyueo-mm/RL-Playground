@@ -1,0 +1,167 @@
+{
+  "project": "mobile",
+  "samples": [
+    {
+      "second": 0,
+      "cards": [
+        {
+          "id": "02_first_portal_lesson",
+          "step": 0
+        },
+        {
+          "id": "17_sealed_research_base",
+          "step": 1
+        },
+        {
+          "id": "14_crumbling_canyon",
+          "step": 0
+        },
+        {
+          "id": "04_fragile_bridge",
+          "step": 0
+        }
+      ],
+      "heapBytes": 4498008,
+      "intervals": 1
+    },
+    {
+      "second": 5,
+      "cards": [
+        {
+          "id": "02_first_portal_lesson",
+          "step": 9
+        },
+        {
+          "id": "17_sealed_research_base",
+          "step": 39
+        },
+        {
+          "id": "14_crumbling_canyon",
+          "step": 17
+        },
+        {
+          "id": "04_fragile_bridge",
+          "step": 10
+        }
+      ],
+      "heapBytes": 5221612,
+      "intervals": 1
+    },
+    {
+      "second": 10,
+      "cards": [
+        {
+          "id": "16_multi_goal_expedition",
+          "step": 3
+        },
+        {
+          "id": "17_sealed_research_base",
+          "step": 69
+        },
+        {
+          "id": "14_crumbling_canyon",
+          "step": 34
+        },
+        {
+          "id": "09_lab_corridors",
+          "step": 4
+        }
+      ],
+      "heapBytes": 5689148,
+      "intervals": 1
+    },
+    {
+      "second": 15,
+      "cards": [
+        {
+          "id": "16_multi_goal_expedition",
+          "step": 27
+        },
+        {
+          "id": "17_sealed_research_base",
+          "step": 100
+        },
+        {
+          "id": "14_crumbling_canyon",
+          "step": 49
+        },
+        {
+          "id": "09_lab_corridors",
+          "step": 16
+        }
+      ],
+      "heapBytes": 5721000,
+      "intervals": 1
+    },
+    {
+      "second": 20,
+      "cards": [
+        {
+          "id": "16_multi_goal_expedition",
+          "step": 52
+        },
+        {
+          "id": "17_sealed_research_base",
+          "step": 137
+        },
+        {
+          "id": "01_meadow_walk",
+          "step": 4
+        },
+        {
+          "id": "09_lab_corridors",
+          "step": 29
+        }
+      ],
+      "heapBytes": 5591436,
+      "intervals": 1
+    },
+    {
+      "second": 25,
+      "cards": [
+        {
+          "id": "16_multi_goal_expedition",
+          "step": 80
+        },
+        {
+          "id": "08_twin_portal_plaza",
+          "step": 4
+        },
+        {
+          "id": "06_forked_village",
+          "step": 2
+        },
+        {
+          "id": "05_arrow_alley",
+          "step": 0
+        }
+      ],
+      "heapBytes": 5301352,
+      "intervals": 1
+    },
+    {
+      "second": 30,
+      "cards": [
+        {
+          "id": "03_one_switch_one_door",
+          "step": 7
+        },
+        {
+          "id": "08_twin_portal_plaza",
+          "step": 14
+        },
+        {
+          "id": "06_forked_village",
+          "step": 14
+        },
+        {
+          "id": "05_arrow_alley",
+          "step": 10
+        }
+      ],
+      "heapBytes": 4882716,
+      "intervals": 1
+    }
+  ],
+  "uniqueMaps": 11
+}

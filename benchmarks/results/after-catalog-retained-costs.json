@@ -1,0 +1,42 @@
+[
+  {
+    "kind": "q",
+    "count": 10000,
+    "states": 10000,
+    "estimatedBytes": 1492000,
+    "baselineBytes": 10750868,
+    "retainedBytes": 11635024,
+    "deltaBytes": 884156,
+    "bytesPerInputItem": 88.4156
+  },
+  {
+    "kind": "q",
+    "count": 50000,
+    "states": 50000,
+    "estimatedBytes": 7512000,
+    "baselineBytes": 8998592,
+    "retainedBytes": 13139888,
+    "deltaBytes": 4141296,
+    "bytesPerInputItem": 82.82592
+  },
+  {
+    "kind": "q",
+    "count": 100000,
+    "states": 100000,
+    "estimatedBytes": 15112000,
+    "baselineBytes": 10839584,
+    "retainedBytes": 19465172,
+    "deltaBytes": 8625588,
+    "bytesPerInputItem": 86.25588
+  },
+  {
+    "kind": "history",
+    "count": 100000,
+    "states": 48,
+    "recordedSteps": 1205,
+    "baselineBytes": 11861700,
+    "retainedBytes": 13631436,
+    "deltaBytes": 1769736,
+    "bytesPerInputItem": 17.69736
+  }
+]

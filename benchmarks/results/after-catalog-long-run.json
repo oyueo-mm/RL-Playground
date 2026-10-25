@@ -1,0 +1,297 @@
+{
+  "mode": "Synchronous production engine steps, no UI subscriber. CPU time is not interactive UI throughput.",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0",
+  "samples": [
+    {
+      "preset": "01_meadow_walk",
+      "elapsedMs": 1255.2000000029802,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 30305
+        }
+      },
+      "qStates": 166,
+      "qVersion": 500266,
+      "estimatedQBytes": 22908,
+      "totalSteps": 500100,
+      "completedEpisodes": 30305,
+      "episodeSteps": 5,
+      "recordedSteps": 1599,
+      "stepsPerSecond": 360429,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 166,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 9424384,
+      "afterGcBytes": 11137236,
+      "retainedDeltaBytes": 1712852
+    },
+    {
+      "preset": "02_first_portal_lesson",
+      "elapsedMs": 994.4000000059605,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 28442
+        }
+      },
+      "qStates": 167,
+      "qVersion": 500267,
+      "estimatedQBytes": 23046,
+      "totalSteps": 500100,
+      "completedEpisodes": 28442,
+      "episodeSteps": 1,
+      "recordedSteps": 1684,
+      "stepsPerSecond": 0,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 0,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 9838928,
+      "afterGcBytes": 11581928,
+      "retainedDeltaBytes": 1743000
+    },
+    {
+      "preset": "03_one_switch_one_door",
+      "elapsedMs": 1046.5999999940395,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 20455
+        }
+      },
+      "qStates": 252,
+      "qVersion": 500352,
+      "estimatedQBytes": 36792,
+      "totalSteps": 500100,
+      "completedEpisodes": 20455,
+      "episodeSteps": 5,
+      "recordedSteps": 2341,
+      "stepsPerSecond": 477761,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 252,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 9423184,
+      "afterGcBytes": 11242572,
+      "retainedDeltaBytes": 1819388
+    },
+    {
+      "preset": "04_fragile_bridge",
+      "elapsedMs": 1199.4000000059605,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "truncated": 43,
+          "goal": 2111
+        }
+      },
+      "qStates": 591,
+      "qVersion": 500691,
+      "estimatedQBytes": 86286,
+      "totalSteps": 500100,
+      "completedEpisodes": 2154,
+      "episodeSteps": 4270,
+      "recordedSteps": 36734,
+      "stepsPerSecond": 413971,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 591,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 10171256,
+      "afterGcBytes": 13220448,
+      "retainedDeltaBytes": 3049192
+    },
+    {
+      "preset": "05_arrow_alley",
+      "elapsedMs": 1069.4000000059605,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 18390
+        }
+      },
+      "qStates": 440,
+      "qVersion": 500540,
+      "estimatedQBytes": 60720,
+      "totalSteps": 500100,
+      "completedEpisodes": 18390,
+      "episodeSteps": 8,
+      "recordedSteps": 2587,
+      "stepsPerSecond": 469191,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 439,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 9389128,
+      "afterGcBytes": 11217716,
+      "retainedDeltaBytes": 1828588
+    },
+    {
+      "preset": "06_forked_village",
+      "elapsedMs": 1087.2999999970198,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 9380
+        }
+      },
+      "qStates": 1174,
+      "qVersion": 501274,
+      "estimatedQBytes": 162856,
+      "totalSteps": 500100,
+      "completedEpisodes": 9380,
+      "episodeSteps": 0,
+      "recordedSteps": 4963,
+      "stepsPerSecond": 455788,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 1174,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 9392476,
+      "afterGcBytes": 11368316,
+      "retainedDeltaBytes": 1975840
+    },
+    {
+      "preset": "07_marsh_detour",
+      "elapsedMs": 1031.4000000059605,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "bomb": 400,
+          "goal": 15043
+        }
+      },
+      "qStates": 410,
+      "qVersion": 500510,
+      "estimatedQBytes": 56580,
+      "totalSteps": 500100,
+      "completedEpisodes": 15443,
+      "episodeSteps": 24,
+      "recordedSteps": 3142,
+      "stepsPerSecond": 484582,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 410,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 10792224,
+      "afterGcBytes": 12645212,
+      "retainedDeltaBytes": 1852988
+    },
+    {
+      "preset": "08_twin_portal_plaza",
+      "elapsedMs": 1147.5,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 12108
+        }
+      },
+      "qStates": 1236,
+      "qVersion": 501336,
+      "estimatedQBytes": 171454,
+      "totalSteps": 500100,
+      "completedEpisodes": 12108,
+      "episodeSteps": 20,
+      "recordedSteps": 4035,
+      "stepsPerSecond": 432400,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 1236,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 10873636,
+      "afterGcBytes": 12846340,
+      "retainedDeltaBytes": 1972704
+    },
+    {
+      "preset": "20_final_proving_grounds",
+      "elapsedMs": 1181.0999999940395,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "bomb": 110,
+          "truncated": 48
+        }
+      },
+      "qStates": 2541,
+      "qVersion": 502641,
+      "estimatedQBytes": 380562,
+      "totalSteps": 500100,
+      "completedEpisodes": 158,
+      "episodeSteps": 4235,
+      "recordedSteps": 334379,
+      "stepsPerSecond": 420944,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 2392,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 9722716,
+      "afterGcBytes": 31772144,
+      "retainedDeltaBytes": 22049428
+    }
+  ]
+}

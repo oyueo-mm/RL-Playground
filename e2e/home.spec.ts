@@ -13,8 +13,8 @@ test('preset workflow, tooltips, editor history and guide fit all requested view
     await expect(page.getByTestId('open-map-gallery')).toHaveCount(0)
     await navigate(page, 'presets')
     await expect(page.locator('#preset-panel')).toBeVisible()
-    await expect(page.locator('.gallery-thumbnails > button')).toHaveCount(25)
-    await page.getByTestId('preset-mixedChallenge').click()
+    await expect(page.locator('.gallery-thumbnails > button')).toHaveCount(20)
+    await page.getByTestId('preset-20_final_proving_grounds').click()
     await expectFits(page)
     if (width > 760) {
       const panel = (await page.locator('#preset-panel').boundingBox())!
@@ -208,15 +208,15 @@ test('floating controls, state preservation, stop, real rewards and independent 
   expect(errors).toEqual([])
 })
 
-test('25 visual presets preview without applying, and selected draft can be applied', async ({ page }) => {
+test('20 official presets preview without applying, and selected draft can be applied', async ({ page }) => {
   page.on('dialog', dialog => dialog.accept())
   await page.goto('./')
   await navigate(page, 'editor')
   const editor = page.getByTestId('env-editor')
   await navigate(page, 'presets')
   const thumbnails = page.locator('.gallery-thumbnails > button')
-  await expect(thumbnails).toHaveCount(25)
-  for (let index = 0; index < 25; index++) {
+  await expect(thumbnails).toHaveCount(20)
+  for (let index = 0; index < 20; index++) {
     await thumbnails.nth(index).click()
     await expect(thumbnails.nth(index)).toHaveAttribute('aria-pressed', 'true')
     await expect(page.locator('.gallery-preview svg')).toBeVisible()
@@ -229,7 +229,7 @@ test('25 visual presets preview without applying, and selected draft can be appl
 test('home auto animation loops and reduced motion remains paused', async ({ page }) => {
   await page.goto('./')
   await expect(page.getByRole('button', { name: '일시정지', exact: true })).toBeVisible()
-  const demo = page.locator('[data-scenario=basic]')
+  const demo = page.locator('.mini-demo').first()
   const initial = await demo.getAttribute('data-step')
   await expect.poll(() => demo.getAttribute('data-step')).not.toBe(initial)
   await page.getByRole('button', { name: '일시정지', exact: true }).click()
@@ -352,7 +352,7 @@ test('mixed environment high-speed sample records memory and remains controllabl
   await page.goto('./')
   await navigate(page, 'editor')
   await navigate(page, 'presets')
-  await page.getByTestId('preset-mixedChallenge').click()
+  await page.getByTestId('preset-20_final_proving_grounds').click()
   await page.screenshot({ animations: 'disabled', path: info.outputPath(`${info.project.name}-gallery.png`) })
   await page.getByRole('button', { name: '편집기로 불러오기' }).click()
   await page.getByTestId('env-editor-apply').click()
