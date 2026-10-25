@@ -58,6 +58,8 @@ export function EpisodeTrajectory({
     bomb: t.stats.terminationBomb,
     other: t.stats.terminationOther,
     truncated: t.stats.terminationTruncated,
+    trapped: t === translations.ko ? '탈출 불가' : 'Trapped',
+    'policy-loop': t === translations.ko ? '정책 반복' : 'Policy loop',
   }
 
   const trajectory = episode.trajectory

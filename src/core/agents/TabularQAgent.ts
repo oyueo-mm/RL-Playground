@@ -35,6 +35,8 @@ export class TabularQAgent implements ActionValueAgent {
     return vector
   }
 
+  peekQVector(state: StateKey): number[] { return [...(this.table.get(state) ?? new Array(this.actionSpace).fill(0))] }
+
   getQVector(state: StateKey): number[] {
     return [...this.getOrCreate(state)]
   }

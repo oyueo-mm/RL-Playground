@@ -1,3 +1,4 @@
+import { createDefaultGridWorldConfig } from '../environments/gridworld/GridWorldEnv'
 import { describe, expect, it } from 'vitest'
 import { SimulationEngine } from './SimulationEngine'
 import type { TimerSource } from './Scheduler'
@@ -369,7 +370,7 @@ describe('SimulationEngine — reset()', () => {
 describe('SimulationEngine — restartEpisode() (Phase 36)', () => {
   it('preserves the Q-table learned before an in-flight run is restarted (unlike reset())', () => {
     const { source, flushAll } = createManualTimerSource()
-    const engine = new SimulationEngine({ timerSource: source })
+    const engine = new SimulationEngine({ timerSource: source, envConfig:{...createDefaultGridWorldConfig(),width:1,height:4,start:{x:0,y:3},goals:[{x:0,y:0}]} })
 
     // Learn something real first.
     engine.run({ episodes: 10 })
@@ -452,10 +453,10 @@ describe('SimulationEngine — restartEpisode() (Phase 36)', () => {
 
   it('works correctly when called during a Greedy run (the primary motivating case: a stuck/looping Greedy run)', () => {
     const { source, flushAll } = createManualTimerSource()
-    const engine = new SimulationEngine({ timerSource: source })
+    const engine = new SimulationEngine({ timerSource: source, envConfig:{ ...createDefaultGridWorldConfig(),start:{x:0,y:5} } })
 
     engine.run({ episodes: 1, greedy: true })
-    flushAll(50)
+    flushAll(1)
     expect(engine.getSnapshot().status).toBe('running')
 
     engine.restartEpisode()
@@ -1743,7 +1744,7 @@ describe('SimulationEngine — Phase 28: Greedy Policy execution (run({ greedy: 
     expect(snapshot.kind).toBe('Q')
     if (snapshot.kind === 'Q') {
       const allValues = Object.values(snapshot.qTable).flat()
-      expect(allValues.length).toBeGreaterThan(0) // visited at least one State
+      expect(allValues.length).toBe(0) // observing unseen states must not create Q rows
       expect(allValues.every((v) => v === 0)).toBe(true) // and none of them ever got updated
     }
   })

@@ -9,6 +9,7 @@ export interface StepResult {
   done: boolean
   /** Time limit, not MDP termination: the TD target still bootstraps from nextState. */
   truncated?: boolean
+  cutoffReason?: 'trapped' | 'policy-loop'
 }
 
 // Transition = { state, action } & StepResult — composed rather than redeclaring

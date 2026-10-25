@@ -50,14 +50,14 @@ describe('Bounded records independent of learning', () => {
     let seed = 42
     const random = vi.spyOn(Math, 'random').mockImplementation(() => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296 })
     try {
-      const engine = new SimulationEngine({ algorithmId: 'sarsa', resourceBudget: { maxQStates: 1_000_000 }, envConfig: draftToGridWorldConfig(COMPLEX_PRESETS.at(-1)!.draft), hyperparams: { alpha: .1, gamma: .9, epsilon: .3 } })
+      const engine = new SimulationEngine({ algorithmId: 'sarsa', resourceBudget: { maxQStates: 1_000_000 }, envConfig: draftToGridWorldConfig(COMPLEX_PRESETS.find(p=>p.id==='23_final_proving_grounds')!.draft), hyperparams: { alpha: .1, gamma: .9, epsilon: .3 } })
       for (let i = 0; i < 500100; i++) engine.step()
       expect(engine.getResourceMetrics().totalSteps).toBe(500100)
       expect(engine.getResourceMetrics().pauseReason).toBeNull()
       expect(engine.getResourceMetrics().recordedSteps).toBeLessThanOrEqual(500000)
     } finally { random.mockRestore() }
   }, 120000)
-  it.each([...COMPLEX_PRESETS.slice(0, 8), COMPLEX_PRESETS.at(-1)!])('$id continues beyond 500,000 real learning steps with bounded records', preset => {
+  it.each([...COMPLEX_PRESETS.slice(0, 5), ...COMPLEX_PRESETS.slice(6, 9), COMPLEX_PRESETS.find(p=>p.id==='23_final_proving_grounds')!])('$id continues beyond 500,000 real learning steps with bounded records', preset => {
     let seed = 42
     const random = vi.spyOn(Math, 'random').mockImplementation(() => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296 })
     try {

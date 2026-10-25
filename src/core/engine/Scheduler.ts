@@ -57,6 +57,7 @@ export interface SchedulerCallbacks {
 export class Scheduler {
   private generation = 0
   private activeTimerId: number | null = null
+  private activeTimerKind: 'timeout' | 'frame' = 'timeout'
   private running = false
   private callbacks: SchedulerCallbacks | null = null
 
@@ -111,7 +112,7 @@ export class Scheduler {
 
   private cancelActiveTimer(): void {
     if (this.activeTimerId === null) return
-    if (this.speed.mode === 'interval') {
+    if (this.activeTimerKind === 'timeout') {
       this.timerSource.clearTimeout(this.activeTimerId)
     } else {
       this.timerSource.cancelAnimationFrame(this.activeTimerId)
@@ -125,10 +126,11 @@ export class Scheduler {
       if (myGeneration !== this.generation) return // stale callback — superseded, do nothing
       this.runBatch()
     }
-    this.activeTimerId =
-      this.speed.mode === 'interval'
-        ? this.timerSource.setTimeout(fire, this.speed.intervalMs)
-        : this.timerSource.requestAnimationFrame(fire)
+    const fast = this.speed.mode === 'batch' && this.speed.stepsPerFrame >= 100
+    this.activeTimerKind = this.speed.mode === 'interval' || fast ? 'timeout' : 'frame'
+    this.activeTimerId = this.activeTimerKind === 'timeout'
+      ? this.timerSource.setTimeout(fire, this.speed.mode === 'interval' ? this.speed.intervalMs : 0)
+      : this.timerSource.requestAnimationFrame(fire)
   }
 
   private runBatch(): void {
