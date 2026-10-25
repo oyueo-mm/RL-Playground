@@ -199,6 +199,7 @@ GitHub Pages에서 정적 웹 애플리케이션으로 제공됩니다. 시뮬�
 구조, 변경 파일, 검증 결과 및 제한 사항은 [홈 개편 보고서](docs/HOME_REDESIGN.md)를
 참고하세요. 실제 Edge 브라우저 검증은 빌드 후 `npm run test:e2e`로 실행합니다.
 
-현재 작업 브랜치의 전체 화면 GridWorld, 플로팅 툴바, 보상 타일과 최신 검증·스크린샷은
-[전체 화면 실험실 보고서](docs/FULLSCREEN_WORKSPACE.md)에 정리되어 있습니다.
+전체 화면 GridWorld와 플로팅 툴바 구조는 [전체 화면 실험실 보고서](docs/FULLSCREEN_WORKSPACE.md)를 참고하세요.
+포털·단방향·부서지는 바닥·스위치/토글 벽, 신규 프리셋 5종과 최신 검증·스크린샷은
+[환경 시스템 확장 보고서](docs/ENVIRONMENT_EXPANSION.md)에 정리되어 있습니다.
 
