@@ -1,0 +1,100 @@
+node.exe : [WebServer] (node:32588) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+위치 줄:1 문자:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([WebServer] (no... env being set.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 2 workers
+(node:34124) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3272) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:32812) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:28328) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:28444) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+·FT·T·
+
+  1) [desktop] › e2e\turbo.spec.ts:42:1 › reward defaults, on-demand rules and layout slots fit all requested map sizes and viewports
+
+    Test timeout of 120000ms exceeded.
+
+    Error: locator.boundingBox: Test timeout of 120000ms exceeded.
+    Call log:
+      - waiting for getByTestId('learning-grid').getByTestId('reward-readout')
+
+
+      54 |       await page.getByTestId('reward-info-button').click();await page.getByTestId('toggle-live-rewards').click();await expect(page.getByTestId('reward-info-popover')).toHaveCount(0)
+      55 |       await page.getByRole('button',{name:'설정',exact:true}).click()
+    > 56 |       const mini=(await grid.locator('.camera-minimap').boundingBox())!,hud=(await grid.getByTestId('reward-readout').boundingBox())!,controls=(await grid.locator('.zoom-controls').boundingBox())!
+         |                                                                                                                       ^
+      57 |       const overlaps=(a:typeof mini,b:typeof mini)=>a.x<b.x+b.width&&b.x<a.x+a.width&&a.y<b.y+b.height&&b.y<a.y+a.height
+      58 |       expect(overlaps(mini,hud)).toBe(false);expect(overlaps(hud,controls)).toBe(false);expect(overlaps(mini,controls)).toBe(false)
+      59 |       if(columns===64)await page.screenshot({path:`docs/screenshots/turbo-hud-${width}x${height}.png`,animations:'disabled'})
+        at C:\Users\hihi9\Desktop\Projects\RLPlayground\e2e\turbo.spec.ts:56:119
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    .tmp\turbo-e2e-first\turbo-reward-defaults-on-d-f7561-ted-map-sizes-and-viewports-desktop\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: .tmp\turbo-e2e-first\turbo-reward-defaults-on-d-f7561-ted-map-sizes-and-viewports-desktop\error-context.md
+
+  2) [mobile] › e2e\turbo.spec.ts:17:1 › follow retains zoom for wheel/buttons/pinch, centers moving agents and resize, and releases only on pan
+
+    Error: expect(received).toBeGreaterThan(expected)
+
+    Expected: > 2
+    Received:   1.3771277643359572
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      20 |   await grid.getByRole('button',{name:'따라가기',exact:true}).click();await centered(page)
+      21 |   const box=(await view.boundingBox())!;await page.mouse.move(box.x+box.width*.75,box.y+box.height*.6);await page.mouse.wheel(0,-480)
+    > 22 |   await expect.poll(async()=>Number(await view.getAttribute('data-zoom'))).toBeGreaterThan(2)
+         |                                                                            ^
+      23 |   await centered(page)
+      24 |   await page.mouse.wheel(0,120);await centered(page)
+      25 |   await grid.getByRole('button',{name:'Zoom in',exact:true}).click();await grid.getByRole('button',{name:'Zoom out',exact:true}).click();await centered(page)
+        at C:\Users\hihi9\Desktop\Projects\RLPlayground\e2e\turbo.spec.ts:22:76
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    .tmp\turbo-e2e-first\turbo-follow-retains-zoom--62438-ze-and-releases-only-on-pan-mobile\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: .tmp\turbo-e2e-first\turbo-follow-retains-zoom--62438-ze-and-releases-only-on-pan-mobile\error-context.md
+
+  3) [mobile] › e2e\turbo.spec.ts:42:1 › reward defaults, on-demand rules and layout slots fit all requested map sizes and viewports
+
+    Test timeout of 120000ms exceeded.
+
+    Error: locator.boundingBox: Test timeout of 120000ms exceeded.
+    Call log:
+      - waiting for getByTestId('learning-grid').getByTestId('reward-readout')
+
+
+      54 |       await page.getByTestId('reward-info-button').click();await page.getByTestId('toggle-live-rewards').click();await expect(page.getByTestId('reward-info-popover')).toHaveCount(0)
+      55 |       await page.getByRole('button',{name:'설정',exact:true}).click()
+    > 56 |       const mini=(await grid.locator('.camera-minimap').boundingBox())!,hud=(await grid.getByTestId('reward-readout').boundingBox())!,controls=(await grid.locator('.zoom-controls').boundingBox())!
+         |                                                                                                                       ^
+      57 |       const overlaps=(a:typeof mini,b:typeof mini)=>a.x<b.x+b.width&&b.x<a.x+a.width&&a.y<b.y+b.height&&b.y<a.y+a.height
+      58 |       expect(overlaps(mini,hud)).toBe(false);expect(overlaps(hud,controls)).toBe(false);expect(overlaps(mini,controls)).toBe(false)
+      59 |       if(columns===64)await page.screenshot({path:`docs/screenshots/turbo-hud-${width}x${height}.png`,animations:'disabled'})
+        at C:\Users\hihi9\Desktop\Projects\RLPlayground\e2e\turbo.spec.ts:56:119
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    .tmp\turbo-e2e-first\turbo-reward-defaults-on-d-f7561-ted-map-sizes-and-viewports-mobile\test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: .tmp\turbo-e2e-first\turbo-reward-defaults-on-d-f7561-ted-map-sizes-and-viewports-mobile\error-context.md
+
+  3 failed
+    [desktop] › e2e\turbo.spec.ts:42:1 › reward defaults, on-demand rules and layout slots fit all requested map sizes and viewports
+    [mobile] › e2e\turbo.spec.ts:17:1 › follow retains zoom for wheel/buttons/pinch, centers moving agents and resize, and releases only on pan
+    [mobile] › e2e\turbo.spec.ts:42:1 › reward defaults, on-demand rules and layout slots fit all requested map sizes and viewports
+  3 passed (2.3m)

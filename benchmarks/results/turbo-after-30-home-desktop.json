@@ -1,0 +1,17 @@
+{
+  "project": "desktop",
+  "label": "after-30",
+  "durationMs": 5000,
+  "intervals": 1,
+  "cells": 725,
+  "meanFrameGapMs": 16.67300000001987,
+  "p95FrameGapMs": 17.400000005960464,
+  "beforeGcBytes": 4658676,
+  "afterFiveCyclesGcBytes": 5234068,
+  "costsIncludingNavigation": {
+    "ScriptDurationMs": 180.105,
+    "LayoutDurationMs": 157.73499999999999,
+    "RecalcStyleDurationMs": 130.32399999999998,
+    "TaskDurationMs": 1023.3330000000001
+  }
+}

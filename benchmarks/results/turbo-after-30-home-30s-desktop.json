@@ -1,0 +1,167 @@
+{
+  "project": "desktop",
+  "samples": [
+    {
+      "second": 0,
+      "cards": [
+        {
+          "id": "20_sealed_research_base",
+          "step": 1
+        },
+        {
+          "id": "25_obsidian_citadel",
+          "step": 1
+        },
+        {
+          "id": "15_power_control_zone",
+          "step": 1
+        },
+        {
+          "id": "02_first_portal_lesson",
+          "step": 0
+        }
+      ],
+      "heapBytes": 5066840,
+      "intervals": 1
+    },
+    {
+      "second": 5,
+      "cards": [
+        {
+          "id": "20_sealed_research_base",
+          "step": 26
+        },
+        {
+          "id": "25_obsidian_citadel",
+          "step": 38
+        },
+        {
+          "id": "15_power_control_zone",
+          "step": 28
+        },
+        {
+          "id": "02_first_portal_lesson",
+          "step": 9
+        }
+      ],
+      "heapBytes": 6084380,
+      "intervals": 1
+    },
+    {
+      "second": 10,
+      "cards": [
+        {
+          "id": "20_sealed_research_base",
+          "step": 55
+        },
+        {
+          "id": "25_obsidian_citadel",
+          "step": 75
+        },
+        {
+          "id": "15_power_control_zone",
+          "step": 54
+        },
+        {
+          "id": "14_portal_city",
+          "step": 3
+        }
+      ],
+      "heapBytes": 6254632,
+      "intervals": 1
+    },
+    {
+      "second": 15,
+      "cards": [
+        {
+          "id": "20_sealed_research_base",
+          "step": 84
+        },
+        {
+          "id": "25_obsidian_citadel",
+          "step": 112
+        },
+        {
+          "id": "15_power_control_zone",
+          "step": 79
+        },
+        {
+          "id": "14_portal_city",
+          "step": 15
+        }
+      ],
+      "heapBytes": 6442288,
+      "intervals": 1
+    },
+    {
+      "second": 20,
+      "cards": [
+        {
+          "id": "20_sealed_research_base",
+          "step": 113
+        },
+        {
+          "id": "25_obsidian_citadel",
+          "step": 151
+        },
+        {
+          "id": "01_meadow_walk",
+          "step": 5
+        },
+        {
+          "id": "14_portal_city",
+          "step": 29
+        }
+      ],
+      "heapBytes": 6281872,
+      "intervals": 1
+    },
+    {
+      "second": 25,
+      "cards": [
+        {
+          "id": "08_marsh_detour",
+          "step": 5
+        },
+        {
+          "id": "25_obsidian_citadel",
+          "step": 185
+        },
+        {
+          "id": "26_abyssal_fortress",
+          "step": 11
+        },
+        {
+          "id": "14_portal_city",
+          "step": 44
+        }
+      ],
+      "heapBytes": 6340652,
+      "intervals": 1
+    },
+    {
+      "second": 30,
+      "cards": [
+        {
+          "id": "08_marsh_detour",
+          "step": 15
+        },
+        {
+          "id": "24_the_sealed_observatory",
+          "step": 26
+        },
+        {
+          "id": "26_abyssal_fortress",
+          "step": 43
+        },
+        {
+          "id": "21_collapsing_archipelago",
+          "step": 16
+        }
+      ],
+      "heapBytes": 6575260,
+      "intervals": 1
+    }
+  ],
+  "uniqueMaps": 10
+}

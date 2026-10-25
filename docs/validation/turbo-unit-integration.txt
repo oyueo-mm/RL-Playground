@@ -1,0 +1,12 @@
+
+> rl-playground@0.0.0 test
+> vitest run
+
+
+ RUN  v4.1.11 C:/Users/hihi9/Desktop/Projects/RLPlayground
+
+
+ Test Files  79 passed (79)
+      Tests  1415 passed (1415)
+   Start at  04:27:49
+   Duration  77.09s (transform 3.26s, setup 0ms, import 13.85s, tests 82.92s, environment 40.08s)

@@ -1,0 +1,66 @@
+{
+  "baseline": "32b7a0e1df26f500843055157a4225911f2d2013",
+  "maps": [
+    {
+      "map": "default7",
+      "before": {
+        "stepsPerSecond": 16441.848250937197,
+        "episodesPerSecond": 946.1038819050627
+      },
+      "normal": {
+        "stepsPerSecond": 16736.417231701027,
+        "episodesPerSecond": 964.0175656943163
+      },
+      "turbo": {
+        "stepsPerSecond": 450384.4111008914,
+        "episodesPerSecond": 26408.711987904782
+      }
+    },
+    {
+      "map": "preset20",
+      "before": {
+        "stepsPerSecond": 15028.12981335562,
+        "episodesPerSecond": 43.465677211585174
+      },
+      "normal": {
+        "stepsPerSecond": 15017.929719092226,
+        "episodesPerSecond": 43.56504228578997
+      },
+      "turbo": {
+        "stepsPerSecond": 309679.64829402126,
+        "episodesPerSecond": 964.1802129923251
+      }
+    },
+    {
+      "map": "preset32",
+      "before": {
+        "stepsPerSecond": 13240.208452288398,
+        "episodesPerSecond": 16.58770937620609
+      },
+      "normal": {
+        "stepsPerSecond": 13186.438326098123,
+        "episodesPerSecond": 16.75739051111597
+      },
+      "turbo": {
+        "stepsPerSecond": 294079.21038140845,
+        "episodesPerSecond": 331.55691813204373
+      }
+    },
+    {
+      "map": "preset48",
+      "before": {
+        "stepsPerSecond": 9813.471698888385,
+        "episodesPerSecond": 7.866140491698594
+      },
+      "normal": {
+        "stepsPerSecond": 9964.985376583554,
+        "episodesPerSecond": 8.031591713091167
+      },
+      "turbo": {
+        "stepsPerSecond": 292796.861026917,
+        "episodesPerSecond": 210.68006180158665
+      }
+    }
+  ],
+  "interpretation": "Two 5s samples per condition; observed speedups are not universal guarantees. Raw data and scope are in turbo-paired.json."
+}

@@ -1,0 +1,1970 @@
+{
+  "baseline": "32b7a0e1df26f500843055157a4225911f2d2013",
+  "conditions": "Edge headless 1366x768; actual mounted React simulator; all visual preferences ON in all variants (temporarily unmounted in turbo); seed12345; alpha .1 gamma .9 epsilon .3; batch100 normal; same default budgets; 2500 isolated warmup steps; 5s x2, reverse variant order on repetition 2; no concurrent suites. CDP task/script CPU are main-renderer metrics, not OS process CPU.",
+  "results": [
+    {
+      "variant": "before",
+      "repeat": 0,
+      "map": "default7",
+      "elapsedMs": 5002.699999988079,
+      "updates": 61,
+      "maxAnimations": 1,
+      "frameP95Ms": 29.900000005960464,
+      "frameMaxMs": 42.5,
+      "metrics": {
+        "lifetime": {
+          "exploration": 24583,
+          "exploitation": 56717,
+          "reasons": {
+            "goal": 4676
+          }
+        },
+        "qStates": 48,
+        "qVersion": 81348,
+        "estimatedQBytes": 6624,
+        "totalSteps": 81300,
+        "completedEpisodes": 4676,
+        "episodeSteps": 12,
+        "recordedSteps": 1659,
+        "stepsPerSecond": 16051.844466600201,
+        "uiUpdatesPerSecond": 11.964107676969094,
+        "qStateGrowth": 0,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 49,
+      "policyOverlays": 1,
+      "pauseInputMs": 88,
+      "stepsPerSecond": 16251.224338895743,
+      "episodesPerSecond": 934.6952645593665,
+      "taskCpuPercent": 32.95268554988163,
+      "scriptCpuPercent": 25.52685549809189,
+      "heapBefore": 9804164,
+      "heapAfter": 11908088,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 24844,
+            "exploitation": 57356,
+            "reasons": {
+              "goal": 4730
+            }
+          },
+          "qStates": 48,
+          "qVersion": 82248,
+          "estimatedQBytes": 6624,
+          "totalSteps": 82200,
+          "completedEpisodes": 4730,
+          "episodeSteps": 4,
+          "recordedSteps": 1683,
+          "stepsPerSecond": 16051.844466600201,
+          "uiUpdatesPerSecond": 11.964107676969094,
+          "qStateGrowth": 0,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "normal",
+      "repeat": 0,
+      "map": "default7",
+      "elapsedMs": 5005.5999999940395,
+      "updates": 61,
+      "maxAnimations": 1,
+      "frameP95Ms": 26.900000005960464,
+      "frameMaxMs": 35.89999997615814,
+      "metrics": {
+        "lifetime": {
+          "exploration": 25421,
+          "exploitation": 58779,
+          "reasons": {
+            "goal": 4851
+          }
+        },
+        "qStates": 48,
+        "qVersion": 84248,
+        "estimatedQBytes": 6624,
+        "totalSteps": 84200,
+        "completedEpisodes": 4851,
+        "episodeSteps": 7,
+        "recordedSteps": 1641,
+        "stepsPerSecond": 15884.115884115887,
+        "uiUpdatesPerSecond": 11.988011988011989,
+        "qStateGrowth": 0,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 49,
+      "policyOverlays": 1,
+      "pauseInputMs": 63,
+      "stepsPerSecond": 16821.160300483512,
+      "episodesPerSecond": 969.1145916584977,
+      "taskCpuPercent": 30.95033562413786,
+      "scriptCpuPercent": 23.30827473232758,
+      "heapBefore": 10387800,
+      "heapAfter": 12260308,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 25532,
+            "exploitation": 59068,
+            "reasons": {
+              "goal": 4874
+            }
+          },
+          "qStates": 48,
+          "qVersion": 84648,
+          "estimatedQBytes": 6624,
+          "totalSteps": 84600,
+          "completedEpisodes": 4874,
+          "episodeSteps": 1,
+          "recordedSteps": 1662,
+          "stepsPerSecond": 15884.115884115887,
+          "uiUpdatesPerSecond": 11.988011988011989,
+          "qStateGrowth": 0,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "turbo",
+      "repeat": 0,
+      "map": "default7",
+      "elapsedMs": 5023.9000000059605,
+      "updates": 7,
+      "maxAnimations": 0,
+      "frameP95Ms": 23.5,
+      "frameMaxMs": 27.69999998807907,
+      "metrics": {
+        "lifetime": {
+          "exploration": 676169,
+          "exploitation": 1573943,
+          "reasons": {
+            "goal": 131935
+          }
+        },
+        "qStates": 48,
+        "qVersion": 2250160,
+        "estimatedQBytes": 6624,
+        "totalSteps": 2250112,
+        "completedEpisodes": 131935,
+        "episodeSteps": 0,
+        "recordedSteps": 1696,
+        "stepsPerSecond": 395888.44621513947,
+        "uiUpdatesPerSecond": 0.9960159362549801,
+        "qStateGrowth": 0,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 0,
+      "policyOverlays": 0,
+      "pauseInputMs": 69,
+      "stepsPerSecond": 447881.5263037342,
+      "episodesPerSecond": 26261.470172543934,
+      "taskCpuPercent": 68.83447122745073,
+      "scriptCpuPercent": 63.40820876204185,
+      "heapBefore": 10411284,
+      "heapAfter": 11688468,
+      "after": {
+        "turbo": {
+          "state": "paused",
+          "active": true,
+          "completedEpisodes": 133284,
+          "targetEpisodes": 1000000,
+          "progress": 0.133284,
+          "totalSteps": 2272992,
+          "successes": 133284,
+          "successRate": 1,
+          "elapsedMs": 5078,
+          "stepsPerSecond": 447615.5966916109,
+          "episodesPerSecond": 26247.341473020875,
+          "recentEpisodes": 100,
+          "recentMeanReward": 8.412999999999998,
+          "recentSuccessRate": 1
+        },
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 683068,
+            "exploitation": 1589924,
+            "reasons": {
+              "goal": 133284
+            }
+          },
+          "qStates": 48,
+          "qVersion": 2273040,
+          "estimatedQBytes": 6624,
+          "totalSteps": 2272992,
+          "completedEpisodes": 133284,
+          "episodeSteps": 13,
+          "recordedSteps": 1700,
+          "stepsPerSecond": 395888.44621513947,
+          "uiUpdatesPerSecond": 0.9960159362549801,
+          "qStateGrowth": 0,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "before",
+      "repeat": 0,
+      "map": "preset20",
+      "elapsedMs": 5003.700000017881,
+      "updates": 61,
+      "maxAnimations": 1,
+      "frameP95Ms": 36.900000005960464,
+      "frameMaxMs": 63.5,
+      "metrics": {
+        "lifetime": {
+          "exploration": 22807,
+          "exploitation": 52593,
+          "reasons": {
+            "bomb": 219
+          }
+        },
+        "qStates": 1311,
+        "qVersion": 76711,
+        "estimatedQBytes": 195368,
+        "totalSteps": 75400,
+        "completedEpisodes": 219,
+        "episodeSteps": 50,
+        "recordedSteps": 32651,
+        "stepsPerSecond": 14171.656686626746,
+        "uiUpdatesPerSecond": 11.976047904191617,
+        "qStateGrowth": 83,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 400,
+      "policyOverlays": 1,
+      "pauseInputMs": 71,
+      "stepsPerSecond": 15068.84905164789,
+      "episodesPerSecond": 43.76761196698791,
+      "taskCpuPercent": 41.937286407908175,
+      "scriptCpuPercent": 30.455482942513623,
+      "heapBefore": 10138260,
+      "heapAfter": 13713680,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 22978,
+            "exploitation": 52922,
+            "reasons": {
+              "bomb": 220
+            }
+          },
+          "qStates": 1311,
+          "qVersion": 77211,
+          "estimatedQBytes": 195368,
+          "totalSteps": 75900,
+          "completedEpisodes": 220,
+          "episodeSteps": 42,
+          "recordedSteps": 33081,
+          "stepsPerSecond": 14171.656686626746,
+          "uiUpdatesPerSecond": 11.976047904191617,
+          "qStateGrowth": 83,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "normal",
+      "repeat": 0,
+      "map": "preset20",
+      "elapsedMs": 5001.4000000059605,
+      "updates": 61,
+      "maxAnimations": 1,
+      "frameP95Ms": 42.5,
+      "frameMaxMs": 58.30000001192093,
+      "metrics": {
+        "lifetime": {
+          "exploration": 22972,
+          "exploitation": 53028,
+          "reasons": {
+            "bomb": 221
+          }
+        },
+        "qStates": 1314,
+        "qVersion": 77314,
+        "estimatedQBytes": 195818,
+        "totalSteps": 76000,
+        "completedEpisodes": 221,
+        "episodeSteps": 257,
+        "recordedSteps": 32945,
+        "stepsPerSecond": 14271.457085828344,
+        "uiUpdatesPerSecond": 11.976047904191617,
+        "qStateGrowth": 86,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 400,
+      "policyOverlays": 1,
+      "pauseInputMs": 62,
+      "stepsPerSecond": 15195.745191328313,
+      "episodesPerSecond": 44.18762746425733,
+      "taskCpuPercent": 43.43497820605052,
+      "scriptCpuPercent": 31.183248690329535,
+      "heapBefore": 10442692,
+      "heapAfter": 14284372,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 23096,
+            "exploitation": 53304,
+            "reasons": {
+              "bomb": 222
+            }
+          },
+          "qStates": 1314,
+          "qVersion": 77714,
+          "estimatedQBytes": 195818,
+          "totalSteps": 76400,
+          "completedEpisodes": 222,
+          "episodeSteps": 101,
+          "recordedSteps": 32959,
+          "stepsPerSecond": 14271.457085828344,
+          "uiUpdatesPerSecond": 11.976047904191617,
+          "qStateGrowth": 86,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "turbo",
+      "repeat": 0,
+      "map": "preset20",
+      "elapsedMs": 5016.299999982119,
+      "updates": 7,
+      "maxAnimations": 0,
+      "frameP95Ms": 23.900000005960464,
+      "frameMaxMs": 25.400000005960464,
+      "metrics": {
+        "lifetime": {
+          "exploration": 483754,
+          "exploitation": 1126550,
+          "reasons": {
+            "bomb": 4397,
+            "goal": 782
+          }
+        },
+        "qStates": 3374,
+        "qVersion": 1613678,
+        "estimatedQBytes": 505368,
+        "totalSteps": 1610304,
+        "completedEpisodes": 5179,
+        "episodeSteps": 1125,
+        "recordedSteps": 15612,
+        "stepsPerSecond": 276706,
+        "uiUpdatesPerSecond": 1,
+        "qStateGrowth": 56,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 0,
+      "policyOverlays": 0,
+      "pauseInputMs": 79,
+      "stepsPerSecond": 321014.2934046489,
+      "episodesPerSecond": 1032.4342643020675,
+      "taskCpuPercent": 68.23728644642868,
+      "scriptCpuPercent": 63.31246137614021,
+      "heapBefore": 10875736,
+      "heapAfter": 12673816,
+      "after": {
+        "turbo": {
+          "state": "paused",
+          "active": true,
+          "completedEpisodes": 5273,
+          "targetEpisodes": 1000000,
+          "progress": 0.005273,
+          "totalSteps": 1627360,
+          "successes": 818,
+          "successRate": 0.15512990707377206,
+          "elapsedMs": 5082,
+          "stepsPerSecond": 320220.3856749311,
+          "episodesPerSecond": 1037.5836284927193,
+          "recentEpisodes": 100,
+          "recentMeanReward": 10.467499999999989,
+          "recentSuccessRate": 0.36
+        },
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 488879,
+            "exploitation": 1138481,
+            "reasons": {
+              "bomb": 4455,
+              "goal": 818
+            }
+          },
+          "qStates": 3374,
+          "qVersion": 1630734,
+          "estimatedQBytes": 505368,
+          "totalSteps": 1627360,
+          "completedEpisodes": 5273,
+          "episodeSteps": 123,
+          "recordedSteps": 18568,
+          "stepsPerSecond": 276706,
+          "uiUpdatesPerSecond": 1,
+          "qStateGrowth": 56,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "before",
+      "repeat": 0,
+      "map": "preset32",
+      "elapsedMs": 5001.9000000059605,
+      "updates": 61,
+      "maxAnimations": 1,
+      "frameP95Ms": 39.400000005960464,
+      "frameMaxMs": 92.5,
+      "metrics": {
+        "lifetime": {
+          "exploration": 20619,
+          "exploitation": 47481,
+          "reasons": {
+            "bomb": 85
+          }
+        },
+        "qStates": 2256,
+        "qVersion": 70356,
+        "estimatedQBytes": 339000,
+        "totalSteps": 68100,
+        "completedEpisodes": 85,
+        "episodeSteps": 611,
+        "recordedSteps": 68100,
+        "stepsPerSecond": 12287.71228771229,
+        "uiUpdatesPerSecond": 11.988011988011989,
+        "qStateGrowth": 193,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 1024,
+      "policyOverlays": 1,
+      "pauseInputMs": 93,
+      "stepsPerSecond": 13614.826365964704,
+      "episodesPerSecond": 16.99354245384728,
+      "taskCpuPercent": 51.38717287424653,
+      "scriptCpuPercent": 37.20570183325901,
+      "heapBefore": 11121712,
+      "heapAfter": 18833688,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 20822,
+            "exploitation": 47978,
+            "reasons": {
+              "bomb": 86
+            }
+          },
+          "qStates": 2279,
+          "qVersion": 71079,
+          "estimatedQBytes": 342450,
+          "totalSteps": 68800,
+          "completedEpisodes": 86,
+          "episodeSteps": 368,
+          "recordedSteps": 68800,
+          "stepsPerSecond": 12287.71228771229,
+          "uiUpdatesPerSecond": 11.988011988011989,
+          "qStateGrowth": 193,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "normal",
+      "repeat": 0,
+      "map": "preset32",
+      "elapsedMs": 5011,
+      "updates": 62,
+      "maxAnimations": 1,
+      "frameP95Ms": 44.900000005960464,
+      "frameMaxMs": 86.59999999403954,
+      "metrics": {
+        "lifetime": {
+          "exploration": 20820,
+          "exploitation": 47980,
+          "reasons": {
+            "bomb": 88
+          }
+        },
+        "qStates": 2273,
+        "qVersion": 71073,
+        "estimatedQBytes": 341550,
+        "totalSteps": 68800,
+        "completedEpisodes": 88,
+        "episodeSteps": 141,
+        "recordedSteps": 68800,
+        "stepsPerSecond": 12961.116650049851,
+        "uiUpdatesPerSecond": 11.964107676969094,
+        "qStateGrowth": 256,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 1024,
+      "policyOverlays": 1,
+      "pauseInputMs": 79,
+      "stepsPerSecond": 13729.79445220515,
+      "episodesPerSecond": 17.561364997006585,
+      "taskCpuPercent": 52.05837158251846,
+      "scriptCpuPercent": 37.617820794252644,
+      "heapBefore": 10998444,
+      "heapAfter": 18195080,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 21020,
+            "exploitation": 48380,
+            "reasons": {
+              "bomb": 88
+            }
+          },
+          "qStates": 2273,
+          "qVersion": 71673,
+          "estimatedQBytes": 341550,
+          "totalSteps": 69400,
+          "completedEpisodes": 88,
+          "episodeSteps": 741,
+          "recordedSteps": 69400,
+          "stepsPerSecond": 12961.116650049851,
+          "uiUpdatesPerSecond": 11.964107676969094,
+          "qStateGrowth": 256,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "turbo",
+      "repeat": 0,
+      "map": "preset32",
+      "elapsedMs": 5027.9000000059605,
+      "updates": 7,
+      "maxAnimations": 0,
+      "frameP95Ms": 23.5,
+      "frameMaxMs": 31.100000023841858,
+      "metrics": {
+        "lifetime": {
+          "exploration": 446818,
+          "exploitation": 1040542,
+          "reasons": {
+            "bomb": 1676,
+            "goal": 6
+          }
+        },
+        "qStates": 11341,
+        "qVersion": 1498701,
+        "estimatedQBytes": 1722302,
+        "totalSteps": 1487360,
+        "completedEpisodes": 1682,
+        "episodeSteps": 605,
+        "recordedSteps": 71701,
+        "stepsPerSecond": 250869,
+        "uiUpdatesPerSecond": 1,
+        "qStateGrowth": 1702,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 0,
+      "policyOverlays": 0,
+      "pauseInputMs": 66,
+      "stepsPerSecond": 295821.31705050555,
+      "episodesPerSecond": 334.53330416237515,
+      "taskCpuPercent": 68.52236520209064,
+      "scriptCpuPercent": 63.377075916311426,
+      "heapBefore": 11048692,
+      "heapAfter": 16140756,
+      "after": {
+        "turbo": {
+          "state": "paused",
+          "active": true,
+          "completedEpisodes": 1705,
+          "targetEpisodes": 1000000,
+          "progress": 0.001705,
+          "totalSteps": 1503104,
+          "successes": 7,
+          "successRate": 0.004105571847507331,
+          "elapsedMs": 5082,
+          "stepsPerSecond": 295770.1692247147,
+          "episodesPerSecond": 335.4978354978355,
+          "recentEpisodes": 100,
+          "recentMeanReward": -25.017500000000144,
+          "recentSuccessRate": 0.03
+        },
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 451568,
+            "exploitation": 1051536,
+            "reasons": {
+              "bomb": 1698,
+              "goal": 7
+            }
+          },
+          "qStates": 11381,
+          "qVersion": 1514485,
+          "estimatedQBytes": 1728442,
+          "totalSteps": 1503104,
+          "completedEpisodes": 1705,
+          "episodeSteps": 76,
+          "recordedSteps": 70830,
+          "stepsPerSecond": 250869,
+          "uiUpdatesPerSecond": 1,
+          "qStateGrowth": 1702,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "before",
+      "repeat": 0,
+      "map": "preset48",
+      "elapsedMs": 5165.200000017881,
+      "updates": 60,
+      "maxAnimations": 1,
+      "frameP95Ms": 57.79999998211861,
+      "frameMaxMs": 160.2999999821186,
+      "metrics": {
+        "lifetime": {
+          "exploration": 15433,
+          "exploitation": 35567,
+          "reasons": {
+            "bomb": 41
+          }
+        },
+        "qStates": 2414,
+        "qVersion": 53414,
+        "estimatedQBytes": 360518,
+        "totalSteps": 51000,
+        "completedEpisodes": 41,
+        "episodeSteps": 1367,
+        "recordedSteps": 51000,
+        "stepsPerSecond": 8075.7726819541385,
+        "uiUpdatesPerSecond": 11.964107676969094,
+        "qStateGrowth": 15,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 1920,
+      "policyOverlays": 1,
+      "pauseInputMs": 118,
+      "stepsPerSecond": 9873.77061872211,
+      "episodesPerSecond": 7.937737164070716,
+      "taskCpuPercent": 67.65211414829828,
+      "scriptCpuPercent": 50.85212576455717,
+      "heapBefore": 12198016,
+      "heapAfter": 23266736,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 15692,
+            "exploitation": 36308,
+            "reasons": {
+              "bomb": 41
+            }
+          },
+          "qStates": 2414,
+          "qVersion": 54414,
+          "estimatedQBytes": 360518,
+          "totalSteps": 52000,
+          "completedEpisodes": 41,
+          "episodeSteps": 2367,
+          "recordedSteps": 52000,
+          "stepsPerSecond": 8075.7726819541385,
+          "uiUpdatesPerSecond": 11.964107676969094,
+          "qStateGrowth": 15,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "normal",
+      "repeat": 0,
+      "map": "preset48",
+      "elapsedMs": 5036,
+      "updates": 59,
+      "maxAnimations": 1,
+      "frameP95Ms": 55,
+      "frameMaxMs": 140.30000001192093,
+      "metrics": {
+        "lifetime": {
+          "exploration": 15609,
+          "exploitation": 35991,
+          "reasons": {
+            "bomb": 42
+          }
+        },
+        "qStates": 2414,
+        "qVersion": 54014,
+        "estimatedQBytes": 360518,
+        "totalSteps": 51600,
+        "completedEpisodes": 42,
+        "episodeSteps": 279,
+        "recordedSteps": 51600,
+        "stepsPerSecond": 8662.175168431184,
+        "uiUpdatesPerSecond": 11.549566891241579,
+        "qStateGrowth": 15,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 1920,
+      "policyOverlays": 1,
+      "pauseInputMs": 212,
+      "stepsPerSecond": 10246.227164416203,
+      "episodesPerSecond": 8.339952343129468,
+      "taskCpuPercent": 68.94503574265289,
+      "scriptCpuPercent": 50.72660841938046,
+      "heapBefore": 12709788,
+      "heapAfter": 20824216,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 15821,
+            "exploitation": 36479,
+            "reasons": {
+              "bomb": 42
+            }
+          },
+          "qStates": 2539,
+          "qVersion": 54839,
+          "estimatedQBytes": 379268,
+          "totalSteps": 52300,
+          "completedEpisodes": 42,
+          "episodeSteps": 979,
+          "recordedSteps": 52300,
+          "stepsPerSecond": 8662.175168431184,
+          "uiUpdatesPerSecond": 11.549566891241579,
+          "qStateGrowth": 15,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "turbo",
+      "repeat": 0,
+      "map": "preset48",
+      "elapsedMs": 5023.700000017881,
+      "updates": 7,
+      "maxAnimations": 0,
+      "frameP95Ms": 23.600000023841858,
+      "frameMaxMs": 35,
+      "metrics": {
+        "lifetime": {
+          "exploration": 435668,
+          "exploitation": 1015052,
+          "reasons": {
+            "bomb": 1045,
+            "truncated": 1
+          }
+        },
+        "qStates": 19713,
+        "qVersion": 1470433,
+        "estimatedQBytes": 2975962,
+        "totalSteps": 1450720,
+        "completedEpisodes": 1046,
+        "episodeSteps": 1890,
+        "recordedSteps": 143683,
+        "stepsPerSecond": 247019,
+        "uiUpdatesPerSecond": 1,
+        "qStateGrowth": 1995,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 0,
+      "policyOverlays": 0,
+      "pauseInputMs": 59,
+      "stepsPerSecond": 288775.2055247798,
+      "episodesPerSecond": 208.2130700472315,
+      "taskCpuPercent": 68.8093835218603,
+      "scriptCpuPercent": 63.36317853352448,
+      "heapBefore": 12583108,
+      "heapAfter": 21479680,
+      "after": {
+        "turbo": {
+          "state": "paused",
+          "active": true,
+          "completedEpisodes": 1055,
+          "targetEpisodes": 1000000,
+          "progress": 0.001055,
+          "totalSteps": 1459232,
+          "successes": 0,
+          "successRate": 0,
+          "elapsedMs": 5070,
+          "stepsPerSecond": 287816.9625246548,
+          "episodesPerSecond": 208.08678500986193,
+          "recentEpisodes": 100,
+          "recentMeanReward": -124.78899999999922,
+          "recentSuccessRate": 0
+        },
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 438257,
+            "exploitation": 1020975,
+            "reasons": {
+              "bomb": 1054,
+              "truncated": 1
+            }
+          },
+          "qStates": 19751,
+          "qVersion": 1478983,
+          "estimatedQBytes": 2981738,
+          "totalSteps": 1459232,
+          "completedEpisodes": 1055,
+          "episodeSteps": 480,
+          "recordedSteps": 135579,
+          "stepsPerSecond": 247019,
+          "uiUpdatesPerSecond": 1,
+          "qStateGrowth": 1995,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "turbo",
+      "repeat": 1,
+      "map": "default7",
+      "elapsedMs": 5022,
+      "updates": 7,
+      "maxAnimations": 0,
+      "frameP95Ms": 23.5,
+      "frameMaxMs": 24.80000001192093,
+      "metrics": {
+        "lifetime": {
+          "exploration": 683389,
+          "exploitation": 1591011,
+          "reasons": {
+            "goal": 133364
+          }
+        },
+        "qStates": 48,
+        "qVersion": 2274448,
+        "estimatedQBytes": 6624,
+        "totalSteps": 2274400,
+        "completedEpisodes": 133364,
+        "episodeSteps": 13,
+        "recordedSteps": 1641,
+        "stepsPerSecond": 400969,
+        "uiUpdatesPerSecond": 1,
+        "qStateGrowth": 0,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 0,
+      "policyOverlays": 0,
+      "pauseInputMs": 72,
+      "stepsPerSecond": 452887.2958980486,
+      "episodesPerSecond": 26555.95380326563,
+      "taskCpuPercent": 69.02911190760652,
+      "scriptCpuPercent": 63.488231780167254,
+      "heapBefore": 10128420,
+      "heapAfter": 11712992,
+      "after": {
+        "turbo": {
+          "state": "paused",
+          "active": true,
+          "completedEpisodes": 134637,
+          "targetEpisodes": 1000000,
+          "progress": 0.134637,
+          "totalSteps": 2296096,
+          "successes": 134637,
+          "successRate": 1,
+          "elapsedMs": 5079,
+          "stepsPerSecond": 452076.3929907462,
+          "episodesPerSecond": 26508.564678086237,
+          "recentEpisodes": 100,
+          "recentMeanReward": 8.379,
+          "recentSuccessRate": 1
+        },
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 689966,
+            "exploitation": 1606130,
+            "reasons": {
+              "goal": 134637
+            }
+          },
+          "qStates": 48,
+          "qVersion": 2296144,
+          "estimatedQBytes": 6624,
+          "totalSteps": 2296096,
+          "completedEpisodes": 134637,
+          "episodeSteps": 15,
+          "recordedSteps": 1736,
+          "stepsPerSecond": 400969,
+          "uiUpdatesPerSecond": 1,
+          "qStateGrowth": 0,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "normal",
+      "repeat": 1,
+      "map": "default7",
+      "elapsedMs": 5002.5,
+      "updates": 61,
+      "maxAnimations": 1,
+      "frameP95Ms": 28.5,
+      "frameMaxMs": 36.5,
+      "metrics": {
+        "lifetime": {
+          "exploration": 25150,
+          "exploitation": 58150,
+          "reasons": {
+            "goal": 4797
+          }
+        },
+        "qStates": 48,
+        "qVersion": 83348,
+        "estimatedQBytes": 6624,
+        "totalSteps": 83300,
+        "completedEpisodes": 4797,
+        "episodeSteps": 6,
+        "recordedSteps": 1668,
+        "stepsPerSecond": 16051.844466600201,
+        "uiUpdatesPerSecond": 11.964107676969094,
+        "qStateGrowth": 0,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 49,
+      "policyOverlays": 1,
+      "pauseInputMs": 72,
+      "stepsPerSecond": 16651.67416291854,
+      "episodesPerSecond": 958.9205397301349,
+      "taskCpuPercent": 33.03808095952024,
+      "scriptCpuPercent": 24.561399300349827,
+      "heapBefore": 9691640,
+      "heapAfter": 11839552,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 25283,
+            "exploitation": 58517,
+            "reasons": {
+              "goal": 4828
+            }
+          },
+          "qStates": 48,
+          "qVersion": 83848,
+          "estimatedQBytes": 6624,
+          "totalSteps": 83800,
+          "completedEpisodes": 4828,
+          "episodeSteps": 1,
+          "recordedSteps": 1630,
+          "stepsPerSecond": 16051.844466600201,
+          "uiUpdatesPerSecond": 11.964107676969094,
+          "qStateGrowth": 0,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "before",
+      "repeat": 1,
+      "map": "default7",
+      "elapsedMs": 5020.300000011921,
+      "updates": 62,
+      "maxAnimations": 1,
+      "frameP95Ms": 28.19999998807907,
+      "frameMaxMs": 35,
+      "metrics": {
+        "lifetime": {
+          "exploration": 25217,
+          "exploitation": 58283,
+          "reasons": {
+            "goal": 4807
+          }
+        },
+        "qStates": 48,
+        "qVersion": 83548,
+        "estimatedQBytes": 6624,
+        "totalSteps": 83500,
+        "completedEpisodes": 4807,
+        "episodeSteps": 10,
+        "recordedSteps": 1678,
+        "stepsPerSecond": 15901,
+        "uiUpdatesPerSecond": 12,
+        "qStateGrowth": 0,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 49,
+      "policyOverlays": 1,
+      "pauseInputMs": 66,
+      "stepsPerSecond": 16632.47216297865,
+      "episodesPerSecond": 957.512499250759,
+      "taskCpuPercent": 32.994821026553524,
+      "scriptCpuPercent": 24.35812600834803,
+      "heapBefore": 10308920,
+      "heapAfter": 12179728,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 25447,
+            "exploitation": 58853,
+            "reasons": {
+              "goal": 4857
+            }
+          },
+          "qStates": 48,
+          "qVersion": 84348,
+          "estimatedQBytes": 6624,
+          "totalSteps": 84300,
+          "completedEpisodes": 4857,
+          "episodeSteps": 3,
+          "recordedSteps": 1642,
+          "stepsPerSecond": 15901,
+          "uiUpdatesPerSecond": 12,
+          "qStateGrowth": 0,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "turbo",
+      "repeat": 1,
+      "map": "preset20",
+      "elapsedMs": 5027.199999988079,
+      "updates": 7,
+      "maxAnimations": 0,
+      "frameP95Ms": 23.200000017881393,
+      "frameMaxMs": 24.400000005960464,
+      "metrics": {
+        "lifetime": {
+          "exploration": 450495,
+          "exploitation": 1049345,
+          "reasons": {
+            "bomb": 3994,
+            "goal": 510
+          }
+        },
+        "qStates": 3372,
+        "qVersion": 1503212,
+        "estimatedQBytes": 505064,
+        "totalSteps": 1499840,
+        "completedEpisodes": 4504,
+        "episodeSteps": 36,
+        "recordedSteps": 15372,
+        "stepsPerSecond": 252067.9320679321,
+        "uiUpdatesPerSecond": 0.9990009990009991,
+        "qStateGrowth": 56,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 0,
+      "policyOverlays": 0,
+      "pauseInputMs": 70,
+      "stepsPerSecond": 298345.0031833936,
+      "episodesPerSecond": 895.9261616825828,
+      "taskCpuPercent": 69.02583943364553,
+      "scriptCpuPercent": 63.7009667410804,
+      "heapBefore": 11536792,
+      "heapAfter": 12469728,
+      "after": {
+        "turbo": {
+          "state": "paused",
+          "active": true,
+          "completedEpisodes": 4572,
+          "targetEpisodes": 1000000,
+          "progress": 0.004572,
+          "totalSteps": 1513088,
+          "successes": 527,
+          "successRate": 0.11526684164479441,
+          "elapsedMs": 5081,
+          "stepsPerSecond": 297793.34776618774,
+          "episodesPerSecond": 899.8228695138753,
+          "recentEpisodes": 100,
+          "recentMeanReward": 13.458499999999956,
+          "recentSuccessRate": 0.31
+        },
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 454446,
+            "exploitation": 1058642,
+            "reasons": {
+              "bomb": 4045,
+              "goal": 527
+            }
+          },
+          "qStates": 3372,
+          "qVersion": 1516460,
+          "estimatedQBytes": 505064,
+          "totalSteps": 1513088,
+          "completedEpisodes": 4572,
+          "episodeSteps": 76,
+          "recordedSteps": 17591,
+          "stepsPerSecond": 252067.9320679321,
+          "uiUpdatesPerSecond": 0.9990009990009991,
+          "qStateGrowth": 56,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "normal",
+      "repeat": 1,
+      "map": "preset20",
+      "elapsedMs": 5006.700000017881,
+      "updates": 61,
+      "maxAnimations": 1,
+      "frameP95Ms": 40.89999997615814,
+      "frameMaxMs": 62.89999997615814,
+      "metrics": {
+        "lifetime": {
+          "exploration": 22467,
+          "exploitation": 51833,
+          "reasons": {
+            "bomb": 215
+          }
+        },
+        "qStates": 1299,
+        "qVersion": 75599,
+        "estimatedQBytes": 193568,
+        "totalSteps": 74300,
+        "completedEpisodes": 215,
+        "episodeSteps": 142,
+        "recordedSteps": 32511,
+        "stepsPerSecond": 13473.053892215568,
+        "uiUpdatesPerSecond": 11.976047904191617,
+        "qStateGrowth": 74,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 400,
+      "policyOverlays": 1,
+      "pauseInputMs": 66,
+      "stepsPerSecond": 14840.114246856141,
+      "episodesPerSecond": 42.94245710732261,
+      "taskCpuPercent": 43.25689575952753,
+      "scriptCpuPercent": 31.31441867885834,
+      "heapBefore": 11102828,
+      "heapAfter": 14435452,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 22649,
+            "exploitation": 52251,
+            "reasons": {
+              "bomb": 217
+            }
+          },
+          "qStates": 1299,
+          "qVersion": 76199,
+          "estimatedQBytes": 193568,
+          "totalSteps": 74900,
+          "completedEpisodes": 217,
+          "episodeSteps": 390,
+          "recordedSteps": 32458,
+          "stepsPerSecond": 13473.053892215568,
+          "uiUpdatesPerSecond": 11.976047904191617,
+          "qStateGrowth": 74,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "before",
+      "repeat": 1,
+      "map": "preset20",
+      "elapsedMs": 5004.200000017881,
+      "updates": 61,
+      "maxAnimations": 1,
+      "frameP95Ms": 40.70000001788139,
+      "frameMaxMs": 60.400000005960464,
+      "metrics": {
+        "lifetime": {
+          "exploration": 22691,
+          "exploitation": 52309,
+          "reasons": {
+            "bomb": 216
+          }
+        },
+        "qStates": 1311,
+        "qVersion": 76311,
+        "estimatedQBytes": 195368,
+        "totalSteps": 75000,
+        "completedEpisodes": 216,
+        "episodeSteps": 382,
+        "recordedSteps": 32622,
+        "stepsPerSecond": 13653,
+        "uiUpdatesPerSecond": 12,
+        "qStateGrowth": 74,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 400,
+      "policyOverlays": 1,
+      "pauseInputMs": 66,
+      "stepsPerSecond": 14987.410575063348,
+      "episodesPerSecond": 43.16374245618244,
+      "taskCpuPercent": 42.419187882027394,
+      "scriptCpuPercent": 30.64411893998082,
+      "heapBefore": 10563868,
+      "heapAfter": 14413176,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 22866,
+            "exploitation": 52734,
+            "reasons": {
+              "bomb": 219
+            }
+          },
+          "qStates": 1311,
+          "qVersion": 76911,
+          "estimatedQBytes": 195368,
+          "totalSteps": 75600,
+          "completedEpisodes": 219,
+          "episodeSteps": 269,
+          "recordedSteps": 32851,
+          "stepsPerSecond": 13653,
+          "uiUpdatesPerSecond": 12,
+          "qStateGrowth": 74,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "turbo",
+      "repeat": 1,
+      "map": "preset32",
+      "elapsedMs": 5021.5999999940395,
+      "updates": 7,
+      "maxAnimations": 0,
+      "frameP95Ms": 23.600000023841858,
+      "frameMaxMs": 29.900000005960464,
+      "metrics": {
+        "lifetime": {
+          "exploration": 440907,
+          "exploitation": 1027093,
+          "reasons": {
+            "bomb": 1645,
+            "goal": 5
+          }
+        },
+        "qStates": 11331,
+        "qVersion": 1479331,
+        "estimatedQBytes": 1720790,
+        "totalSteps": 1468000,
+        "completedEpisodes": 1650,
+        "episodeSteps": 582,
+        "recordedSteps": 79145,
+        "stepsPerSecond": 247743,
+        "uiUpdatesPerSecond": 1,
+        "qStateGrowth": 1563,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 0,
+      "policyOverlays": 0,
+      "pauseInputMs": 68,
+      "stepsPerSecond": 292337.1037123113,
+      "episodesPerSecond": 328.5805321017123,
+      "taskCpuPercent": 68.50420184809788,
+      "scriptCpuPercent": 63.5330771069736,
+      "heapBefore": 11651744,
+      "heapAfter": 17414072,
+      "after": {
+        "turbo": {
+          "state": "paused",
+          "active": true,
+          "completedEpisodes": 1657,
+          "targetEpisodes": 1000000,
+          "progress": 0.001657,
+          "totalSteps": 1480640,
+          "successes": 5,
+          "successRate": 0.0030175015087507543,
+          "elapsedMs": 5076,
+          "stepsPerSecond": 291694.2474389283,
+          "episodesPerSecond": 326.4381402679275,
+          "recentEpisodes": 100,
+          "recentMeanReward": -41.66200000000047,
+          "recentSuccessRate": 0.01
+        },
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 444678,
+            "exploitation": 1035962,
+            "reasons": {
+              "bomb": 1652,
+              "goal": 5
+            }
+          },
+          "qStates": 11614,
+          "qVersion": 1492254,
+          "estimatedQBytes": 1764220,
+          "totalSteps": 1480640,
+          "completedEpisodes": 1657,
+          "episodeSteps": 2116,
+          "recordedSteps": 85592,
+          "stepsPerSecond": 247743,
+          "uiUpdatesPerSecond": 1,
+          "qStateGrowth": 1563,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "normal",
+      "repeat": 1,
+      "map": "preset32",
+      "elapsedMs": 5014.5999999940395,
+      "updates": 61,
+      "maxAnimations": 1,
+      "frameP95Ms": 44.099999994039536,
+      "frameMaxMs": 106.5,
+      "metrics": {
+        "lifetime": {
+          "exploration": 19202,
+          "exploitation": 44198,
+          "reasons": {
+            "bomb": 80
+          }
+        },
+        "qStates": 2179,
+        "qVersion": 65579,
+        "estimatedQBytes": 327422,
+        "totalSteps": 63400,
+        "completedEpisodes": 80,
+        "episodeSteps": 186,
+        "recordedSteps": 63400,
+        "stepsPerSecond": 11077.844311377245,
+        "uiUpdatesPerSecond": 11.976047904191617,
+        "qStateGrowth": 245,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 1024,
+      "policyOverlays": 1,
+      "pauseInputMs": 91,
+      "stepsPerSecond": 12643.082199991099,
+      "episodesPerSecond": 15.95341602522536,
+      "taskCpuPercent": 55.02624336942688,
+      "scriptCpuPercent": 40.01439795801031,
+      "heapBefore": 11454020,
+      "heapAfter": 18346768,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 19386,
+            "exploitation": 44614,
+            "reasons": {
+              "bomb": 80
+            }
+          },
+          "qStates": 2179,
+          "qVersion": 66179,
+          "estimatedQBytes": 327422,
+          "totalSteps": 64000,
+          "completedEpisodes": 80,
+          "episodeSteps": 786,
+          "recordedSteps": 64000,
+          "stepsPerSecond": 11077.844311377245,
+          "uiUpdatesPerSecond": 11.976047904191617,
+          "qStateGrowth": 245,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "before",
+      "repeat": 1,
+      "map": "preset32",
+      "elapsedMs": 5005.5999999940395,
+      "updates": 61,
+      "maxAnimations": 1,
+      "frameP95Ms": 43,
+      "frameMaxMs": 102,
+      "metrics": {
+        "lifetime": {
+          "exploration": 19490,
+          "exploitation": 44910,
+          "reasons": {
+            "bomb": 81
+          }
+        },
+        "qStates": 2179,
+        "qVersion": 66579,
+        "estimatedQBytes": 327422,
+        "totalSteps": 64400,
+        "completedEpisodes": 81,
+        "episodeSteps": 681,
+        "recordedSteps": 64400,
+        "stepsPerSecond": 10956.175298804781,
+        "uiUpdatesPerSecond": 11.952191235059761,
+        "qStateGrowth": 250,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 1024,
+      "policyOverlays": 1,
+      "pauseInputMs": 91,
+      "stepsPerSecond": 12865.590538612092,
+      "episodesPerSecond": 16.181876298564898,
+      "taskCpuPercent": 54.5368187630504,
+      "scriptCpuPercent": 39.64517740135774,
+      "heapBefore": 11742760,
+      "heapAfter": 18618624,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 19702,
+            "exploitation": 45398,
+            "reasons": {
+              "bomb": 81
+            }
+          },
+          "qStates": 2214,
+          "qVersion": 67314,
+          "estimatedQBytes": 332602,
+          "totalSteps": 65100,
+          "completedEpisodes": 81,
+          "episodeSteps": 1381,
+          "recordedSteps": 65100,
+          "stepsPerSecond": 10956.175298804781,
+          "uiUpdatesPerSecond": 11.952191235059761,
+          "qStateGrowth": 250,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "turbo",
+      "repeat": 1,
+      "map": "preset48",
+      "elapsedMs": 5024.699999988079,
+      "updates": 7,
+      "maxAnimations": 0,
+      "frameP95Ms": 23.30000001192093,
+      "frameMaxMs": 27.799999982118607,
+      "metrics": {
+        "lifetime": {
+          "exploration": 448009,
+          "exploitation": 1043415,
+          "reasons": {
+            "bomb": 1070,
+            "truncated": 1
+          }
+        },
+        "qStates": 20301,
+        "qVersion": 1511725,
+        "estimatedQBytes": 3065142,
+        "totalSteps": 1491424,
+        "completedEpisodes": 1071,
+        "episodeSteps": 4373,
+        "recordedSteps": 140050,
+        "stepsPerSecond": 257704,
+        "uiUpdatesPerSecond": 1,
+        "qStateGrowth": 1792,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 0,
+      "policyOverlays": 0,
+      "pauseInputMs": 53,
+      "stepsPerSecond": 296818.51652905415,
+      "episodesPerSecond": 213.14705355594182,
+      "taskCpuPercent": 68.36619101654128,
+      "scriptCpuPercent": 63.193344876460955,
+      "heapBefore": 12112760,
+      "heapAfter": 21567832,
+      "after": {
+        "turbo": {
+          "state": "paused",
+          "active": true,
+          "completedEpisodes": 1078,
+          "targetEpisodes": 1000000,
+          "progress": 0.001078,
+          "totalSteps": 1500768,
+          "successes": 0,
+          "successRate": 0,
+          "elapsedMs": 5067,
+          "stepsPerSecond": 296184.7246891652,
+          "episodesPerSecond": 212.74916123939215,
+          "recentEpisodes": 100,
+          "recentMeanReward": -128.2669999999998,
+          "recentSuccessRate": 0
+        },
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 450701,
+            "exploitation": 1050067,
+            "reasons": {
+              "bomb": 1077,
+              "truncated": 1
+            }
+          },
+          "qStates": 20513,
+          "qVersion": 1521281,
+          "estimatedQBytes": 3097462,
+          "totalSteps": 1500768,
+          "completedEpisodes": 1078,
+          "episodeSteps": 1681,
+          "recordedSteps": 140382,
+          "stepsPerSecond": 257704,
+          "uiUpdatesPerSecond": 1,
+          "qStateGrowth": 1792,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "normal",
+      "repeat": 1,
+      "map": "preset48",
+      "elapsedMs": 5049.699999988079,
+      "updates": 59,
+      "maxAnimations": 1,
+      "frameP95Ms": 58.400000005960464,
+      "frameMaxMs": 165.90000000596046,
+      "metrics": {
+        "lifetime": {
+          "exploration": 14809,
+          "exploitation": 34091,
+          "reasons": {
+            "bomb": 39
+          }
+        },
+        "qStates": 2414,
+        "qVersion": 51314,
+        "estimatedQBytes": 360518,
+        "totalSteps": 48900,
+        "completedEpisodes": 39,
+        "episodeSteps": 854,
+        "recordedSteps": 48900,
+        "stepsPerSecond": 8410,
+        "uiUpdatesPerSecond": 11,
+        "qStateGrowth": 34,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 1920,
+      "policyOverlays": 1,
+      "pauseInputMs": 79,
+      "stepsPerSecond": 9683.743588750904,
+      "episodesPerSecond": 7.723231083052868,
+      "taskCpuPercent": 68.47648375167165,
+      "scriptCpuPercent": 50.3293661010753,
+      "heapBefore": 12296972,
+      "heapAfter": 20281936,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 14955,
+            "exploitation": 34445,
+            "reasons": {
+              "bomb": 39
+            }
+          },
+          "qStates": 2414,
+          "qVersion": 51814,
+          "estimatedQBytes": 360518,
+          "totalSteps": 49400,
+          "completedEpisodes": 39,
+          "episodeSteps": 1354,
+          "recordedSteps": 49400,
+          "stepsPerSecond": 8410,
+          "uiUpdatesPerSecond": 11,
+          "qStateGrowth": 34,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    },
+    {
+      "variant": "before",
+      "repeat": 1,
+      "map": "preset48",
+      "elapsedMs": 5003.5,
+      "updates": 58,
+      "maxAnimations": 1,
+      "frameP95Ms": 58,
+      "frameMaxMs": 148.90000000596046,
+      "metrics": {
+        "lifetime": {
+          "exploration": 14777,
+          "exploitation": 34023,
+          "reasons": {
+            "bomb": 39
+          }
+        },
+        "qStates": 2414,
+        "qVersion": 51214,
+        "estimatedQBytes": 360518,
+        "totalSteps": 48800,
+        "completedEpisodes": 39,
+        "episodeSteps": 754,
+        "recordedSteps": 48800,
+        "stepsPerSecond": 7761.194029850747,
+        "uiUpdatesPerSecond": 10.945273631840797,
+        "qStateGrowth": 34,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "gridCells": 1920,
+      "policyOverlays": 1,
+      "pauseInputMs": 218,
+      "stepsPerSecond": 9753.172779054661,
+      "episodesPerSecond": 7.794543819326472,
+      "taskCpuPercent": 70.81900669531329,
+      "scriptCpuPercent": 53.04562806035775,
+      "heapBefore": 12604268,
+      "heapAfter": 22876096,
+      "after": {
+        "status": "paused",
+        "metrics": {
+          "lifetime": {
+            "exploration": 14962,
+            "exploitation": 34438,
+            "reasons": {
+              "bomb": 40
+            }
+          },
+          "qStates": 2414,
+          "qVersion": 51814,
+          "estimatedQBytes": 360518,
+          "totalSteps": 49400,
+          "completedEpisodes": 40,
+          "episodeSteps": 563,
+          "recordedSteps": 49400,
+          "stepsPerSecond": 7761.194029850747,
+          "uiUpdatesPerSecond": 10.945273631840797,
+          "qStateGrowth": 34,
+          "pauseReason": null,
+          "level": "normal",
+          "budget": {
+            "maxQStates": 100000,
+            "maxRecordedSteps": 500000,
+            "maxEpisodeSteps": 10000,
+            "maxDetailedEpisodes": 100
+          }
+        }
+      }
+    }
+  ]
+}

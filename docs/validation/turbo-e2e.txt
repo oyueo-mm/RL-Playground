@@ -1,0 +1,28 @@
+
+> rl-playground@0.0.0 test:e2e
+> playwright test --workers=2 --output=.tmp/turbo-e2e-delivery
+
+node.exe : [WebServer] (node:34500) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+위치 줄:1 문자:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([WebServer] (no... env being set.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 52 tests using 2 workers
+(node:996) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15356) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+···········SUSTAINED_UI_SAMPLE {"project":"desktop","samples":[{"elapsedMs":5072,"heap":13929036,"qStates":"1,817","steps":"91400","episodes":"126 / 643"},{"elapsedMs":10088,"heap":23623176,"qStates":"2,559","steps":"184700","episodes":"241 / 132"},{"elapsedMs":15122,"heap":21199264,"qStates":"3,167","steps":"274400","episodes":"340 / 287"},{"elapsedMs":20283,"heap":22826552,"qStates":"3,826","steps":"363500","episodes":"454 / 1469"},{"elapsedMs":25300,"heap":39070200,"qStates":"4,269","steps":"450700","episodes":"556 / 934"},{"elapsedMs":30333,"heap":35799720,"qStates":"4,504","steps":"540000","episodes":"672 / 1006"}],"pauseMs":55,"resumeMs":69,"stopMs":68,"frameCount":1821,"meanFrameGapMs":16.66436024161566,"p95FrameGapMs":21.30000001192093,"beforeBytes":4914208,"afterStopGcBytes":12340460,"after10CyclesGcBytes":13081864}
+·····DYNAMIC_MEMORY_SAMPLE {"project":"desktop","durationMs":3000,"theoreticalStates":204800,"episodes":0,"beforeBytes":6620596,"afterBytes":19377844,"afterStopGcBytes":11280060,"after10ScreenCyclesGcBytes":11272624}
+(node:28224) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:8264) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+························SUSTAINED_UI_SAMPLE {"project":"mobile","samples":[{"elapsedMs":5056,"heap":18062632,"qStates":"1,884","steps":"91400","episodes":"134 / 94"},{"elapsedMs":10076,"heap":33610520,"qStates":"2,696","steps":"182900","episodes":"242 / 277"},{"elapsedMs":15109,"heap":42587864,"qStates":"3,247","steps":"274200","episodes":"345 / 595"},{"elapsedMs":20245,"heap":23655856,"qStates":"3,729","steps":"366500","episodes":"464 / 1276"},{"elapsedMs":25270,"heap":27376092,"qStates":"4,451","steps":"455300","episodes":"573 / 2048"},{"elapsedMs":30327,"heap":21454560,"qStates":"4,721","steps":"543600","episodes":"682 / 32"}],"pauseMs":63,"resumeMs":45,"stopMs":59,"frameCount":1816,"meanFrameGapMs":16.700881057258876,"p95FrameGapMs":21.69999998807907,"beforeBytes":5006092,"afterStopGcBytes":12155552,"after10CyclesGcBytes":12992384}
+·DYNAMIC_MEMORY_SAMPLE {"project":"mobile","durationMs":3000,"theoreticalStates":204800,"episodes":0,"beforeBytes":6675136,"afterBytes":15943584,"afterStopGcBytes":11606472,"after10ScreenCyclesGcBytes":11986124}
+···········
+  52 passed (3.1m)
