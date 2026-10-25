@@ -190,3 +190,12 @@ GitHub Pages에서 정적 웹 애플리케이션으로 제공됩니다. 시뮬�
 [Live Demo](https://oyueo-mm.github.io/RL-Playground/) · [Source Code](https://github.com/oyueo-mm/RL-Playground)
 
 </div>
+# 홈 화면 개편
+
+첫 진입은 소개 홈이며, 사이드바에서 학습 환경·맵 편집·학습 결과·알고리즘 가이드로
+이동할 수 있습니다. 현재 실험은 화면 전환 중 유지됩니다. 홈 GridWorld는 명시적으로
+구분된 설명용 시연이며, 실제 학습은 학습 환경에서 실행합니다.
+
+구조, 변경 파일, 검증 결과 및 제한 사항은 [홈 개편 보고서](docs/HOME_REDESIGN.md)를
+참고하세요. 실제 Edge 브라우저 검증은 빌드 후 `npm run test:e2e`로 실행합니다.
+
