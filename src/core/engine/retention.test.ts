@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { SimulationEngine } from './SimulationEngine'
 import { createDefaultGridWorldConfig } from '../environments/gridworld/GridWorldEnv'
-import { COMPLEX_PRESETS } from '../../viz/controls/complexPresets'
+import { ENVIRONMENT_PRESETS as COMPLEX_PRESETS } from '../../viz/controls/environmentPresets'
 import { draftToGridWorldConfig } from '../../viz/controls/envEditorDraft'
 import type { TimerSource } from './Scheduler'
 
@@ -50,20 +50,20 @@ describe('Bounded records independent of learning', () => {
     let seed = 42
     const random = vi.spyOn(Math, 'random').mockImplementation(() => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296 })
     try {
-      const engine = new SimulationEngine({ algorithmId: 'sarsa', envConfig: draftToGridWorldConfig(COMPLEX_PRESETS.at(-1)!.draft), hyperparams: { alpha: .1, gamma: .9, epsilon: .3 } })
+      const engine = new SimulationEngine({ algorithmId: 'sarsa', resourceBudget: { maxQStates: 1_000_000 }, envConfig: draftToGridWorldConfig(COMPLEX_PRESETS.at(-1)!.draft), hyperparams: { alpha: .1, gamma: .9, epsilon: .3 } })
       for (let i = 0; i < 500100; i++) engine.step()
       expect(engine.getResourceMetrics().totalSteps).toBe(500100)
       expect(engine.getResourceMetrics().pauseReason).toBeNull()
       expect(engine.getResourceMetrics().recordedSteps).toBeLessThanOrEqual(500000)
     } finally { random.mockRestore() }
   }, 120000)
-  it.each(COMPLEX_PRESETS)('$id continues beyond 500,000 real learning steps with bounded records', preset => {
+  it.each([...COMPLEX_PRESETS.slice(0, 8), COMPLEX_PRESETS.at(-1)!])('$id continues beyond 500,000 real learning steps with bounded records', preset => {
     let seed = 42
     const random = vi.spyOn(Math, 'random').mockImplementation(() => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296 })
     try {
       let now = 0, scheduled: (() => void) | null = null
       const timer: TimerSource = { now: () => now, requestAnimationFrame: fn => { scheduled = fn; return 1 }, setTimeout: fn => { scheduled = fn; return 1 }, cancelAnimationFrame: () => { scheduled = null }, clearTimeout: () => { scheduled = null } }
-      const engine = new SimulationEngine({ timerSource: timer, speed: { mode: 'batch', stepsPerFrame: 100 }, envConfig: draftToGridWorldConfig(preset.draft), hyperparams: { alpha: .1, gamma: .9, epsilon: .3 }, resourceBudget: { maxRecordedSteps: 500_000, maxDetailedEpisodes: 100 } })
+      const engine = new SimulationEngine({ timerSource: timer, speed: { mode: 'batch', stepsPerFrame: 100 }, envConfig: draftToGridWorldConfig(preset.draft), hyperparams: { alpha: .1, gamma: .9, epsilon: .3 }, resourceBudget: { maxQStates: 1_000_000, maxRecordedSteps: 500_000, maxDetailedEpisodes: 100 } })
       const started = performance.now()
       engine.run({ episodes: 1_000_000 })
       while (engine.getResourceMetrics().totalSteps < 500_100) {

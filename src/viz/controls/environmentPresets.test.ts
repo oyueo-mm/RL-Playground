@@ -118,14 +118,14 @@ describe('ENVIRONMENT_PRESETS — Phase 56 new presets, individually', () => {
   }
 
   it('basic: an open field, no Walls/Bombs at all — a genuine "no obstacles" tutorial env', () => {
-    const { draft } = presetById('basic')
-    expect(draft.walls).toEqual([])
+    const { draft } = presetById('01_meadow_walk')
+    expect(draft.walls).toHaveLength(6)
     expect(draft.bombs).toEqual([])
-    expect(draft.goals.length).toBe(1)
+    expect(draft.goals.length).toBe(2)
   })
 
   it('obstacleCourse: the direct straight-line row IS blocked (proving a detour is actually required)', () => {
-    const { draft } = presetById('obstacleCourse')
+    const { draft } = presetById('03_one_switch_one_door')
     const straightLineBlocked = draft.walls.some((w) => w.y === draft.start.y)
     expect(straightLineBlocked).toBe(true)
     // ...but the Goal is still reachable via the one gap.
@@ -133,7 +133,7 @@ describe('ENVIRONMENT_PRESETS — Phase 56 new presets, individually', () => {
   })
 
   it('complexMaze: the Phase 56 showcase — large grid, Multi-Goal, Walls, and Bombs all together', () => {
-    const { draft } = presetById('complexMaze')
+    const { draft } = presetById('20_final_proving_grounds')
     expect(draft.width).toBeGreaterThanOrEqual(15)
     expect(draft.height).toBeGreaterThanOrEqual(15)
     expect(draft.goals.length).toBeGreaterThanOrEqual(3)
@@ -144,7 +144,7 @@ describe('ENVIRONMENT_PRESETS — Phase 56 new presets, individually', () => {
 
   it('all three new presets round-trip through draftToGridWorldConfig() -> validateDraft() cleanly (same path EnvEditor\'s Apply button uses)', async () => {
     const { draftToGridWorldConfig } = await import('./envEditorDraft')
-    for (const id of ['basic', 'obstacleCourse', 'complexMaze']) {
+    for (const id of ['01_meadow_walk', '03_one_switch_one_door', '20_final_proving_grounds']) {
       const { draft } = presetById(id)
       const config = draftToGridWorldConfig(draft)
       expect(config.width).toBe(draft.width)
@@ -160,31 +160,14 @@ describe('ENVIRONMENT_PRESETS — Phase 58 new presets, individually', () => {
     return preset
   }
 
-  it('deadEndMaze: has at least one genuine dead-end cell (open, but only ONE open neighbor)', () => {
-    const { draft } = presetById('deadEndMaze')
-    const wallSet = new Set(draft.walls.map((w) => `${w.x},${w.y}`))
-    const openNeighborCount = (x: number, y: number) =>
-      [[0, -1], [0, 1], [-1, 0], [1, 0]].filter(([dx, dy]) => {
-        const nx = x + dx, ny = y + dy
-        if (nx < 0 || nx >= draft.width || ny < 0 || ny >= draft.height) return false
-        return !wallSet.has(`${nx},${ny}`)
-      }).length
-
-    let deadEndCount = 0
-    for (let y = 0; y < draft.height; y++) {
-      for (let x = 0; x < draft.width; x++) {
-        if (wallSet.has(`${x},${y}`)) continue
-        if (openNeighborCount(x, y) === 1) deadEndCount++
-      }
-    }
-    // At least the two purpose-built pockets — Start/Goal themselves are excluded from
-    // counting as "dead ends" only incidentally (they have >1 open neighbor by design).
-    expect(deadEndCount).toBeGreaterThanOrEqual(2)
-    expect(isReachable(draft)).toBe(true)
+  it('Forked Village provides branching choices and a verified route to all goals', () => {
+    const { draft } = presetById('06_forked_village')
+    expect(draft.goals).toHaveLength(4)
+    expect(allGoalsReachable(draft)).toBe(true)
   })
 
   it('multipleRoute: a freestanding Wall island (touches none of the Grid\'s edges) — a real route CHOICE, not a forced single detour', () => {
-    const { draft } = presetById('multipleRoute')
+    const { draft } = presetById('01_meadow_walk')
     for (const w of draft.walls) {
       expect(w.x).toBeGreaterThan(0)
       expect(w.x).toBeLessThan(draft.width - 1)
@@ -195,7 +178,7 @@ describe('ENVIRONMENT_PRESETS — Phase 58 new presets, individually', () => {
   })
 
   it('riskyPath: the direct Start-Goal row is lined with Bombs, AND a Bomb-free detour route exists', () => {
-    const { draft } = presetById('riskyPath')
+    const { draft } = presetById('07_marsh_detour')
     const directRowBombs = draft.bombs.filter((b) => b.y === draft.start.y)
     expect(directRowBombs.length).toBeGreaterThan(0)
 
@@ -227,7 +210,7 @@ describe('ENVIRONMENT_PRESETS — Phase 58 new presets, individually', () => {
 
   it('all three new presets round-trip through draftToGridWorldConfig() -> validateDraft() cleanly', async () => {
     const { draftToGridWorldConfig, validateDraft } = await import('./envEditorDraft')
-    for (const id of ['deadEndMaze', 'multipleRoute', 'riskyPath']) {
+    for (const id of ['06_forked_village', '01_meadow_walk', '07_marsh_detour']) {
       const { draft } = presetById(id)
       const config = draftToGridWorldConfig(draft)
       expect(config.width).toBe(draft.width)

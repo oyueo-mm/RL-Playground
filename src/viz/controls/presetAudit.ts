@@ -2,10 +2,17 @@ import type { GridEditorDraft } from './envEditorDraft'
 
 /** Potential geometry only: closed gates, collapse history and one-way rules are
  * intentionally evaluated separately by real-transition witness replays. */
-export function auditPreset(draft: GridEditorDraft) {
+export function auditPreset(draft: GridEditorDraft, portalConnectivity = false) {
   const key = (x: number, y: number) => `${x},${y}`
   const walls = new Set(draft.walls.map(p => key(p.x, p.y)))
-  const adjacent = (x: number, y: number) => [[x-1,y],[x+1,y],[x,y-1],[x,y+1]].filter(([a,b]) => a >= 0 && b >= 0 && a < draft.width && b < draft.height && !walls.has(key(a,b)))
+  const adjacent = (x: number, y: number) => {
+    const neighbors = [[x-1,y],[x+1,y],[x,y-1],[x,y+1]].filter(([a,b]) => a >= 0 && b >= 0 && a < draft.width && b < draft.height && !walls.has(key(a,b)))
+    if (portalConnectivity) for (const pair of draft.portals ?? []) {
+      const index = pair.ends.findIndex(p => p.x === x && p.y === y)
+      if (index !== -1) { const other = pair.ends[1-index]; neighbors.push([other.x, other.y]) }
+    }
+    return neighbors
+  }
   const distances = (x: number, y: number) => {
     const result = new Map([[key(x,y), 0]]), queue = [[x,y]]
     for (let head = 0; head < queue.length; head++) {

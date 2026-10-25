@@ -1,0 +1,35 @@
+{
+  "map": "Meadow Walk",
+  "goalOrder": [
+    [
+      6,
+      6
+    ],
+    [
+      6,
+      1
+    ]
+  ],
+  "steps": 10,
+  "actions": [
+    3,
+    3,
+    3,
+    3,
+    3,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "legend": {
+    "0": "up",
+    "1": "down",
+    "2": "left",
+    "3": "right"
+  },
+  "events": {
+    "goal": 2
+  }
+}

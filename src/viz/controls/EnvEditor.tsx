@@ -410,38 +410,8 @@ export function EnvEditor({
     toggleWall: locale === 'ko' ? '토글 벽' : 'Toggle wall',
   }
 
-  const presetLabel: Record<string, string> = {
-    custom: t.envEditor.presetCustom,
-    basic: t.envEditor.presetBasic,
-    corridor: t.envEditor.presetCorridor,
-    maze: t.envEditor.presetMaze,
-    bombField: t.envEditor.presetBombField,
-    multiGoal: t.envEditor.presetMultiGoal,
-    treasureHunt: t.envEditor.presetTreasureHunt,
-    obstacleCourse: t.envEditor.presetObstacleCourse,
-    complexMaze: t.envEditor.presetComplexMaze,
-    deadEndMaze: t.envEditor.presetDeadEndMaze,
-    multipleRoute: t.envEditor.presetMultipleRoute,
-    riskyPath: t.envEditor.presetRiskyPath,
-  }
-
-  // Phase 56 §4 — a short one-line description shown under the selector, so a user
-  // faced with a longer Preset list can tell what each one actually does without having
-  // to select it first. `custom` has no entry (nothing to describe — it's just "whatever
-  // the Draft currently is"), so the description line is omitted entirely for it.
-  const presetDescription: Record<string, string> = {
-    basic: t.envEditor.presetBasicDescription,
-    corridor: t.envEditor.presetCorridorDescription,
-    maze: t.envEditor.presetMazeDescription,
-    bombField: t.envEditor.presetBombFieldDescription,
-    multiGoal: t.envEditor.presetMultiGoalDescription,
-    treasureHunt: t.envEditor.presetTreasureHuntDescription,
-    obstacleCourse: t.envEditor.presetObstacleCourseDescription,
-    complexMaze: t.envEditor.presetComplexMazeDescription,
-    deadEndMaze: t.envEditor.presetDeadEndMazeDescription,
-    multipleRoute: t.envEditor.presetMultipleRouteDescription,
-    riskyPath: t.envEditor.presetRiskyPathDescription,
-  }
+  const presetLabel = { custom: t.envEditor.presetCustom }
+  const presetDescription = Object.fromEntries(ENVIRONMENT_PRESETS.map(preset => [preset.id, preset.metadata.description[locale]]))
 
   if (fullscreen) return <div className="fullscreen-editor" data-testid="env-editor">
     {playing && <ManualPlay config={draftToGridWorldConfig(draft)} locale={locale} active={active} onClose={() => { setPlaying(false); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-testid=manual-play-start]')?.focus()) }} />}
@@ -559,7 +529,7 @@ export function EnvEditor({
           <option value="custom">{presetLabel.custom}</option>
           {ENVIRONMENT_PRESETS.map((preset) => (
             <option key={preset.id} value={preset.id}>
-              {presetLabel[preset.id]}
+              {preset.metadata.name[locale]}
             </option>
           ))}
         </select>

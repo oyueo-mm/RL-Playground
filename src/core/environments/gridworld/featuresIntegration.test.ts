@@ -29,7 +29,7 @@ describe('Feature interactions', () => {
     expect(BigInt(env.getState().split(',')[2])).toBe(1n << 33n)
   })
   it.each(['q-learning', 'sarsa'])('runs %s on the mixed dynamic environment without changing algorithm rules', algorithmId => {
-    const config = draftToGridWorldConfig(ENVIRONMENT_PRESETS.find(preset => preset.id === 'mixedChallenge')!.draft)
+    const config = draftToGridWorldConfig(ENVIRONMENT_PRESETS.find(preset => preset.id === '20_final_proving_grounds')!.draft)
     const engine = new SimulationEngine({ algorithmId, envConfig: config, hyperparams: { alpha: .3, gamma: .9, epsilon: .3 } })
     for (let i = 0; i < 300; i++) engine.step()
     const snapshot = engine.getSnapshot()

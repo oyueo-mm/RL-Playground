@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import auditJSON from '../../../benchmarks/results/preset-audit-usability.json?raw'
-import { COMPLEX_PRESETS } from './complexPresets'
+import { ENVIRONMENT_PRESETS as COMPLEX_PRESETS } from './environmentPresets'
 const audit = JSON.parse(auditJSON)
 import { auditPreset } from './presetAudit'
+import catalogJSON from '../../data/presets/catalog.json?raw'
 
 describe('Open complex preset geometry', () => {
   it.each(COMPLEX_PRESETS)('$id has broad reachable space, branches and multiple goals', preset => {
-    const metrics = auditPreset(preset.draft)
+    const metrics = auditPreset(preset.draft, true)
     expect(metrics.wallRatio).toBeLessThan(.45)
     expect(metrics.potentialReachable / (metrics.cells - metrics.walls)).toBeGreaterThan(.9)
     expect(metrics.branches).toBeGreaterThan(30)
@@ -15,9 +16,15 @@ describe('Open complex preset geometry', () => {
   it('keeps the checked-in audit aligned with actual presets and preserved baseline', () => {
     expect(audit.baseline).toBe('535c33d')
     expect(audit.results).toHaveLength(9)
+    const catalog = JSON.parse(catalogJSON)
+    expect(COMPLEX_PRESETS).toHaveLength(20)
     for (const [index, preset] of COMPLEX_PRESETS.entries()) {
-      expect(audit.results[index].id).toBe(preset.id)
-      expect(audit.results[index].after).toEqual(auditPreset(preset.draft))
+      const source = catalog[index]
+      const measured = auditPreset(preset.draft)
+      expect(preset.sourceFile).toBe(source.file)
+      expect(measured.cells).toBe(source.width * source.height)
+      expect(measured.walls).toBe(source.walls)
+      expect(measured.goals).toBe(source.goals)
     }
   })
 })

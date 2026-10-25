@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { COMPLEX_PRESETS } from './complexPresets'
+import { ENVIRONMENT_PRESETS as COMPLEX_PRESETS } from './environmentPresets'
 import { ENVIRONMENT_PRESETS } from './environmentPresets'
 import { draftToGridWorldConfig, validateDraft } from './envEditorDraft'
 import { parseEnvImport, serializeEnvExport } from './envEditorIO'
@@ -8,10 +8,9 @@ import { stateSpaceDetails } from '../../core/environments/gridworld/features'
 import { solveGrid } from '../../test/solveGrid'
 
 describe('Constructively solved complex maps', () => {
-  it('preserves all sixteen original presets and adds nine distinct large maps', () => {
-    expect(ENVIRONMENT_PRESETS).toHaveLength(25)
-    expect(ENVIRONMENT_PRESETS[15].id).toBe('mixedChallenge')
-    expect(new Set(COMPLEX_PRESETS.map(p => p.id)).size).toBe(9)
+  it('publishes precisely the twenty approved presets', () => {
+    expect(ENVIRONMENT_PRESETS).toHaveLength(20)
+    expect(new Set(COMPLEX_PRESETS.map(p => p.id)).size).toBe(20)
   })
   it.each(COMPLEX_PRESETS)('$id reaches all goals via actual transitions, round-trips and stays structurally valid', preset => {
     expect(validateDraft(preset.draft)).toEqual([])
