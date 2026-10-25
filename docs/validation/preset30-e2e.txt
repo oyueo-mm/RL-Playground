@@ -1,0 +1,72 @@
+> rl-playground@0.0.0 test:e2e
+> playwright test --workers=2
+
+node.exe : [WebServer] (node:26416) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+위치 줄:1 문자:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([WebServer] (no... env being set.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 44 tests using 2 workers
+
+(node:34452) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:30396) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  2 [desktop] › e2e\complex.spec.ts:25:1 › element drag, touch, overwrite, automatic links and undo preserve the experiment (3.5s)
+  ok  3 [desktop] › e2e\complex.spec.ts:67:1 › home real-rule scenarios and one guide scroll container fit all requested sizes (7.5s)
+  ok  1 [desktop] › e2e\catalog.spec.ts:4:1 › random gallery moves four agents, replaces one card, previews and filters all 20 maps (13.4s)
+  ok  4 [desktop] › e2e\complex.spec.ts:105:1 › huge presets are applicable and actual budgets safely pause with distinct truncation (2.6s)
+  ok  5 [desktop] › e2e\catalog.spec.ts:68:1 › held keyboard and pointer movement stop on release blur pause restart and navigation (1.9s)
+  ok  7 [desktop] › e2e\home.spec.ts:4:1 › preset workflow, tooltips, editor history and guide fit all requested viewports (14.9s)
+  ok  8 [desktop] › e2e\home.spec.ts:100:1 › full-map fit across desktop sizes, map ratios, sidebar and analysis changes (13.2s)
+  ok  9 [desktop] › e2e\home.spec.ts:145:1 › 20x20 high speed training remains controllable and stop preserves learned values (1.5s)
+SUSTAINED_UI_SAMPLE {"project":"desktop","samples":[{"elapsedMs":5092,"heap":17484028,"qStates":"4,392","steps":"61200","episodes":"99 / 1134"},{"elapsedMs":10159,"heap":16399656,"qStates":"6,627","steps":"120200","episodes":"177 / 580"},{"elapsedMs":15182,"heap":13835272,"qStates":"8,343","steps":"178100","episodes":"242 / 82"},{"elapsedMs":20378,"heap":27953628,"qStates":"10,306","steps":"236300","episodes":"305 / 1645"},{"elapsedMs":25418,"heap":33320648,"qStates":"11,491","steps":"293100","episodes":"383 / 24"},{"elapsedMs":30467,"heap":20209340,"qStates":"13,180","steps":"351100","episodes":"457 / 2771"}],"pauseMs":82,"resumeMs":79,"stopMs":83,"frameCount":1833,"meanFrameGapMs":16.654391707583198,"p95FrameGapMs":25.900000005960464,"beforeBytes":4804984,"afterStopGcBytes":11631216,"after10CyclesGcBytes":12259968}
+  ok  6 [desktop] › e2e\complex.spec.ts:134:1 › 30-second production UI run samples heap, frame delays and pause/resume/stop response (34.2s)
+  ok 10 [desktop] › e2e\home.spec.ts:163:1 › floating controls, state preservation, stop, real rewards and independent editor (3.0s)
+  ok 12 [desktop] › e2e\home.spec.ts:215:1 › 30 official presets preview without applying, and selected draft can be applied (3.2s)
+  ok 13 [desktop] › e2e\home.spec.ts:234:1 › home auto animation loops and reduced motion remains paused (1.2s)
+  ok 14 [desktop] › e2e\home.spec.ts:248:1 › fixed single language selector and square editor selection survive navigation and collapse (1.8s)
+  ok 11 [desktop] › e2e\homePerformance.spec.ts:5:1 › home rendering memory and timer cleanup sample (7.4s)
+  ok 15 [desktop] › e2e\home.spec.ts:283:1 › new elements can be placed, linked, changed and exported through mouse and keyboard (2.9s)
+  ok 17 [desktop] › e2e\home.spec.ts:326:1 › dynamic collapse, portal and switch state stays consistent through pause and locale changes (4.6s)
+DYNAMIC_MEMORY_SAMPLE {"project":"desktop","durationMs":3000,"theoreticalStates":204800,"episodes":0,"beforeBytes":6504776,"afterBytes":14449052,"afterStopGcBytes":9088360,"after10ScreenCyclesGcBytes":9228756}
+  ok 18 [desktop] › e2e\home.spec.ts:357:1 › mixed environment high-speed sample records memory and remains controllable (7.1s)
+  ok 16 [desktop] › e2e\homePerformance.spec.ts:37:1 › 30-second live home animation keeps bounded memory and independently rotates maps (31.6s)
+  ok 19 [desktop] › e2e\upgrade30.spec.ts:4:1 › 30-map fullscreen catalog, named tools, apply navigation and 64x64 fit at every viewport (21.0s)
+  ok 21 [desktop] › e2e\upgrade30.spec.ts:42:1 › cursor zoom, pan, editor-safe space drag, resize and mobile pinch (3.0s)
+  ok 20 [desktop] › e2e\usability.spec.ts:4:1 › manual play and dismissible import errors preserve editing across all target sizes (8.4s)
+  ok 22 [desktop] › e2e\upgrade30.spec.ts:74:1 › policy playback ignores turbo, supports pause and restores speed after stop and a proven loop (3.5s)
+(node:3124) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:356) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 24 [mobile] › e2e\complex.spec.ts:25:1 › element drag, touch, overwrite, automatic links and undo preserve the experiment (4.1s)
+  ok 23 [mobile] › e2e\catalog.spec.ts:4:1 › random gallery moves four agents, replaces one card, previews and filters all 20 maps (4.7s)
+  ok 25 [mobile] › e2e\complex.spec.ts:67:1 › home real-rule scenarios and one guide scroll container fit all requested sizes (2.7s)
+  ok 26 [mobile] › e2e\catalog.spec.ts:68:1 › held keyboard and pointer movement stop on release blur pause restart and navigation (3.0s)
+  ok 27 [mobile] › e2e\complex.spec.ts:105:1 › huge presets are applicable and actual budgets safely pause with distinct truncation (3.2s)
+  ok 28 [mobile] › e2e\home.spec.ts:4:1 › preset workflow, tooltips, editor history and guide fit all requested viewports (6.6s)
+  ok 30 [mobile] › e2e\home.spec.ts:100:1 › full-map fit across desktop sizes, map ratios, sidebar and analysis changes (9.6s)
+  ok 31 [mobile] › e2e\home.spec.ts:145:1 › 20x20 high speed training remains controllable and stop preserves learned values (2.2s)
+  ok 32 [mobile] › e2e\home.spec.ts:163:1 › floating controls, state preservation, stop, real rewards and independent editor (6.6s)
+  ok 33 [mobile] › e2e\home.spec.ts:215:1 › 30 official presets preview without applying, and selected draft can be applied (4.6s)
+  ok 34 [mobile] › e2e\home.spec.ts:234:1 › home auto animation loops and reduced motion remains paused (1.7s)
+  ok 35 [mobile] › e2e\home.spec.ts:248:1 › fixed single language selector and square editor selection survive navigation and collapse (3.7s)
+  ok 36 [mobile] › e2e\home.spec.ts:283:1 › new elements can be placed, linked, changed and exported through mouse and keyboard (3.4s)
+SUSTAINED_UI_SAMPLE {"project":"mobile","samples":[{"elapsedMs":5069,"heap":28328720,"qStates":"5,278","steps":"60400","episodes":"85 / 2106"},{"elapsedMs":10119,"heap":31219648,"qStates":"7,818","steps":"117400","episodes":"148 / 931"},{"elapsedMs":15147,"heap":19683168,"qStates":"9,900","steps":"174400","episodes":"221 / 215"},{"elapsedMs":20716,"heap":34722316,"qStates":"11,214","steps":"235300","episodes":"296 / 1013"},{"elapsedMs":25773,"heap":18944384,"qStates":"12,751","steps":"293600","episodes":"362 / 481"},{"elapsedMs":30816,"heap":24234808,"qStates":"14,434","steps":"349700","episodes":"431 / 1212"}],"pauseMs":301,"resumeMs":203,"stopMs":52,"frameCount":1849,"meanFrameGapMs":16.674634937807443,"p95FrameGapMs":26.600000023841858,"beforeBytes":4911464,"afterStopGcBytes":11524200,"after10CyclesGcBytes":12312308}
+  ok 37 [mobile] › e2e\home.spec.ts:326:1 › dynamic collapse, portal and switch state stays consistent through pause and locale changes (6.0s)
+  ok 29 [mobile] › e2e\complex.spec.ts:134:1 › 30-second production UI run samples heap, frame delays and pause/resume/stop response (42.8s)
+  ok 39 [mobile] › e2e\homePerformance.spec.ts:5:1 › home rendering memory and timer cleanup sample (11.6s)
+DYNAMIC_MEMORY_SAMPLE {"project":"mobile","durationMs":3000,"theoreticalStates":204800,"episodes":0,"beforeBytes":6600036,"afterBytes":16506336,"afterStopGcBytes":9276212,"after10ScreenCyclesGcBytes":9385992}
+  ok 38 [mobile] › e2e\home.spec.ts:357:1 › mixed environment high-speed sample records memory and remains controllable (16.7s)
+  ok 41 [mobile] › e2e\upgrade30.spec.ts:4:1 › 30-map fullscreen catalog, named tools, apply navigation and 64x64 fit at every viewport (6.0s)
+  ok 42 [mobile] › e2e\upgrade30.spec.ts:42:1 › cursor zoom, pan, editor-safe space drag, resize and mobile pinch (2.8s)
+  ok 43 [mobile] › e2e\upgrade30.spec.ts:74:1 › policy playback ignores turbo, supports pause and restores speed after stop and a proven loop (2.6s)
+  ok 44 [mobile] › e2e\usability.spec.ts:4:1 › manual play and dismissible import errors preserve editing across all target sizes (3.2s)
+  ok 40 [mobile] › e2e\homePerformance.spec.ts:37:1 › 30-second live home animation keeps bounded memory and independently rotates maps (31.8s)
+
+  44 passed (3.3m)
