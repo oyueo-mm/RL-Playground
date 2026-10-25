@@ -62,22 +62,25 @@ export function PolicyOverlay({ renderModel, agentSnapshot, currentState, cellSi
       {entries.map(([state, qVector]) => {
         const { x, y } = parseStateKey(state)
         const action = argmaxLowestIndex(qVector)
+        const best = Math.max(...qVector)
+        const tied = qVector.filter(value => value === best).length > 1
         const label = GRIDWORLD_ACTION_LABELS[action]
         const arrow = label ? GRIDWORLD_ACTION_ARROWS[label] : undefined
         if (!arrow) return null // unknown action index — draw nothing rather than a guess
         return (
           <text
             key={state}
-            x={x * cellSize + cellSize / 2}
-            y={y * cellSize + cellSize / 2}
+            x={x * cellSize + cellSize * 0.78}
+            y={y * cellSize + cellSize * 0.22}
             textAnchor="middle"
             dominantBaseline="central"
-            fontSize={cellSize * 0.5}
+            fontSize={cellSize * 0.32}
             fill="#1d4ed8"
             data-testid={`policy-arrow-${state}`}
             data-action={action}
+            data-tied={tied || undefined}
           >
-            {arrow}
+            {tied ? '⋯' : arrow}
           </text>
         )
       })}

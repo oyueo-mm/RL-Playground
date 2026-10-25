@@ -211,6 +211,12 @@ export class GridWorldEnv implements Environment {
       }
     }
 
+    // Entry-only reward tiles are memoryless: revisits pay again, but a blocked
+    // action while standing on a tile does not. Terminal/wall/start overlaps are
+    // rejected by the editor and import boundary.
+    if (!samePosition(current, next) && !this.config.bombs.some(b => samePosition(b, next)) && !this.config.goals.some(g => samePosition(g, next))) {
+      reward += this.config.rewardTiles?.find(tile => samePosition(tile, next))?.reward ?? 0
+    }
     this.agent = next
     // Phase 34: computed AFTER `this.agent = next` and after any `collectedGoals.add()`
     // above, so `nextState`'s mask correctly reflects "post-action, post-collection-
@@ -246,6 +252,7 @@ export class GridWorldEnv implements Environment {
       // that cannot shrink as Goals are collected — see render.ts's doc comment.
       allGoals: this.config.goals.map(positionKey),
       agentPos: positionKey(this.agent),
+      ...(this.config.rewardTiles?.length ? { cellRewards: Object.fromEntries(this.config.rewardTiles.map(tile => [positionKey(tile), tile.reward])) } : {}),
     }
   }
 

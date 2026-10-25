@@ -52,6 +52,8 @@ describe('PolicyOverlay', () => {
     render(<PolicyOverlay renderModel={renderModel} agentSnapshot={agentSnapshot} />)
 
     expect(screen.getByTestId('policy-arrow-1,1').getAttribute('data-action')).toBe('0')
+    expect(screen.getByTestId('policy-arrow-1,1').getAttribute('data-tied')).toBe('true')
+    expect(screen.getByTestId('policy-arrow-1,1').textContent).toBe('⋯')
   })
 
   it('draws nothing for a State absent from the Q-table (never visited)', () => {

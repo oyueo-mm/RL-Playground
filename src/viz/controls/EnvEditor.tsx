@@ -14,11 +14,14 @@
 // Environment Preset selector were added; both still only ever mutate the local Draft —
 // neither reaches the live Environment before Apply.
 
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
 import type { GridWorldConfig } from '../../core/environments/gridworld/types'
 import type { EnvRenderModel } from '../../core/types/render'
 import type { StateKey } from '../../core/types/rl'
 import { GridSvg } from '../grid/GridSvg'
+import { GridViewport } from '../../ui/GridViewport'
+import { FloatingToolbar } from '../../ui/FloatingToolbar'
+import { MapGallery } from './MapGallery'
 import { parseStateKey } from '../grid/stateKey'
 import { translations, translateValidationError, type Dictionary, type Locale } from '../../ui/i18n'
 import { ENVIRONMENT_PRESETS } from './environmentPresets'
@@ -46,6 +49,8 @@ export interface EnvEditorProps {
   /** Phase 13 — defaults to English so every pre-existing caller/test is unaffected. */
   t?: Dictionary
   locale?: Locale
+  fullscreen?: boolean
+  active?: boolean
 }
 
 function isAnyGoal(pos: { x: number; y: number }, goals: GridEditorDraft['goals']): boolean {
@@ -58,10 +63,30 @@ export function EnvEditor({
   confirmApply = window.confirm,
   t = translations.en,
   locale = 'en',
+  fullscreen = false,
+  active = true,
 }: EnvEditorProps) {
-  const [draft, setDraft] = useState<GridEditorDraft>(() => draftFromRenderModel(currentRenderModel))
+  const [draft, setDraftState] = useState<GridEditorDraft>(() => draftFromRenderModel(currentRenderModel))
+  const dirty = useRef(false)
+  const setDraft: Dispatch<SetStateAction<GridEditorDraft>> = action => { dirty.current = true; setDraftState(action) }
+  const seedKey = JSON.stringify([currentRenderModel.width, currentRenderModel.height, currentRenderModel.start, currentRenderModel.allGoals ?? currentRenderModel.goals, currentRenderModel.walls, currentRenderModel.bombs, currentRenderModel.stepReward, currentRenderModel.wallPenalty, currentRenderModel.goalReward, currentRenderModel.bombPenalty, currentRenderModel.cellRewards])
+  const previousSeed = useRef(seedKey)
+  useEffect(() => {
+    if (previousSeed.current !== seedKey && !dirty.current) setDraftState(draftFromRenderModel(currentRenderModel))
+    previousSeed.current = seedKey
+  }, [seedKey, currentRenderModel])
   const [mode, setMode] = useState<EditMode>('wall')
   const [presetId, setPresetId] = useState<string>('custom')
+  const [propertiesOpen, setPropertiesOpen] = useState(false)
+  const [galleryOpen, setGalleryOpen] = useState(false)
+  const [tileReward, setTileReward] = useState(1)
+  const [selectedCell, setSelectedCell] = useState<StateKey | null>(null)
+  useEffect(() => {
+    if (!active) return
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setPropertiesOpen(false); setGalleryOpen(false) } }
+    window.addEventListener('keydown', close)
+    return () => window.removeEventListener('keydown', close)
+  }, [active])
   // Phase 46 — Import/Export. `importError` is cleared on every successful Import (and
   // stays until then — a bad file otherwise leaves no visible trace it was rejected).
   const [importError, setImportError] = useState<string | null>(null)
@@ -79,6 +104,7 @@ export function EnvEditor({
       walls: prev.walls.filter((w) => w.x < value),
       bombs: prev.bombs.filter((b) => b.x < value),
       goals: prev.goals.filter((g) => g.x < value),
+      ...(prev.rewardTiles ? { rewardTiles: prev.rewardTiles.filter(tile => tile.x < value) } : {}),
     }))
   }
 
@@ -89,6 +115,7 @@ export function EnvEditor({
       walls: prev.walls.filter((w) => w.y < value),
       bombs: prev.bombs.filter((b) => b.y < value),
       goals: prev.goals.filter((g) => g.y < value),
+      ...(prev.rewardTiles ? { rewardTiles: prev.rewardTiles.filter(tile => tile.y < value) } : {}),
     }))
   }
 
@@ -126,6 +153,24 @@ export function EnvEditor({
 
   function handleCellClick(stateKey: StateKey) {
     const pos = parseStateKey(stateKey)
+    setSelectedCell(stateKey)
+    if (mode === 'select') {
+      const tile = draft.rewardTiles?.find(tile => samePosition(tile, pos))
+      if (tile) setTileReward(tile.reward)
+      setPropertiesOpen(true)
+      return
+    }
+    if (mode === 'erase') {
+      setDraft(prev => ({ ...prev, walls: prev.walls.filter(p => !samePosition(p, pos)), bombs: prev.bombs.filter(p => !samePosition(p, pos)), goals: prev.goals.filter(p => !samePosition(p, pos)), rewardTiles: prev.rewardTiles?.filter(p => !samePosition(p, pos)) }))
+      return
+    }
+    if (mode === 'reward') {
+      if ([draft.start, ...draft.goals, ...draft.walls, ...draft.bombs].some(p => samePosition(p, pos))) return
+      setDraft(prev => ({ ...prev, rewardTiles: [...(prev.rewardTiles ?? []).filter(p => !samePosition(p, pos)), { ...pos, reward: tileReward }] }))
+      return
+    }
+    // Replacing an element also removes any reward tile beneath it.
+    setDraft(prev => prev.rewardTiles ? { ...prev, rewardTiles: prev.rewardTiles.filter(p => !samePosition(p, pos)) } : prev)
 
     if (mode === 'start') {
       setDraft((prev) => ({
@@ -183,6 +228,7 @@ export function EnvEditor({
   function handleApply() {
     if (!isValid) return // defense in depth — the button is already disabled in this case
     if (!confirmApply(t.envEditor.applyConfirm)) return
+    dirty.current = false
     onApply(draftToGridWorldConfig(draft))
   }
 
@@ -227,7 +273,7 @@ export function EnvEditor({
       setImportError(null)
       setPresetId('custom')
       setDraft(result.draft)
-      onApply(draftToGridWorldConfig(result.draft))
+      if (!fullscreen) onApply(draftToGridWorldConfig(result.draft))
     }
     reader.onerror = () => setImportError('Could not read the selected file.')
     reader.readAsText(file)
@@ -240,6 +286,9 @@ export function EnvEditor({
     start: t.envEditor.modeStart,
     goal: t.envEditor.modeGoal,
     bomb: t.envEditor.modeBomb,
+    reward: locale === 'ko' ? '보상' : 'Reward',
+    erase: locale === 'ko' ? '지우개' : 'Erase',
+    select: locale === 'ko' ? '선택' : 'Select',
   }
 
   const presetLabel: Record<string, string> = {
@@ -274,6 +323,38 @@ export function EnvEditor({
     multipleRoute: t.envEditor.presetMultipleRouteDescription,
     riskyPath: t.envEditor.presetRiskyPathDescription,
   }
+
+  if (fullscreen) return <div className="fullscreen-editor" data-testid="env-editor">
+    <h2 className="sr-only">{t.envEditor.heading}</h2>
+    <FloatingToolbar className="editor-toolbar" active={active} label={locale === 'ko' ? '맵 편집 도구' : 'Map editing tools'}>
+      <div className="tool-buttons" role="group" aria-label={locale === 'ko' ? '배치 요소' : 'Placement tool'}>{(['select', 'wall', 'start', 'goal', 'bomb', 'reward', 'erase'] as EditMode[]).map(tool => <button key={tool} aria-pressed={mode === tool} onClick={() => setMode(tool)} data-testid={`env-editor-mode-${tool}`}>{modeLabel[tool]}</button>)}</div>
+      <button onClick={() => setGalleryOpen(!galleryOpen)} data-testid="open-map-gallery">{locale === 'ko' ? '맵 프리셋' : 'Map presets'}</button>
+      <button onClick={() => setPropertiesOpen(!propertiesOpen)} aria-expanded={propertiesOpen} aria-controls="editor-properties">{locale === 'ko' ? '속성 / 파일' : 'Properties / files'}</button>
+      <button className="toolbar-primary" onClick={handleApply} disabled={!isValid} data-testid="env-editor-apply">{t.envEditor.apply}</button>
+    </FloatingToolbar>
+    <div className="editor-body" data-testid="env-editor-grid">
+      <GridViewport width={draft.width} height={draft.height} active={active}><GridSvg renderModel={draftToRenderModel(draft)} selectedState={selectedCell} cellSize={48} onStateSelect={handleCellClick} className="stage-grid" /></GridViewport>
+      <aside className="properties-panel" id="editor-properties" hidden={!propertiesOpen} aria-label={locale === 'ko' ? '맵 속성' : 'Map properties'}>
+        <header><h2>{locale === 'ko' ? '맵 속성' : 'Map properties'}</h2><button onClick={() => setPropertiesOpen(false)} aria-label={locale === 'ko' ? '속성 닫기' : 'Close properties'}>×</button></header>
+        <div className="property-fields">
+          <label>{t.envEditor.width}<input type="number" min={3} max={20} value={draft.width} onChange={e => updateWidth(Number(e.target.value))} data-testid="env-editor-width-input" /></label>
+          <label>{t.envEditor.height}<input type="number" min={3} max={20} value={draft.height} onChange={e => updateHeight(Number(e.target.value))} data-testid="env-editor-height-input" /></label>
+          {(['stepReward', 'wallPenalty', 'goalReward', 'bombPenalty'] as const).map(key => <label key={key}>{({ stepReward: t.envEditor.stepReward, wallPenalty: t.envEditor.wallPenalty, goalReward: t.envEditor.goalReward, bombPenalty: t.envEditor.bombPenalty })[key]}<input type="number" step="0.1" value={draft[key]} data-testid={`env-editor-${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}-input`} onChange={e => setDraft(previous => ({ ...previous, [key]: Number(e.target.value) }))} /></label>)}
+          <label>{locale === 'ko' ? '보상 타일 값' : 'Reward tile value'}<input type="number" min={-100} max={100} value={tileReward} data-testid="tile-reward-input" onChange={e => {
+            const reward = Math.max(-100, Math.min(100, Number(e.target.value)))
+            setTileReward(reward)
+            if (selectedCell && mode === 'select') setDraft(prev => ({ ...prev, rewardTiles: prev.rewardTiles?.map(tile => samePosition(tile, parseStateKey(selectedCell)) ? { ...tile, reward } : tile) }))
+          }} /></label>
+          <p>{locale === 'ko' ? '보상 타일: 진입할 때마다 이동 보상에 추가됩니다. 벽 충돌에는 지급하지 않습니다. 반복 방문도 지급하므로 순환 보상에 유의하세요.' : 'Reward tiles add to the movement reward on every entry, including revisits. Blocked moves do not pay. Positive loops can encourage reward farming.'}</p>
+          <button onClick={handleImportClick} data-testid="env-editor-import">{t.envEditor.importButton}</button><button onClick={handleExport} data-testid="env-editor-export">{t.envEditor.exportButton}</button>
+          <input hidden ref={importFileInputRef} type="file" accept=".json,application/json" onChange={handleImportFileChange} data-testid="env-editor-import-input" />
+          <p>{locale === 'ko' ? '가져오기는 초안만 변경합니다. 적용은 현재 학습을 초기화합니다.' : 'Import changes only the draft. Applying resets the current experiment.'}</p>
+        </div>
+      </aside>
+    </div>
+    {(errors.length > 0 || importError) && <div className="editor-validation" role="status" data-testid="env-editor-errors">{importError ?? errors.map(error => translateValidationError(error, locale)).join(' ')}</div>}
+    {galleryOpen && <MapGallery locale={locale} labels={presetLabel} onClose={() => setGalleryOpen(false)} onSelect={next => { setDraft(next); setPresetId('custom'); setSelectedCell(null) }} />}
+  </div>
 
   return (
     <div className="w-full max-w-lg space-y-3 rounded border border-gray-200 p-4 text-sm" data-testid="env-editor">

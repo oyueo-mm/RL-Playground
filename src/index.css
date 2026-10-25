@@ -129,6 +129,97 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .demo-legend { font-size: 10px; }
 .page-content, [data-testid="stats-panel"] { scroll-margin-top: 90px; }
 
+/* App viewport: toolbar and independent panes, never a scrolling lab page. */
+.lab-mode { height: 100dvh; overflow: hidden; }
+.lab-mode .workspace { height: 100%; }
+.lab-mode .page-content { height: 100%; max-width: none; padding: 0; }
+.lab-mode .topbar { display: none; }
+.lab-mode .brand, .lab-mode .sidebar-bottom, .lab-mode .nav-caption { display: none; }
+.lab-mode .sidebar { padding-top: 18px; }
+.lab-mode .sidebar nav { margin-top: 22px; }
+.sidebar-language { margin-top: 24px; padding: 8px; }
+.is-collapsed .sidebar-language { padding: 0; }
+.is-collapsed .sidebar-language label { font-size: 0; gap: 0; }
+.is-collapsed .sidebar-language select { font-size: 10px; width: 56px; }
+.lab-mode .experiment-workspace { height: 100%; }
+.fullscreen-simulator { display: flex; flex-direction: row; align-items: stretch; width: 100%; height: 100%; max-width: none; padding: 0; gap: 0; background: #f5f7f2; }
+.environment-screen, .editor-screen { flex: 1; min-width: 0; min-height: 0; height: 100%; }
+.workspace-stage { height: 100%; min-height: 0; padding: 76px 16px 16px; position: relative; }
+.grid-viewport-shell { height: 100%; min-height: 0; min-width: 0; position: relative; flex: 1; }
+.grid-viewport { width: 100%; height: 100%; overflow: auto; overscroll-behavior: contain; touch-action: pan-x pan-y; }
+.grid-centering { display: grid; place-items: center; }
+.grid-drawing { position: relative; flex-shrink: 0; outline: 1px solid #c7d2c3; background: white; }
+.stage-grid { display: block; width: 100%; height: 100%; }
+.stage-overlay { position: absolute; inset: 0; display: block; width: 100%; height: 100%; pointer-events: none; }
+.zoom-controls { position: absolute; right: 8px; bottom: 8px; display: flex; border: 1px solid #d1ddca; border-radius: 7px; background: #ffffffef; z-index: 3; box-shadow: 0 3px 12px #2135200a; }
+.zoom-controls button { min-width: 32px; min-height: 32px; padding: 5px 8px; color: #52724a; font-size: 11px; }
+.floating-toolbar { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 12; width: max-content; max-width: calc(100% - 28px); display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px; padding: 7px; background: #fffffff5; border: 1px solid #d4dfcf; border-radius: 10px; box-shadow: 0 4px 18px #2645230d; }
+.floating-toolbar > button, .tool-buttons > button { min-height: 32px; padding: 6px 10px; border: 1px solid transparent; border-radius: 5px; white-space: nowrap; font-size: 12px; color: #566f4e; }
+.floating-toolbar button:hover { background: #eaf1e4; }
+.floating-toolbar button[aria-expanded=true], .tool-buttons button[aria-pressed=true] { background: #e5efdc; border-color: #b8cdaa; color: #365c2f; }
+.floating-toolbar .toolbar-primary { background: #326e4f; color: white; }
+.floating-toolbar .speed-slider { width: 148px; padding: 0 8px 0 3px; border-right: 1px solid #e4eadf; }
+.floating-toolbar .speed-slider-heading { font-size: 9px; margin-bottom: 0; gap: 5px; }
+.floating-toolbar .speed-slider-heading output { font-size: 8px; }
+.floating-toolbar .speed-slider-scale { display: none; }
+.floating-toolbar .speed-slider input { min-height: 18px; }
+.toolbar-popover { position: absolute; z-index: 15; top: 72px; right: 18px; width: 320px; max-width: calc(100% - 36px); max-height: calc(100% - 90px); overflow: auto; padding: 22px; display: flex; flex-direction: column; gap: 20px; background: #fff; border: 1px solid #d3dfcc; border-radius: 10px; box-shadow: 0 10px 40px #20391d16; font-size: 12px; }
+.toolbar-popover p, .property-fields p { font-size: 11px; color: #778970; line-height: 1.8; }
+.toolbar-popover input[type=number], .property-fields input { width: 75px; border: 1px solid #cbd9c4; padding: 5px; border-radius: 4px; background: white; }
+.toolbar-popover > label { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.analysis-drawer { width: 365px; max-width: 42%; flex-shrink: 0; height: 100%; overflow-y: auto; overscroll-behavior: contain; border-left: 1px solid #d9e2d3; padding: 16px; background: #f9fbf6; }
+.analysis-drawer > header, .properties-panel > header, .map-gallery > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
+.analysis-drawer h2 { font-size: 16px; font-weight: 600; }
+.analysis-drawer header button, .properties-panel header button, .map-gallery header button { font-size: 22px; width: 32px; height: 32px; border-radius: 5px; }
+.analysis-drawer .analysis-content { display: flex; flex-direction: column; gap: 12px; }
+.analysis-drawer .analysis-content > * { max-width: none; width: 100%; }
+.analysis-drawer .analysis-content svg { width: 100%; height: auto; }
+.results-view .analysis-drawer { width: 100%; max-width: none; border: 0; padding: 28px; }
+.results-view .analysis-content { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
+.fullscreen-editor { height: 100%; position: relative; }
+.editor-body { height: 100%; display: flex; padding: 76px 16px 16px; gap: 16px; }
+.tool-buttons { display: flex; flex-wrap: wrap; gap: 3px; }
+.properties-panel { width: 300px; max-width: 42%; flex-shrink: 0; overflow-y: auto; overscroll-behavior: contain; background: #fff; border: 1px solid #d8e2d1; border-radius: 8px; padding: 18px; }
+.property-fields { display: flex; flex-direction: column; gap: 15px; font-size: 12px; }
+.property-fields label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.property-fields button { border: 1px solid #cfddc7; padding: 8px; border-radius: 5px; }
+.editor-validation { position: absolute; left: 14px; bottom: 8px; max-width: calc(100% - 28px); background: #fff5e5; color: #94642a; border: 1px solid #e7d0a6; border-radius: 5px; padding: 8px; font-size: 11px; z-index: 5; }
+.map-gallery { position: absolute; inset: 70px 18px 18px; z-index: 18; background: #fff; border: 1px solid #d5e0cd; border-radius: 12px; box-shadow: 0 12px 50px #1d371c20; padding: 22px; display: flex; flex-direction: column; min-height: 0; }
+.gallery-body { display: grid; grid-template-columns: 1.3fr 1fr; min-height: 0; flex: 1; gap: 24px; }
+.gallery-thumbnails { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; gap: 10px; overflow-y: auto; overscroll-behavior: contain; padding: 3px; }
+.gallery-thumbnails button { min-width: 0; border: 1px solid #dce5d5; border-radius: 7px; padding: 9px; text-align: left; background: #f8faf5; }
+.gallery-thumbnails button[aria-pressed=true] { border: 2px solid #6b9a5d; padding: 8px; background: #eef5e8; }
+.thumbnail-grid { display: block; width: 100%; height: auto; max-height: 240px; }
+.gallery-thumbnails span, .gallery-thumbnails small { display: block; font-size: 11px; margin-top: 6px; }
+.gallery-thumbnails small { font-size: 9px; color: #8a9b81; }
+.gallery-preview { min-width: 0; overflow-y: auto; padding: 4px; }
+.gallery-preview h3 { font-size: 18px; margin-bottom: 14px; }
+.gallery-preview p { font-size: 12px; line-height: 1.8; color: #829477; margin: 16px 0; }
+.demo-card .wall-block { border: 0; border-radius: 1px; box-shadow: none; }
+.demo-card .demo-agent { border-radius: 50%; box-shadow: none; }
+@media (max-width: 1100px) { .workspace-stage, .editor-body { padding-top: 105px; } .toolbar-popover { top: 105px; } .floating-toolbar { top: 10px; } .results-view .analysis-content { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .lab-mode .topbar { display: block; position: absolute; top: 4px; left: 5px; width: 36px; height: 38px; padding: 0; background: #fff; border: 1px solid #d3dfcd; border-radius: 5px; z-index: 22; }
+  .lab-mode .topbar label, .lab-mode .breadcrumb strong, .lab-mode .breadcrumb > span { display: none; }
+  .lab-mode .workspace { position: relative; }
+  .floating-toolbar { max-width: calc(100% - 56px); left: calc(50% + 16px); top: 5px; padding: 4px; gap: 2px; }
+  .floating-toolbar > button, .tool-buttons > button { font-size: 10px; padding: 4px 6px; min-height: 29px; }
+  .floating-toolbar .speed-slider { width: 126px; }
+  .workspace-stage, .editor-body { padding: 140px 7px 7px; }
+  .toolbar-popover { top: 135px; right: 8px; max-height: calc(100% - 150px); }
+  .analysis-drawer { position: absolute; top: 140px; right: 0; bottom: 0; height: auto; width: 85%; max-width: 365px; z-index: 16; box-shadow: -8px 0 30px #233d2020; }
+  .results-view .analysis-drawer { position: static; height: 100%; width: 100%; max-width: none; padding: 45px 14px 14px; }
+  .results-view .analysis-content { display: flex; }
+  .properties-panel { position: absolute; right: 7px; top: 140px; bottom: 7px; width: 85%; max-width: 300px; z-index: 16; box-shadow: -6px 0 20px #24401e18; }
+  .map-gallery { inset: 140px 7px 7px; padding: 12px; }
+  .gallery-body { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .gallery-thumbnails { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .gallery-thumbnails button { padding: 5px; }
+  .gallery-thumbnails button[aria-pressed=true] { padding: 4px; }
+  .gallery-preview h3 { font-size: 14px; }
+  .gallery-preview .primary-button { padding: 10px; font-size: 11px; }
+}
+
 /* The lab canvas owns its full row. Analysis never participates in its sizing. */
 .lab-toolbar { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 18px; padding: 0 0 20px; border-bottom: 1px solid #dfe7da; }
 .lab-toolbar p { font-size: 12px; color: #7a8b75; margin-top: 5px; }
@@ -170,6 +261,14 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .is-collapsed .collapse-button, .is-collapsed .sidebar nav button { justify-content: center; padding-left: 8px; padding-right: 8px; }
 .is-collapsed .brand { padding-left: 10px; }
 .is-collapsed .sidebar nav button[aria-current] { box-shadow: inset 2px 0 #56845c; }
+@media (max-width: 760px) {
+  .fullscreen-simulator:has(> .analysis-drawer:not([hidden])) { flex-direction: column; }
+  .fullscreen-simulator:has(> .analysis-drawer:not([hidden])) > .environment-screen { flex: 1; height: auto; min-height: 0; }
+  .fullscreen-simulator > .analysis-drawer { position: static; height: 44%; width: 100%; max-width: none; flex-shrink: 0; border-left: 0; border-top: 1px solid #d1deca; box-shadow: none; }
+  .fullscreen-simulator.results-view > .analysis-drawer { height: 100%; }
+  .editor-body:has(> .properties-panel:not([hidden])) { flex-direction: column; }
+  .editor-body > .properties-panel { position: static; height: 44%; width: 100%; max-width: none; flex-shrink: 0; box-shadow: none; }
+}
 @media (max-width: 1000px) { .analysis-content { grid-template-columns: 1fr; } .experiment-canvas { padding: 16px; } }
 @media (max-width: 760px) {
   .lab-toolbar { align-items: start; gap: 12px; }
@@ -184,6 +283,9 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
   .analysis-heading button { white-space: nowrap; }
   .is-collapsed .collapse-button, .is-collapsed .sidebar nav button { justify-content: flex-start; padding: 11px 14px; }
 }
+.fullscreen-simulator .workspace-stage, .fullscreen-editor .editor-body { padding-top: var(--toolbar-space, 100px); }
+.fullscreen-simulator .toolbar-popover { top: var(--toolbar-space, 100px); max-height: calc(100% - var(--toolbar-space, 100px) - 16px); }
+.fullscreen-editor .map-gallery { top: var(--toolbar-space, 100px); }
 @media (min-width: 761px) and (max-width: 1100px) { .app-shell { --sidebar-width: 200px; } .is-collapsed { --sidebar-width: 78px; } .page-content { padding: 30px 26px 0; } .topbar { padding: 0 26px; } .hero-layout { gap: 25px; } .hero-copy h2 { font-size: 39px; } .hero-actions { gap: 12px; } .demo-card { padding: 15px; } .concept-card { padding: 16px; } }
 @media (max-width: 1000px) { .hero-layout { grid-template-columns: 1fr; } .hero-copy { max-width: 620px; } .hero-copy h2 { font-size: 52px; } .demo-card { justify-self: start; max-width: 510px; } .hero-layout { gap: 36px; } .section-heading { align-items: start; flex-direction: column; gap: 0; } .concept-grid { grid-template-columns: 1fr; } }
 @media (max-width: 760px) {

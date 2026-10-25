@@ -61,7 +61,9 @@ export function ValueHeatmap({ renderModel, agentSnapshot, currentState, cellSiz
         // largest |value| currently visible, capped at 1 so it can never overflow the
         // visual range regardless of how large Q-values grow.
         const intensity = Math.min(1, Math.abs(value) / maxAbs)
-        const opacity = intensity * MAX_OPACITY
+        const position = `${x},${y}`
+        const protectedCell = position === renderModel.start || renderModel.walls.includes(position) || renderModel.bombs.includes(position) || renderModel.goals.includes(position)
+        const opacity = protectedCell ? 0 : intensity * MAX_OPACITY
         const color = value >= 0 ? `rgba(34, 197, 94, ${opacity})` : `rgba(239, 68, 68, ${opacity})`
         return (
           <rect

@@ -28,7 +28,6 @@ export default function App() {
   useEffect(() => { document.documentElement.lang = locale }, [locale])
   useEffect(() => {
     if (previousPage.current !== page) heading.current?.focus({ preventScroll: true })
-    if (page === 'home' || page === 'guide' || page === 'environment') document.getElementById('page-content')?.scrollIntoView?.({ block: 'start' })
     previousPage.current = page
   }, [page])
   useEffect(() => {
@@ -44,7 +43,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', close)
   }, [mobileOpen])
   const experimentVisible = page === 'environment' || page === 'editor' || page === 'results'
-  return <div className={`app-shell ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
+  return <div className={`app-shell ${experimentVisible ? 'lab-mode' : ''} ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
     <a href="#page-content" className="skip-link">{locale === 'ko' ? '본문으로 이동' : 'Skip to content'}</a>
     {mobileOpen && <button className="sidebar-backdrop" aria-label={locale === 'ko' ? '메뉴 닫기' : 'Close menu'} onClick={() => setMobileOpen(false)} />}
     <aside className="sidebar" id="sidebar">
@@ -53,14 +52,15 @@ export default function App() {
       <p className="nav-caption sidebar-label">{l.workspace}</p>
       <nav id="sidebar-navigation" aria-label={l.workspace}>{(['home', 'environment', 'editor', 'results', 'guide'] as Page[]).map((item, i) => <button key={item} title={l[item]} aria-label={l[item]} aria-current={page === item ? 'page' : undefined} onClick={() => navigate(item)} data-testid={`nav-${item}`}><span aria-hidden="true" className="nav-icon">{['⌂', '▦', '⊞', '▥', '≡'][i]}</span><span className="sidebar-label">{l[item]}</span>{page === item && <span className="nav-dot sidebar-label" />}</button>)}</nav>
       <div className="sidebar-bottom sidebar-label"><span className="tiny-orbit">✳</span><p>{l.note}</p><small>RL PLAYGROUND · OPEN SOURCE</small></div>
+      <div className="sidebar-language"><LanguageSelector locale={locale} onChange={setLocale} t={translations[locale]} /></div>
     </aside>
     <div className="workspace" inert={mobileOpen}>
       <header className="topbar"><div className="breadcrumb"><button id="mobile-menu" aria-label={l.menu} aria-expanded={mobileOpen} aria-controls="sidebar" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><span>Workspace</span><span>/</span><strong>{l[page]}</strong></div><LanguageSelector locale={locale} onChange={setLocale} t={translations[locale]} /></header>
       <main id="page-content" className="page-content" tabIndex={-1}>
-        <h1 ref={heading} tabIndex={-1} className={page === 'home' || page === 'guide' ? 'sr-only' : 'page-heading'}>{page === 'home' ? l.title : l[page]}</h1>
+        <h1 ref={heading} tabIndex={-1} className="sr-only">{page === 'home' ? l.title : l[page]}</h1>
         {page === 'home' && <Home locale={locale} onStart={() => navigate('environment')} onGuide={() => navigate('guide')} />}
         {page === 'guide' && <Home locale={locale} guideOnly onStart={() => navigate('environment')} onGuide={() => navigate('guide')} />}
-        <div hidden={!experimentVisible} className="experiment-workspace" data-testid="experiment-workspace"><p className="experiment-note"><span className="status-dot" />{l.retained}</p><Simulator locale={locale} section={section} active={experimentVisible} /></div>
+        <div hidden={!experimentVisible} className="experiment-workspace" data-testid="experiment-workspace"><Simulator locale={locale} section={section} active={experimentVisible} /></div>
       </main>
     </div>
   </div>

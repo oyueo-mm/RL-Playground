@@ -21,6 +21,7 @@ export interface GridSvgProps {
    * preview omits it, so its fixed cellSize=32 rendering is completely unaffected.
    */
   className?: string
+  showAgent?: boolean
 }
 
 /**
@@ -35,7 +36,7 @@ function parsePosition(stateKey: string): { x: number; y: number } {
 
 type CellKind = 'empty' | 'wall' | 'start' | 'goal' | 'bomb'
 
-export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onStateSelect, className }: GridSvgProps) {
+export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onStateSelect, className, showAgent = true }: GridSvgProps) {
   const { width, height, walls, bombs, start, goals, agentPos } = renderModel
   const wallSet = new Set(walls)
   const bombSet = new Set(bombs)
@@ -88,7 +89,7 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
               y={cell.y * cellSize}
               width={cellSize}
               height={cellSize}
-              fill={cellFill[cell.kind]}
+              fill={cell.kind === 'empty' && renderModel.cellRewards?.[cell.key] !== undefined ? (renderModel.cellRewards[cell.key] >= 0 ? '#eff6df' : '#fff0ef') : cellFill[cell.kind]}
               stroke="#d1d5db"
               style={{ cursor: onStateSelect ? 'pointer' : undefined }}
               onClick={onStateSelect ? () => onStateSelect(cell.key) : undefined}
@@ -104,6 +105,7 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
               data-testid={`cell-${cell.key}`}
               data-cell-kind={cell.kind}
             />
+            {renderModel.cellRewards?.[cell.key] !== undefined && <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={cellSize * 0.25} fill={renderModel.cellRewards[cell.key] >= 0 ? '#22775a' : '#a04646'} pointerEvents="none" data-testid={`reward-tile-${cell.key}`}>{renderModel.cellRewards[cell.key] >= 0 ? '+' : ''}{renderModel.cellRewards[cell.key]}</text>}
             {/*
               Phase 20: a simple bomb glyph (body + fuse + spark) built from the same
               SVG primitives already used elsewhere in this file (circle/line) — no icon
@@ -151,14 +153,14 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
         underneath regardless of whether the Agent is standing there — the marker itself
         has no click handler to lose by this (it's purely visual).
       */}
-      <circle
+      {showAgent && <circle
         cx={agent.x * cellSize + cellSize / 2}
         cy={agent.y * cellSize + cellSize / 2}
         r={cellSize / 3}
         fill="#ef4444"
         pointerEvents="none"
         data-testid="agent-marker"
-      />
+      />}
     </svg>
   )
 }

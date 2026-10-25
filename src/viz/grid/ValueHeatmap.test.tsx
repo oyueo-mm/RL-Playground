@@ -19,6 +19,10 @@ const renderModel: Extract<EnvRenderModel, { kind: 'grid' }> = {
 }
 
 describe('ValueHeatmap', () => {
+  it('keeps goal, wall and risk colors visible even if their Q rows exist', () => {
+    render(<ValueHeatmap renderModel={{ ...renderModel, walls: ['0,1'], bombs: ['1,1'] }} agentSnapshot={{ kind: 'Q', qTable: { '2,2': [10, 0, 0, 0], '0,1': [-5, -5, -5, -5], '1,1': [-10, -10, -10, -10] } }} />)
+    for (const key of ['2,2', '0,1', '1,1']) expect(screen.getByTestId(`value-cell-${key}`).getAttribute('fill')).toMatch(/, 0\)$/)
+  })
   it('computes V(s) = max_a Q(s,a) for a visited State', () => {
     const agentSnapshot: AgentSnapshot = { kind: 'Q', qTable: { '0,0': [1, 5, -2, 3] } }
     render(<ValueHeatmap renderModel={renderModel} agentSnapshot={agentSnapshot} />)
@@ -52,11 +56,11 @@ describe('ValueHeatmap', () => {
   it('shows a stronger color for a larger |value| relative to other visited States', () => {
     const agentSnapshot: AgentSnapshot = {
       kind: 'Q',
-      qTable: { '0,0': [10, 0, 0, 0], '1,1': [1, 0, 0, 0] },
+      qTable: { '1,0': [10, 0, 0, 0], '1,1': [1, 0, 0, 0] },
     }
     render(<ValueHeatmap renderModel={renderModel} agentSnapshot={agentSnapshot} />)
 
-    const strong = screen.getByTestId('value-cell-0,0').getAttribute('fill') ?? ''
+    const strong = screen.getByTestId('value-cell-1,0').getAttribute('fill') ?? ''
     const weak = screen.getByTestId('value-cell-1,1').getAttribute('fill') ?? ''
     const opacityOf = (rgba: string) => Number(rgba.match(/[\d.]+(?=\))/)?.[0] ?? '0')
     expect(opacityOf(strong)).toBeGreaterThan(opacityOf(weak))

@@ -26,11 +26,12 @@ export interface GridEditorDraft {
   wallPenalty: number
   goalReward: number
   bombPenalty: number
+  rewardTiles?: (Position & { reward: number })[]
 }
 
 // 'goal' mode still refers to editing the (now plural) Goal set one cell at a time —
 // same click-to-toggle interaction Bomb mode already uses (see EnvEditor.tsx).
-export type EditMode = 'wall' | 'start' | 'goal' | 'bomb'
+export type EditMode = 'wall' | 'start' | 'goal' | 'bomb' | 'reward' | 'erase' | 'select'
 
 export function samePosition(a: Position, b: Position): boolean {
   return a.x === b.x && a.y === b.y
@@ -41,7 +42,8 @@ export function draftFromRenderModel(renderModel: Extract<EnvRenderModel, { kind
     width: renderModel.width,
     height: renderModel.height,
     start: parseStateKey(renderModel.start),
-    goals: renderModel.goals.map(parseStateKey),
+    goals: (renderModel.allGoals ?? renderModel.goals).map(parseStateKey),
+    ...(renderModel.cellRewards ? { rewardTiles: Object.entries(renderModel.cellRewards).map(([key, reward]) => ({ ...parseStateKey(key), reward })) } : {}),
     walls: renderModel.walls.map(parseStateKey),
     bombs: renderModel.bombs.map(parseStateKey),
     // renderModel's reward fields are optional (see EnvRenderModel's Phase 30 comment) —
@@ -90,6 +92,7 @@ export function draftToRenderModel(draft: GridEditorDraft): Extract<EnvRenderMod
     // No live agent exists for a Draft — Start is shown as a stand-in so the preview
     // still renders a marker, without implying a real simulation is running there.
     agentPos: toStateKey(draft.start),
+    ...(draft.rewardTiles?.length ? { cellRewards: Object.fromEntries(draft.rewardTiles.map(tile => [toStateKey(tile), tile.reward])) } : {}),
   }
 }
 
@@ -129,6 +132,10 @@ export function validateDraft(draft: GridEditorDraft): string[] {
   if (!Number.isFinite(draft.stepReward)) errors.push('Step reward must be a number.')
   if (!Number.isFinite(draft.wallPenalty)) errors.push('Wall penalty must be a number.')
   if (!Number.isFinite(draft.goalReward)) errors.push('Goal reward must be a number.')
+  const tiles = draft.rewardTiles ?? []
+  if (tiles.some(tile => !Number.isInteger(tile.x) || !Number.isInteger(tile.y) || !inBounds(tile, draft) || !Number.isFinite(tile.reward) || Math.abs(tile.reward) > 100)) errors.push('Reward tiles require integer coordinates inside the map and rewards between -100 and 100.')
+  if (tiles.some(tile => [draft.start, ...draft.goals, ...draft.walls, ...draft.bombs].some(pos => samePosition(pos, tile)))) errors.push('Reward tiles cannot overlap start, goal, wall or risk cells.')
+  if (new Set(tiles.map(toStateKey)).size !== tiles.length) errors.push('Duplicate reward tile coordinates.')
 
   return errors
 }
@@ -146,5 +153,6 @@ export function draftToGridWorldConfig(draft: GridEditorDraft): GridWorldConfig 
     wallPenalty: draft.wallPenalty,
     goalReward: draft.goalReward,
     terminalCells: DEFAULT_CONFIG.terminalCells,
+    ...(draft.rewardTiles?.length ? { rewardTiles: draft.rewardTiles } : {}),
   }
 }

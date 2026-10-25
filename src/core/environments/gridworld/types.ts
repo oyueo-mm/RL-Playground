@@ -29,6 +29,8 @@ export interface GridWorldConfig {
    */
   bombs: Position[]
   bombPenalty: number
+  /** Nonterminal, additional reward on every successful entry; collisions never pay. */
+  rewardTiles?: (Position & { reward: number })[]
 }
 
 /**

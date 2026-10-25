@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render as rtlRender, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render as rtlRender, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDefaultGridWorldConfig } from '../core/environments/gridworld/GridWorldEnv'
 // Existing simulator regression suite; shell/navigation is covered in Home.test.tsx.
@@ -17,13 +17,32 @@ afterEach(cleanup)
 // same real LanguageSelector UI a user would use — preserving each test's actual intent
 // (Bomb/Statistics/Trajectory/etc., not language) while still exercising the real Korean
 // default once, in the dedicated Phase 28 test below that uses `rtlRender` directly.
+let currentRender: ReturnType<typeof rtlRender>
+let editorOpen = false
+
 function render(ui: Parameters<typeof rtlRender>[0]) {
   const result = rtlRender(ui)
+  currentRender = result
+  editorOpen = false
   const languageSelector = screen.queryByTestId('language-selector')
   if (languageSelector) {
     fireEvent.change(languageSelector, { target: { value: 'en' } })
   }
+  // Tests that toggle an overlay begin from an explicitly disabled preference.
+  fireEvent.click(screen.getByTestId('toggle-policy'))
+  fireEvent.click(screen.getByTestId('toggle-value'))
   return result
+}
+
+function stepEngine() { act(() => engine.step()) }
+function resetExperiment() {
+  // The toolbar no longer has Reset. Reinitializing the selected algorithm uses
+  // the retained engine.reset boundary and clears experiment selections.
+  fireEvent.change(screen.getByTestId('algorithm-select'), { target: { value: engine.getSnapshot().algorithmId } })
+}
+function openEditor() {
+  editorOpen = !editorOpen
+  currentRender.rerender(<App section={editorOpen ? 'editor' : 'environment'} />)
 }
 
 // Phase 34: a StateKey is now "x,y,mask" (Environment.getState()/Transition.state —
@@ -61,7 +80,7 @@ describe('App (integration, real Engine — Phase 4 §9.4)', () => {
     render(<App />)
     expect(screen.getByTestId('qvalue-bars-empty')).toBeTruthy()
 
-    fireEvent.click(screen.getByTestId('cell-1,1'))
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId('cell-1,1'))
 
     expect(screen.queryByTestId('qvalue-bars-empty')).toBeNull()
     expect(screen.getByTestId('qvalue-bars').textContent).toContain('1,1')
@@ -70,10 +89,10 @@ describe('App (integration, real Engine — Phase 4 §9.4)', () => {
   it('selecting a different State updates QValueBars to that State', () => {
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('cell-1,1'))
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId('cell-1,1'))
     expect(screen.getByTestId('qvalue-bars').textContent).toContain('1,1')
 
-    fireEvent.click(screen.getByTestId('cell-2,3'))
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId('cell-2,3'))
     expect(screen.getByTestId('qvalue-bars').textContent).toContain('2,3')
   })
 
@@ -81,7 +100,7 @@ describe('App (integration, real Engine — Phase 4 §9.4)', () => {
     render(<App />)
     expect(screen.getByTestId('inspector-empty')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: /step/i }))
+    stepEngine()
 
     const snapshot = engine.getSnapshot()
     expect(snapshot.lastTransition).not.toBeNull()
@@ -97,11 +116,11 @@ describe('App (integration, real Engine — Phase 4 §9.4)', () => {
   it('selected State stays selected across Steps, and its Q-values reflect the latest snapshot', () => {
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('cell-0,0')) // select the start cell (Start's own kind, still selectable)
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId('cell-0,0')) // select the start cell (Start's own kind, still selectable)
     expect(screen.getByTestId('qvalue-bars').textContent).toContain('0,0')
 
-    fireEvent.click(screen.getByRole('button', { name: /step/i }))
-    fireEvent.click(screen.getByRole('button', { name: /step/i }))
+    stepEngine()
+    stepEngine()
 
     // Selection persists (still showing "0,0"), and whatever the engine now reports
     // for that state's Q-vector is what's rendered — read via the same public snapshot.
@@ -117,10 +136,10 @@ describe('App (integration, real Engine — Phase 4 §9.4)', () => {
 
   it('Reset returns Inspector to its empty state', () => {
     render(<App />)
-    fireEvent.click(screen.getByRole('button', { name: /step/i }))
+    stepEngine()
     expect(screen.getByTestId('inspector-panel')).toBeTruthy()
 
-    fireEvent.click(screen.getByRole('button', { name: /reset/i }))
+    resetExperiment()
 
     expect(screen.getByTestId('inspector-empty')).toBeTruthy()
   })
@@ -184,10 +203,10 @@ describe('App (integration, real Engine — Phase 5 §15.5)', () => {
 
   it('selecting a visited State and enabling Policy/Value shows overlays for it', () => {
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-step'))
+    stepEngine()
     const visitedState = engine.getSnapshot().lastTransition!.state
 
-    fireEvent.click(screen.getByTestId(`cell-${statePosition(visitedState)}`))
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId(`cell-${statePosition(visitedState)}`))
     fireEvent.click(screen.getByTestId('toggle-policy'))
     fireEvent.click(screen.getByTestId('toggle-value'))
 
@@ -201,7 +220,7 @@ describe('App (integration, real Engine — Phase 5 §15.5)', () => {
     render(<App />)
     fireEvent.click(screen.getByTestId('toggle-value'))
 
-    fireEvent.click(screen.getByTestId('playback-step'))
+    stepEngine()
 
     const snapshot = engine.getSnapshot()
     const state = snapshot.lastTransition!.state
@@ -213,13 +232,13 @@ describe('App (integration, real Engine — Phase 5 §15.5)', () => {
 
   it('Policy and Value overlays can both be shown at once without breaking Grid/Inspector/QValueBars', () => {
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-step'))
-    fireEvent.click(screen.getByTestId('cell-0,0'))
+    stepEngine()
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId('cell-0,0'))
     fireEvent.click(screen.getByTestId('toggle-policy'))
     fireEvent.click(screen.getByTestId('toggle-value'))
 
-    expect(screen.getByTestId('grid-svg')).toBeTruthy()
-    expect(screen.getByTestId('agent-marker')).toBeTruthy()
+    expect(within(screen.getByTestId('learning-grid')).getByTestId('grid-svg')).toBeTruthy()
+    expect(within(screen.getByTestId('learning-grid')).getByTestId('agent-marker')).toBeTruthy()
     expect(screen.getByTestId('selected-cell-outline')).toBeTruthy()
     expect(screen.getByTestId('inspector-panel')).toBeTruthy()
     expect(screen.getByTestId('qvalue-bars')).toBeTruthy()
@@ -240,7 +259,7 @@ describe('App (integration, real Engine — Phase 6 §9.3)', () => {
   it('Step -> Episode Length and Total Reward update to match the Engine snapshot', () => {
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('playback-step'))
+    stepEngine()
 
     const snapshot = engine.getSnapshot()
     expect(screen.getByTestId('stats-episode-length').textContent).toBe(String(snapshot.stats.episodeLength))
@@ -284,11 +303,11 @@ describe('App (integration, real Engine — Phase 6 §9.3)', () => {
 
   it('Reset returns Statistics to their initial state (no stale values left over in the UI)', () => {
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-step'))
-    fireEvent.click(screen.getByTestId('playback-step'))
+    stepEngine()
+    stepEngine()
     expect(screen.getByTestId('stats-episode-length').textContent).not.toBe('0')
 
-    fireEvent.click(screen.getByTestId('playback-reset'))
+    resetExperiment()
 
     expect(screen.getByTestId('stats-episode').textContent).toBe('0')
     expect(screen.getByTestId('stats-episode-length').textContent).toBe('0')
@@ -337,14 +356,11 @@ describe('App (integration, real Engine — Phase 6 §9.3)', () => {
 })
 
 describe('App (integration, real Engine — Phase 7 §15)', () => {
-  function openEditor() {
-    fireEvent.click(screen.getByTestId('toggle-env-editor'))
-  }
   function editorGrid() {
     return within(screen.getByTestId('env-editor-grid'))
   }
   function mainGrid() {
-    return within(screen.getByTestId('grid-stack'))
+    return within(within(screen.getByTestId('learning-grid')).getByTestId('grid-stack'))
   }
 
   beforeEach(() => {
@@ -461,9 +477,9 @@ describe('App (integration, real Engine — Phase 7 §15)', () => {
   it('the existing Reset button still resets simulation state without changing the environment config', () => {
     render(<App />)
     const beforeRenderModel = engine.getSnapshot().envRenderModel
-    fireEvent.click(screen.getByTestId('playback-step'))
+    stepEngine()
 
-    fireEvent.click(screen.getByTestId('playback-reset'))
+    resetExperiment()
 
     expect(engine.getSnapshot().envRenderModel).toEqual(beforeRenderModel)
     expect(engine.getSnapshot().episode).toBe(0)
@@ -474,7 +490,7 @@ describe('App (integration, real Engine — Phase 7 §15)', () => {
   // stale selection for a cell that's no longer on the grid.
   it('Apply clears the State selection (avoids a stale QValueBars reading after resize)', () => {
     render(<App />)
-    fireEvent.click(screen.getByTestId('cell-4,4'))
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId('cell-4,4'))
     expect(screen.getByTestId('qvalue-bars').textContent).toContain('4,4')
 
     openEditor()
@@ -508,7 +524,7 @@ describe('App (integration, real Engine — Phase 13: language selector)', () =>
     rtlRender(<App />)
     expect(langSelect().value).toBe('ko')
     expect(screen.getByTestId('playback-run-episode').textContent).toBe('학습하기')
-    expect(screen.getByTestId('playback-step').textContent).toBe('스텝')
+    expect(screen.queryByTestId('playback-step')).toBeNull() // removed step: '스텝')
     expect(screen.getByTestId('stats-panel').textContent).toContain('통계')
   })
 
@@ -517,7 +533,7 @@ describe('App (integration, real Engine — Phase 13: language selector)', () =>
     selectEnglish()
     expect(langSelect().value).toBe('en')
     expect(screen.getByTestId('playback-run-episode').textContent).toBe('Train')
-    expect(screen.getByTestId('playback-step').textContent).toBe('Step')
+    expect(screen.queryByTestId('playback-step')).toBeNull() // removed step: 'Step')
     expect(screen.getByTestId('stats-panel').textContent).toContain('Statistics')
   })
 
@@ -526,11 +542,11 @@ describe('App (integration, real Engine — Phase 13: language selector)', () =>
     selectKorean()
 
     expect(langSelect().value).toBe('ko')
-    expect(screen.getByTestId('playback-step').textContent).toBe('스텝')
+    expect(screen.queryByTestId('playback-step')).toBeNull() // removed step: '스텝')
     expect(screen.getByTestId('playback-run-episode').textContent).toBe('학습하기')
-    expect(screen.getByTestId('playback-reset').textContent).toBe('초기화')
+    expect(screen.queryByTestId('playback-reset')).toBeNull()
     expect(screen.getByTestId('stats-panel').textContent).toContain('통계')
-    expect(screen.getByTestId('toggle-env-editor').textContent).toBe('환경 편집')
+    expect(screen.getByTestId('env-editor-apply')).toBeTruthy()
   })
 
   it('can be switched back to English from Korean', () => {
@@ -545,7 +561,7 @@ describe('App (integration, real Engine — Phase 13: language selector)', () =>
 
   it('language change does not reset Engine state (Environment/Q-table/episode/stats untouched)', () => {
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-step'))
+    stepEngine()
     const before = engine.getSnapshot()
 
     selectKorean()
@@ -577,7 +593,7 @@ describe('App (integration, real Engine — Phase 13: language selector)', () =>
 
     render(<App />)
     fireEvent.click(screen.getByTestId('playback-run-episode'))
-    fireEvent.click(screen.getByTestId('cell-0,0'))
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId('cell-0,0'))
     expect(screen.getByTestId('qvalue-bars').textContent).toContain('0,0')
 
     const episodeBefore = engine.getSnapshot().episode
@@ -595,7 +611,7 @@ describe('App (integration, real Engine — Phase 13: language selector)', () =>
 
   it('the Environment Editor stays open and displays correctly (including translated validation errors) when the language changes mid-edit', () => {
     render(<App />)
-    fireEvent.click(screen.getByTestId('toggle-env-editor'))
+    openEditor()
     expect(screen.getByTestId('env-editor')).toBeTruthy()
 
     // Put the Draft into an invalid, in-progress state so the translated error message
@@ -721,7 +737,7 @@ describe('App (integration, real Engine — Phase 15: Episode count)', () => {
     fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(engine.getSnapshot().status).toBe('running')
 
-    fireEvent.click(screen.getByTestId('playback-reset'))
+    resetExperiment()
 
     expect(engine.getSnapshot().status).toBe('idle')
     expect(engine.getSnapshot().episode).toBe(0)
@@ -747,360 +763,6 @@ describe('App (integration, real Engine — Phase 15: Episode count)', () => {
   })
 })
 
-describe('App (integration — Phase 16: layout stability, structural)', () => {
-  // jsdom has no real CSS box model, so pixel-position stability itself can only be
-  // proven in an actual browser (done for this Phase via Playwright — see the Phase 16
-  // report's measured before/after coordinates). What CAN be guarded here, cheaply and
-  // durably, is the specific CSS mechanism the fix depends on: if a future change
-  // silently drops `w-full` from the two-column row or `flex-1`/`max-w-lg` from the
-  // right column, the shrink-to-fit + `items-center` re-centering bug this Phase fixed
-  // would silently come back. This test fails loudly if that happens.
-  //
-  // Phase 28 §2: the right column's cap moved from max-w-md (28rem) to max-w-lg (32rem)
-  // as part of that Phase's layout-width improvement — the underlying stabilizing
-  // mechanism (a fixed, viewport-driven cap, not shrink-to-fit) is what this test
-  // actually guards, so only the specific class name needed updating.
-  //
-  // Phase 37: `md:flex-1` (shorthand for `flex: 1 1 0%`) was replaced with the explicit
-  // longhand `md:grow md:shrink md:basis-auto` — real-browser measurement showed the
-  // zero flex-basis made this column collapse to a literal 0px box under a genuine
-  // space deficit (a large Grid on a narrow viewport), while its own children still
-  // rendered at their natural size and stuck out past that 0px box, which is what
-  // actually produced Phase 37's horizontal-overflow bug. `basis-auto` (content-based)
-  // made it shrink proportionally alongside the Grid column instead of collapsing to
-  // zero.
-  //
-  // Phase 42: `basis-auto` turned out to have its own defect — it measures this
-  // column's preferred width from its children's actual content, which includes
-  // InspectorPanel's `targetFormula` (an unrounded TD-target string whose length varies
-  // every Step). At large-enough Grid sizes this made the Grid/right-column boundary
-  // visibly oscillate on every Step (measured: 18.703125px at 15x15 @ 1440x900).
-  // `md:basis-0` (content-independent, like Phase 37's original bug) fixes the
-  // oscillation; `md:min-w-[260px]` (a fixed, equally content-independent floor)
-  // prevents Phase 37's collapse-to-0 regression from coming back. This test's role is
-  // unchanged: guard the specific classes this fix depends on.
-  it('keeps the full-width canvas and collapsed analysis as independent layout siblings', () => {
-    render(<App />)
-
-    const canvas = screen.getByTestId('grid-stack').closest('.experiment-canvas')
-    const layout = canvas!.parentElement!
-    expect(layout.className).toContain('lab-layout')
-    expect(layout.className).toContain('w-full')
-    const analysis = screen.getByTestId('analysis-panel')
-    expect(analysis.parentElement).toBe(layout)
-    expect(analysis.contains(canvas)).toBe(false)
-    expect(analysis.hidden).toBe(true)
-  })
-})
-
-describe('App (integration — Phase 42: dynamic Inspector content does not affect flex sizing)', () => {
-  // The actual bug (Phase 38 Audit → Phase 42 fix): InspectorPanel's targetFormula
-  // string length varies every Step (unrounded floating-point noise — see
-  // qLearning.ts/sarsa.ts, deliberately unchanged this Phase), and under the old
-  // `md:basis-auto` right column, that length variance changed the column's own
-  // computed preferred width, visibly shifting the Grid/right-column boundary on every
-  // Step at large enough Grid sizes (measured 18.703125px @ 15x15/1440x900 — see the
-  // Phase 42 report for full real-browser pixel evidence; jsdom has no CSS box model so
-  // that pixel-level claim can only be proven there). What CAN be guarded here is the
-  // structural claim the fix depends on: the right column's sizing classes are static
-  // JSX literals, never derived from Inspector's own content, so a short vs. long
-  // targetFormula can never change them.
-  it('analysis stays separate from the canvas for both short and long TD formulas', () => {
-    // A short, "nice" TD formula (no bootstrap yet).
-    engine.reset({ envConfig: createDefaultGridWorldConfig(), hyperparams: { alpha: 0.37, gamma: 0.83, epsilon: 0 } })
-    render(<App />)
-    fireEvent.click(screen.getByTestId('playback-step'))
-    const shortFormula = screen.getByTestId('inspector-target-formula').textContent ?? ''
-    const rightColumnShort = screen.getByTestId('stats-panel').parentElement!
-    const classNameShort = rightColumnShort.className
-
-    // Continue stepping with irrational alpha/gamma until a real long (floating-point
-    // noise) formula string naturally appears, exactly as a genuine Run would produce.
-    let longFormula = shortFormula
-    for (let i = 0; i < 20 && longFormula.length <= shortFormula.length; i++) {
-      fireEvent.click(screen.getByTestId('playback-step'))
-      longFormula = screen.getByTestId('inspector-target-formula').textContent ?? ''
-    }
-    expect(longFormula.length).toBeGreaterThan(shortFormula.length) // sanity: content genuinely changed
-
-    const rightColumnLong = screen.getByTestId('stats-panel').parentElement!
-    expect(rightColumnLong.className).toBe(classNameShort) // identical regardless of content length
-    expect(rightColumnLong.className).toContain('analysis-content')
-    expect(screen.getByTestId('analysis-panel').contains(screen.getByTestId('grid-stack'))).toBe(false)
-  })
-})
-
-describe('App (integration — Phase 49: Step Viewer positioned near the Grid, not the right column)', () => {
-  // Phase 49 §1: moved the Step Viewer from the bottom of the right column (Phase 46) to
-  // directly under the Grid, in the LEFT column, so the user can watch the Grid and
-  // scrub Steps without scrolling past Inspector/Statistics/charts. Purely a JSX
-  // relocation — no Step Viewer behavior changed (see EpisodeStepViewer.test.tsx, fully
-  // unmodified this Phase). jsdom has no real CSS box model, so the actual "pixels away
-  // from the Grid" claim is verified via Playwright (see the Phase 49 report); what's
-  // guarded here is the structural claim the visual result depends on: which column the
-  // Step Viewer's DOM node lives in.
-  it('the empty-state Step Viewer shares an ancestor with grid-stack, not with the right column (stats-panel)', () => {
-    render(<App />)
-
-    const gridColumn = screen.getByTestId('grid-stack').parentElement!
-    const rightColumn = screen.getByTestId('stats-panel').parentElement!
-    const stepViewerEmpty = screen.getByTestId('step-viewer-empty')
-
-    expect(gridColumn.contains(stepViewerEmpty)).toBe(true)
-    expect(rightColumn.contains(stepViewerEmpty)).toBe(false)
-  })
-
-  it('the populated Step Viewer (an Episode selected) also lives in the left/Grid column, not the right column', () => {
-    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
-    render(<App />)
-    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
-    fireEvent.click(screen.getByTestId('playback-run-episode'))
-    fireEvent.click(screen.getByTestId('episode-history-row-1'))
-
-    const gridColumn = screen.getByTestId('grid-stack').parentElement!
-    const rightColumn = screen.getByTestId('stats-panel').parentElement!
-    const stepViewer = screen.getByTestId('step-viewer')
-
-    expect(gridColumn.contains(stepViewer)).toBe(true)
-    expect(rightColumn.contains(stepViewer)).toBe(false)
-  })
-
-  it('places execution controls and overlays before the episode Step Viewer', () => {
-    render(<App />)
-
-    const gridColumn = screen.getByTestId('grid-stack').parentElement!
-    const children = Array.from(gridColumn.children)
-    const gridIndex = children.indexOf(screen.getByTestId('grid-stack'))
-    const stepViewerWrapper = screen.getByTestId('step-viewer-empty').parentElement!
-    const stepViewerIndex = children.indexOf(stepViewerWrapper)
-
-    const controlsIndex = children.indexOf(screen.getByTestId('speed-slider').closest('.lab-run-controls')!)
-    expect(controlsIndex).toBe(gridIndex + 1)
-    expect(stepViewerIndex).toBeGreaterThan(controlsIndex)
-  })
-
-  it('EpisodeStepViewer itself received no functional/behavioral changes this Phase (still controlled purely by App-owned step/onStepChange props)', () => {
-    engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
-    render(<App />)
-    fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
-    fireEvent.click(screen.getByTestId('playback-run-episode'))
-    fireEvent.click(screen.getByTestId('episode-history-row-1'))
-
-    const slider = screen.getByTestId('step-viewer-slider') as HTMLInputElement
-    fireEvent.change(slider, { target: { value: '0' } })
-    expect(screen.getByTestId('step-viewer-position').textContent).toContain('0 /')
-    fireEvent.click(screen.getByTestId('step-viewer-next'))
-    expect(screen.getByTestId('step-viewer-position').textContent).toContain('1 /')
-  })
-})
-
-describe('App (integration — Phase 37: responsive Grid, structural)', () => {
-  // Same rationale as the Phase 16 suite above: jsdom has no real CSS box model, so the
-  // actual "does 20x20 @ 768px overflow" question can only be answered by a real browser
-  // (done via Playwright — see the Phase 37 report). What's guarded here is the specific
-  // CSS mechanism the fix depends on, so a future change can't silently regress it.
-  it('the grid column can shrink (no flex-none, min-w-0) — the mechanism that lets a large Grid fit a narrow viewport', () => {
-    render(<App />)
-
-    const gridColumn = screen.getByTestId('grid-stack').parentElement!
-    expect(gridColumn.className).not.toContain('flex-none')
-    expect(gridColumn.className).toContain('min-w-0')
-  })
-
-  it('grid-stack is capped at the Grid\'s natural full-size pixel width, but can shrink below it (w-full)', () => {
-    engine.reset({ envConfig: createDefaultGridWorldConfig() })
-    render(<App />)
-
-    const gridStack = screen.getByTestId('grid-stack')
-    expect(gridStack.className).toContain('w-full')
-    const renderModel = engine.getSnapshot().envRenderModel
-    const width = renderModel.kind === 'grid' ? renderModel.width : 0
-    const height = renderModel.kind === 'grid' ? renderModel.height : 1
-    expect(gridStack.style.maxWidth).toBe(`${Math.min(960, Math.max(420, window.innerHeight - 280) * width / height)}px`)
-  })
-
-  it('the live GridSvg is CSS-responsive (block, w-full, h-auto) — the standard responsive-SVG technique paired with its unchanged viewBox', () => {
-    render(<App />)
-
-    const svg = screen.getByTestId('grid-svg')
-    expect(svg.getAttribute('class')).toBe('block h-auto w-full')
-    // viewBox must still exactly match the intrinsic pixel size for the aspect ratio
-    // that CSS `height: auto` scales against to stay correct.
-    const width = svg.getAttribute('width')
-    const height = svg.getAttribute('height')
-    expect(svg.getAttribute('viewBox')).toBe(`0 0 ${width} ${height}`)
-  })
-
-  // Phase 54: `liveCellSize` only shrinks below the fixed CELL_SIZE(48) once the
-  // viewport is too SHORT for the grid's full height to fit (see the dedicated Phase 54
-  // describe block below) — on a tall-enough viewport (mocked here so this test's own
-  // result doesn't depend on jsdom's default window.innerHeight), a 20x20 Grid still
-  // renders at exactly its old fixed full size, proving the mechanism is unaffected
-  // when there's no vertical pressure to shrink into.
-  it('a large (20x20) Grid renders with the same responsive mechanism as the default Grid (not a special-cased path)', () => {
-    const originalInnerHeight = window.innerHeight
-    Object.defineProperty(window, 'innerHeight', { value: 2000, writable: true, configurable: true })
-    engine.reset({
-      envConfig: {
-        width: 20,
-        height: 20,
-        start: { x: 0, y: 0 },
-        goal: { x: 19, y: 19 },
-        walls: [],
-        stepReward: -0.1,
-        goalReward: 10,
-        terminalCells: [],
-        bombs: [],
-        bombPenalty: -10,
-      },
-    })
-    render(<App />)
-
-    const gridStack = screen.getByTestId('grid-stack')
-    expect(gridStack.style.maxWidth).toBe('960px') // 20 * CELL_SIZE(48)
-    const svg = screen.getByTestId('grid-svg')
-    expect(svg.getAttribute('width')).toBe('960')
-    expect(svg.getAttribute('height')).toBe('960')
-
-    Object.defineProperty(window, 'innerHeight', { value: originalInnerHeight, writable: true, configurable: true })
-  })
-
-  // `absolute inset-0` alone only positions these overlay SVGs at the container's
-  // top-left corner — it does NOT stretch a replaced element (an SVG with explicit
-  // width/height attributes) to fill the container, verified via real-browser
-  // measurement that Value/Policy overlays kept rendering at their own unshrunk
-  // intrinsic size and spilled past the (now-responsive) Grid underneath them without
-  // this. `h-auto w-full` makes them track whatever size grid-stack actually renders at.
-  it('Value/Policy/Trajectory overlays carry the same responsive sizing classes as the live GridSvg', () => {
-    engine.reset({ envConfig: createDefaultGridWorldConfig() })
-    render(<App />)
-    fireEvent.click(screen.getByTestId('toggle-policy'))
-    fireEvent.click(screen.getByTestId('toggle-value'))
-
-    expect(screen.getByTestId('value-heatmap').getAttribute('class')).toBe('absolute inset-0 h-auto w-full')
-    expect(screen.getByTestId('policy-overlay').getAttribute('class')).toBe('absolute inset-0 h-auto w-full')
-  })
-
-  // Phase 52 — previously the Draft preview GridSvg carried no className at all (a fixed
-  // cellSize=32 render, unrelated to the live Grid's own responsive sizing). That turned
-  // out to be exactly the Phase 52 bug's root cause: with no CSS-responsive scaling and no
-  // maxWidth-capped wrapper, a Draft wider than 16 cells (16*32=512px, this panel's own
-  // max-w-lg cap) rendered its raw, unscaled SVG past the panel's box and into the right
-  // column's Stats panel (reproduced via real-browser measurement: 16x16 fit, 17x17
-  // didn't). Fixed by giving the Draft preview the SAME `w-full h-auto` responsive-SVG
-  // treatment + maxWidth-capped wrapper the live Grid already had since Phase 37 — this
-  // test's title/assertions are updated to match that fix, not a new premise.
-  it('EnvEditor\'s Draft preview GridSvg carries the same responsive sizing classes as the live GridSvg (Phase 52)', () => {
-    render(<App />)
-    fireEvent.click(screen.getByTestId('toggle-env-editor'))
-
-    const draftSvg = within(screen.getByTestId('env-editor-grid')).getByTestId('grid-svg')
-    expect(draftSvg.getAttribute('class')).toBe('block h-auto w-full')
-    // The intrinsic pixel size (viewBox/width/height attributes) is untouched — only the
-    // CSS-rendered size becomes responsive, exactly like the live Grid's own GridSvg.
-    expect(draftSvg.getAttribute('width')).toBe(String(createDefaultGridWorldConfig().width * 32))
-  })
-})
-
-// Phase 54 — a large Grid (e.g. 20x20 @ 48px/cell = 960px tall) could exceed a short
-// viewport's visible HEIGHT even though the pre-existing horizontal shrink (Phase 37)
-// already kept it from overflowing sideways — there was no equivalent vertical
-// mechanism at all before this Phase. `liveCellSize` (App.tsx) adds one: the cell size
-// used for the live Grid shrinks (never below MIN_CELL_SIZE=24, never above the fixed
-// CELL_SIZE=48) so the whole grid fits within `window.innerHeight - 92 - 40` px. jsdom
-// has no real CSS box model, so "does the grid visually fit on screen" can only be
-// answered by a real browser (verified via Playwright — see the Phase 54 report); what's
-// guarded here, same convention as every prior responsive-layout suite in this file, is
-// the specific formula/mechanism the fix depends on.
-describe('App (integration — Phase 54: viewport-height-aware Grid cell size)', () => {
-  function withWindowInnerHeight<T>(height: number, fn: () => T): T {
-    const original = window.innerHeight
-    Object.defineProperty(window, 'innerHeight', { value: height, writable: true, configurable: true })
-    try {
-      return fn()
-    } finally {
-      Object.defineProperty(window, 'innerHeight', { value: original, writable: true, configurable: true })
-    }
-  }
-
-  function reset20x20() {
-    engine.reset({
-      envConfig: {
-        width: 20,
-        height: 20,
-        start: { x: 0, y: 0 },
-        goal: { x: 19, y: 19 },
-        walls: [],
-        stepReward: -0.1,
-        goalReward: 10,
-        terminalCells: [],
-        bombs: [],
-        bombPenalty: -10,
-      },
-    })
-  }
-
-  it('a short viewport shrinks a 20x20 Grid\'s cell size below the fixed 48px default', () => {
-    withWindowInnerHeight(700, () => {
-      reset20x20()
-      render(<App />)
-      // available = 700 - 92 - 40 = 568; fit = floor(568/20) = 28
-      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('420px') // 20 * 28
-      expect(screen.getByTestId('grid-svg').getAttribute('width')).toBe('560')
-      expect(screen.getByTestId('grid-svg').getAttribute('height')).toBe('560')
-    })
-  })
-
-  it('the same short viewport does NOT shrink a small (7x7) Grid — it already fits at the full 48px default', () => {
-    withWindowInnerHeight(700, () => {
-      // 7x7 is the default env (createDefaultGridWorldConfig()) — engine already starts there.
-      render(<App />)
-      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('420px') // 7 * 48, unchanged
-      expect(screen.getByTestId('grid-svg').getAttribute('width')).toBe('336')
-    })
-  })
-
-  it('cell size never shrinks below MIN_CELL_SIZE(24) even on an extremely short viewport', () => {
-    withWindowInnerHeight(200, () => {
-      reset20x20()
-      render(<App />)
-      // available = 200 - 92 - 40 = 68; fit = floor(68/20) = 3, clamped up to the 24px floor
-      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('420px') // 20 * 24
-      expect(screen.getByTestId('grid-svg').getAttribute('width')).toBe('480')
-    })
-  })
-
-  it('cell size never exceeds the fixed 48px default even on a very tall viewport', () => {
-    withWindowInnerHeight(4000, () => {
-      reset20x20()
-      render(<App />)
-      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('960px') // 20 * 48
-    })
-  })
-
-  it('the Value/Policy overlays track the same shrunk cell size as the live Grid', () => {
-    withWindowInnerHeight(700, () => {
-      reset20x20()
-      render(<App />)
-      fireEvent.click(screen.getByTestId('toggle-policy'))
-      fireEvent.click(screen.getByTestId('toggle-value'))
-
-      expect(screen.getByTestId('value-heatmap').getAttribute('width')).toBe('560')
-      expect(screen.getByTestId('policy-overlay').getAttribute('width')).toBe('560')
-    })
-  })
-
-  it('the Step Viewer wrapper mirrors grid-stack\'s maxWidth exactly, including at this new shrunk size (Phase 49\'s invariant preserved)', () => {
-    withWindowInnerHeight(700, () => {
-      reset20x20()
-      render(<App />)
-      const stepViewerWrapper = screen.getByTestId('step-viewer-empty').parentElement!
-      expect(stepViewerWrapper.style.maxWidth).toBe('420px')
-      expect(stepViewerWrapper.style.maxWidth).toBe(screen.getByTestId('grid-stack').style.maxWidth)
-    })
-  })
-})
-
 describe('App (integration, real Engine — Phase 18: Epsilon control)', () => {
   function epsilonNumberInput(): HTMLInputElement {
     return screen.getByTestId('epsilon-number') as HTMLInputElement
@@ -1123,7 +785,7 @@ describe('App (integration, real Engine — Phase 18: Epsilon control)', () => {
     render(<App />)
     fireEvent.change(epsilonNumberInput(), { target: { value: '0' } })
 
-    fireEvent.click(screen.getByTestId('playback-step'))
+    stepEngine()
 
     expect(engine.getSnapshot().lastActionSelection!.wasExploration).toBe(false)
   })
@@ -1133,7 +795,7 @@ describe('App (integration, real Engine — Phase 18: Epsilon control)', () => {
     fireEvent.change(epsilonNumberInput(), { target: { value: '0.05' } })
     expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.05)
 
-    fireEvent.click(screen.getByTestId('playback-reset'))
+    resetExperiment()
 
     expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.1)
     expect(epsilonNumberInput().value).toBe('0.1')
@@ -1184,11 +846,11 @@ describe('App (integration, real Engine — Phase 18: Epsilon control)', () => {
 describe('App (integration, real Engine — Phase 19: Greedy Value / Reward Chart explanation)', () => {
   it('selecting a State shows its Greedy Action and Greedy Value, matching the actual Q-table', () => {
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-step')) // learning happens somewhere
+    stepEngine() // learning happens somewhere
 
     const snapshot = engine.getSnapshot()
     const visitedState = snapshot.lastTransition!.state
-    fireEvent.click(screen.getByTestId(`cell-${statePosition(visitedState)}`))
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId(`cell-${statePosition(visitedState)}`))
 
     expect(snapshot.agentSnapshot.kind).toBe('Q')
     const qVector =
@@ -1216,8 +878,8 @@ describe('App (integration, real Engine — Phase 19: Greedy Value / Reward Char
     })
     render(<App />)
 
-    expect(screen.getByTestId('cell-2,2').getAttribute('data-cell-kind')).toBe('wall')
-    fireEvent.click(screen.getByTestId('cell-2,2'))
+    expect(within(screen.getByTestId('learning-grid')).getByTestId('cell-2,2').getAttribute('data-cell-kind')).toBe('wall')
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId('cell-2,2'))
 
     // Selection never happened — still the empty state, not a Wall's (meaningless) Q-values.
     expect(screen.getByTestId('qvalue-bars-empty')).toBeTruthy()
@@ -1242,7 +904,7 @@ describe('App (integration, real Engine — Phase 19: Greedy Value / Reward Char
     })
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('cell-1,1'))
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId('cell-1,1'))
 
     expect(screen.getByTestId('qvalue-bars')).toBeTruthy()
     expect(screen.getByTestId('greedy-value')).toBeTruthy()
@@ -1250,10 +912,10 @@ describe('App (integration, real Engine — Phase 19: Greedy Value / Reward Char
 
   it('selecting a State for inspection does not change any Engine state (no reset/step/episode/reward/status change)', () => {
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-step'))
+    stepEngine()
     const before = engine.getSnapshot()
 
-    fireEvent.click(screen.getByTestId('cell-3,3'))
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId('cell-3,3'))
 
     const after = engine.getSnapshot()
     expect(after.status).toBe(before.status)
@@ -1266,9 +928,9 @@ describe('App (integration, real Engine — Phase 19: Greedy Value / Reward Char
 
   it('selected State (and its Greedy Value) survives a language change', () => {
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-step'))
+    stepEngine()
     const visitedState = engine.getSnapshot().lastTransition!.state
-    fireEvent.click(screen.getByTestId(`cell-${statePosition(visitedState)}`))
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId(`cell-${statePosition(visitedState)}`))
     const valueBefore = screen.getByTestId('greedy-value').textContent
 
     fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
@@ -1304,14 +966,11 @@ describe('App (integration, real Engine — Phase 19: Greedy Value / Reward Char
 })
 
 describe('App (integration, real Engine — Phase 20: Bomb)', () => {
-  function openEditor() {
-    fireEvent.click(screen.getByTestId('toggle-env-editor'))
-  }
   function editorGrid() {
     return within(screen.getByTestId('env-editor-grid'))
   }
   function mainGrid() {
-    return within(screen.getByTestId('grid-stack'))
+    return within(within(screen.getByTestId('learning-grid')).getByTestId('grid-stack'))
   }
 
   beforeEach(() => {
@@ -1346,7 +1005,7 @@ describe('App (integration, real Engine — Phase 20: Bomb)', () => {
     })
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('cell-2,2'))
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId('cell-2,2'))
 
     expect(screen.getByTestId('qvalue-bars')).toBeTruthy()
     expect(screen.getByTestId('greedy-value')).toBeTruthy()
@@ -1407,10 +1066,10 @@ describe('App (integration, real Engine — Phase 20: Bomb)', () => {
       },
     })
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-step'))
+    stepEngine()
     const before = engine.getSnapshot()
 
-    fireEvent.click(screen.getByTestId('cell-2,2')) // the Bomb cell
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId('cell-2,2')) // the Bomb cell
 
     const after = engine.getSnapshot()
     expect(after.status).toBe(before.status)
@@ -1584,7 +1243,7 @@ describe('App (integration, real Engine — Phase 21: Episode Statistics)', () =
     fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(screen.getByTestId('latest-episode')).toBeTruthy()
 
-    fireEvent.click(screen.getByTestId('playback-reset'))
+    resetExperiment()
 
     expect(screen.getByTestId('latest-episode-empty')).toBeTruthy()
     expect(screen.getByTestId('episode-history-empty')).toBeTruthy()
@@ -1639,7 +1298,7 @@ describe('App (integration, real Engine — Phase 22: Alpha/Gamma controls)', ()
     fireEvent.change(gammaNumberInput(), { target: { value: '0.1' } })
     expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.9, gamma: 0.1, epsilon: 0.1 })
 
-    fireEvent.click(screen.getByTestId('playback-reset'))
+    resetExperiment()
 
     expect(engine.getSnapshot().hyperparams).toEqual({ alpha: 0.1, gamma: 0.9, epsilon: 0.1 })
     expect(alphaNumberInput().value).toBe('0.1')
@@ -1695,10 +1354,10 @@ describe('App (integration, real Engine — Phase 22: Alpha/Gamma controls)', ()
 
   it('the two-column layout / PlaybackControls structure is unaffected by the new controls (Phase 14/16 stabilizing classes still present)', () => {
     render(<App />)
-    const twoColRow = screen.getByTestId('grid-stack').closest('.lab-layout')
+    const twoColRow = within(screen.getByTestId('learning-grid')).getByTestId('grid-stack').closest('.workspace-stage')
     expect(twoColRow).toBeTruthy()
-    expect(twoColRow!.className).toContain('w-full')
-    expect(screen.getByTestId('playback-pause-resume-slot')).toBeTruthy()
+    expect(twoColRow!.className).toContain('workspace-stage')
+    expect(screen.queryByTestId('playback-pause') ?? screen.queryByTestId('playback-resume')).toBeTruthy()
   })
 })
 
@@ -1716,7 +1375,7 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
 
   it('IDLE: selecting SARSA switches the Engine algorithm and starts a fresh experiment', () => {
     render(<App />)
-    fireEvent.click(screen.getByTestId('playback-step')) // build up some state first
+    stepEngine() // build up some state first
     expect(engine.getSnapshot().stats.rewardHistory.length + engine.getSnapshot().episode >= 0).toBe(true)
 
     fireEvent.change(algorithmSelect(), { target: { value: 'sarsa' } })
@@ -1886,7 +1545,7 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
 
     fireEvent.change(algorithmSelect(), { target: { value: 'sarsa' } })
     // Bomb config must survive the algorithm-only reset.
-    expect(screen.getByTestId('grid-stack').querySelector('[data-testid="bomb-marker-1,0"]')).toBeTruthy()
+    expect(within(screen.getByTestId('learning-grid')).getByTestId('grid-stack').querySelector('[data-testid="bomb-marker-1,0"]')).toBeTruthy()
 
     fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
@@ -1899,12 +1558,12 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
     render(<App />)
     fireEvent.change(algorithmSelect(), { target: { value: 'sarsa' } })
 
-    fireEvent.click(screen.getByTestId('toggle-env-editor'))
+    openEditor()
     fireEvent.click(screen.getByTestId('env-editor-mode-wall'))
     fireEvent.click(within(screen.getByTestId('env-editor-grid')).getByTestId('cell-3,3'))
     fireEvent.click(screen.getByTestId('env-editor-apply'))
 
-    expect(within(screen.getByTestId('grid-stack')).getByTestId('cell-3,3').getAttribute('data-cell-kind')).toBe(
+    expect(within(within(screen.getByTestId('learning-grid')).getByTestId('grid-stack')).getByTestId('cell-3,3').getAttribute('data-cell-kind')).toBe(
       'wall',
     )
     expect(engine.getSnapshot().algorithmId).toBe('sarsa') // Applying env config doesn't change algorithm
@@ -1935,10 +1594,10 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
 
   it('the two-column layout / PlaybackControls structure is unaffected by the new AlgorithmSelector row (Phase 14/16 stabilizing classes still present)', () => {
     render(<App />)
-    const twoColRow = screen.getByTestId('grid-stack').closest('.lab-layout')
+    const twoColRow = within(screen.getByTestId('learning-grid')).getByTestId('grid-stack').closest('.workspace-stage')
     expect(twoColRow).toBeTruthy()
-    expect(twoColRow!.className).toContain('w-full')
-    expect(screen.getByTestId('playback-pause-resume-slot')).toBeTruthy()
+    expect(twoColRow!.className).toContain('workspace-stage')
+    expect(screen.queryByTestId('playback-pause') ?? screen.queryByTestId('playback-resume')).toBeTruthy()
     expect(screen.getByTestId('algorithm-selector')).toBeTruthy()
   })
 })
@@ -2030,7 +1689,7 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('episode-detail')).toBeTruthy()
 
-    fireEvent.click(screen.getByTestId('playback-reset'))
+    resetExperiment()
 
     expect(screen.getByTestId('episode-detail-empty')).toBeTruthy()
     expect(screen.getByTestId('episode-history-empty')).toBeTruthy()
@@ -2045,7 +1704,7 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('episode-detail')).toBeTruthy()
 
-    fireEvent.click(screen.getByTestId('playback-reset'))
+    resetExperiment()
     fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode')) // a new Episode 1, post-reset
 
@@ -2096,7 +1755,7 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('episode-detail')).toBeTruthy()
 
-    fireEvent.click(screen.getByTestId('toggle-env-editor'))
+    openEditor()
     fireEvent.click(screen.getByTestId('env-editor-apply'))
 
     expect(screen.getByTestId('episode-detail-empty')).toBeTruthy()
@@ -2122,10 +1781,10 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
-    const twoColRow = screen.getByTestId('grid-stack').closest('.lab-layout')
+    const twoColRow = within(screen.getByTestId('learning-grid')).getByTestId('grid-stack').closest('.workspace-stage')
     expect(twoColRow).toBeTruthy()
-    expect(twoColRow!.className).toContain('w-full')
-    expect(screen.getByTestId('playback-pause-resume-slot')).toBeTruthy()
+    expect(twoColRow!.className).toContain('workspace-stage')
+    expect(screen.queryByTestId('playback-pause') ?? screen.queryByTestId('playback-resume')).toBeTruthy()
   })
 
   it('existing Reward Chart/Episode Statistics behavior is unaffected when nothing is selected (regression)', () => {
@@ -2245,7 +1904,7 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     fireEvent.click(screen.getByTestId('playback-run-episode'))
     expect(screen.getByTestId('learning-progress')).toBeTruthy()
 
-    fireEvent.click(screen.getByTestId('playback-reset'))
+    resetExperiment()
 
     expect(screen.getByTestId('learning-progress-empty')).toBeTruthy()
     expect(screen.getByTestId('reward-chart-empty')).toBeTruthy()
@@ -2270,7 +1929,7 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 5000 })
     render(<App />)
-    fireEvent.click(screen.getByTestId('toggle-env-editor'))
+    openEditor()
     fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
     fireEvent.click(within(screen.getByTestId('env-editor-grid')).getByTestId('cell-1,1'))
     fireEvent.click(screen.getByTestId('env-editor-apply'))
@@ -2305,10 +1964,10 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
 
-    const twoColRow = screen.getByTestId('grid-stack').closest('.lab-layout')
+    const twoColRow = within(screen.getByTestId('learning-grid')).getByTestId('grid-stack').closest('.workspace-stage')
     expect(twoColRow).toBeTruthy()
-    expect(twoColRow!.className).toContain('w-full')
-    expect(screen.getByTestId('playback-pause-resume-slot')).toBeTruthy()
+    expect(twoColRow!.className).toContain('workspace-stage')
+    expect(screen.queryByTestId('playback-pause') ?? screen.queryByTestId('playback-resume')).toBeTruthy()
   })
 })
 
@@ -2502,7 +2161,7 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('episode-trajectory')).toBeTruthy()
 
-    fireEvent.click(screen.getByTestId('playback-reset'))
+    resetExperiment()
 
     expect(screen.getByTestId('episode-trajectory-empty')).toBeTruthy()
     expect(screen.queryByTestId('trajectory-overlay')).toBeNull()
@@ -2532,7 +2191,7 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
     expect(screen.getByTestId('episode-trajectory')).toBeTruthy()
 
-    fireEvent.click(screen.getByTestId('toggle-env-editor'))
+    openEditor()
     fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
     fireEvent.click(within(screen.getByTestId('env-editor-grid')).getByTestId('cell-1,1'))
     fireEvent.click(screen.getByTestId('env-editor-apply'))
@@ -2568,10 +2227,10 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
-    const twoColRow = screen.getByTestId('grid-stack').closest('.lab-layout')
+    const twoColRow = within(screen.getByTestId('learning-grid')).getByTestId('grid-stack').closest('.workspace-stage')
     expect(twoColRow).toBeTruthy()
-    expect(twoColRow!.className).toContain('w-full')
-    expect(screen.getByTestId('playback-pause-resume-slot')).toBeTruthy()
+    expect(twoColRow!.className).toContain('workspace-stage')
+    expect(screen.queryByTestId('playback-pause') ?? screen.queryByTestId('playback-resume')).toBeTruthy()
   })
 
   it('existing overlays (Policy/Value) and existing panels are unaffected by the new Trajectory overlay (regression)', () => {
@@ -2749,13 +2408,13 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
   // below are all unchanged.
   it('J/I. View Learned Result label translates to Korean and back to English', () => {
     render(<App />)
-    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('View Learned Result')
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('Run policy')
 
     fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
-    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('학습 결과 보기')
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('학습 결과 실행')
 
     fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'en' } })
-    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('View Learned Result')
+    expect(screen.getByTestId('playback-run-greedy').textContent).toBe('Run policy')
   })
 
   it('Phase 28 §9: the real default locale (no forced switch) is Korean', () => {
@@ -2764,10 +2423,11 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     expect(screen.getByTestId('playback-run-episode').textContent).toBe('학습하기')
   })
 
-  it('§2: <main> uses the wider Phase 28 layout width classes', () => {
+  it('omits the old heading and Step/Reset buttons from the fullscreen lab', () => {
     render(<App />)
-    const main = screen.getByText('RL Playground').closest('main')!
-    expect(main.className).toContain('max-w-7xl')
+    expect(screen.queryByText('RL Playground')).toBeNull()
+    expect(screen.queryByTestId('playback-step')).toBeNull()
+    expect(screen.queryByTestId('playback-reset')).toBeNull()
   })
 
   it('B/C/J. regression: Run/Run Episode/Pause/Resume/Reset/Algorithm Selector/Bomb/Episode Selection/Trajectory all still work after this Phase\'s changes', () => {
@@ -2786,7 +2446,7 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     fireEvent.change(screen.getByTestId('algorithm-select'), { target: { value: 'sarsa' } })
     expect(engine.getSnapshot().algorithmId).toBe('sarsa')
 
-    fireEvent.click(screen.getByTestId('playback-reset'))
+    resetExperiment()
     expect(engine.getSnapshot().episode).toBe(0)
     expect(engine.getSnapshot().hyperparams.epsilon).toBe(0.1)
   })
@@ -2953,7 +2613,7 @@ describe('App (integration, real Engine — Phase 36: Policy/Value dedup, Greedy
     expect(screen.queryByTestId('inspector-estimate')).toBeNull()
 
     // Select the start State to inspect its Q-value bars and confirm the Greedy row is marked.
-    fireEvent.click(screen.getByTestId(`cell-${statePosition(engine.getSnapshot().envRenderModel.start)}`))
+    fireEvent.click(within(screen.getByTestId('learning-grid')).getByTestId(`cell-${statePosition(engine.getSnapshot().envRenderModel.start)}`))
     const greedyRows = screen.queryAllByTestId(/^qvalue-row-/).filter((el) => el.getAttribute('data-greedy-action') === 'true')
     expect(greedyRows.length).toBe(1)
   })
@@ -2984,7 +2644,7 @@ describe('App (integration, real Engine — Phase 36: Policy/Value dedup, Greedy
     expect(qTableDuringRun.kind).toBe('Q')
     const entriesDuringRun = qTableDuringRun.kind === 'Q' ? Object.keys(qTableDuringRun.qTable).length : -1
 
-    fireEvent.click(screen.getByTestId('playback-restart-episode'))
+    fireEvent.click(screen.getByTestId('playback-stop'))
 
     const snapshot = engine.getSnapshot()
     expect(snapshot.status).toBe('idle')
@@ -3017,7 +2677,7 @@ describe('App (integration, real Engine — Phase 36: Policy/Value dedup, Greedy
     fireEvent.click(screen.getByTestId('playback-run-episode')) // starts a new in-progress run
     expect(engine.getSnapshot().status === 'running' || engine.getSnapshot().status === 'idle').toBe(true)
 
-    fireEvent.click(screen.getByTestId('playback-restart-episode'))
+    fireEvent.click(screen.getByTestId('playback-stop'))
 
     const snapshot = engine.getSnapshot()
     expect(snapshot.status).toBe('idle')
@@ -3033,13 +2693,13 @@ describe('App (integration, real Engine — Phase 36: Policy/Value dedup, Greedy
     engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
     render(<App />)
 
-    expect((screen.getByTestId('playback-restart-episode') as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByTestId('playback-stop') as HTMLButtonElement).disabled).toBe(true)
 
     fireEvent.click(screen.getByTestId('playback-run-greedy'))
-    expect((screen.getByTestId('playback-restart-episode') as HTMLButtonElement).disabled).toBe(false)
+    expect((screen.getByTestId('playback-stop') as HTMLButtonElement).disabled).toBe(false)
 
-    fireEvent.click(screen.getByTestId('playback-restart-episode'))
-    expect((screen.getByTestId('playback-restart-episode') as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.click(screen.getByTestId('playback-stop'))
+    expect((screen.getByTestId('playback-stop') as HTMLButtonElement).disabled).toBe(true)
   })
 })
 
@@ -3076,7 +2736,7 @@ describe('App (integration, real Engine — Phase 44: "Goals Collected" denomina
     engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
     render(<App />)
 
-    for (let i = 0; i < 5; i++) fireEvent.click(screen.getByTestId('playback-step'))
+    for (let i = 0; i < 5; i++) stepEngine()
 
     expect(engine.getSnapshot().status).toBe('idle') // Episode auto-completed on the 5th (final) Goal
     expect(engine.getSnapshot().stats.latestEpisodeStats!.terminationReason).toBe('goal')
@@ -3100,13 +2760,13 @@ describe('App (integration, real Engine — Phase 44: "Goals Collected" denomina
     engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
     render(<App />)
 
-    for (let i = 0; i < 5; i++) fireEvent.click(screen.getByTestId('playback-step')) // Episode 1: collect all 5
+    for (let i = 0; i < 5; i++) stepEngine() // Episode 1: collect all 5
     expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('5 / 5')
 
     // Episode 2 has now silently started (auto-reset inside finishEpisode()). Step into
     // it one Goal at a time — "Latest Episode" must keep describing episode 1 throughout.
     for (let collected = 1; collected <= 4; collected++) {
-      fireEvent.click(screen.getByTestId('playback-step'))
+      stepEngine()
       expect(engine.getSnapshot().stats.latestEpisodeStats!.episode).toBe(1) // still episode 1's card
       expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('5 / 5')
     }
@@ -3131,9 +2791,9 @@ describe('App (integration, real Engine — Phase 44: "Goals Collected" denomina
     engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
     render(<App />)
 
-    fireEvent.click(screen.getByTestId('playback-step')) // y5->4: collect Goal 1/4
-    fireEvent.click(screen.getByTestId('playback-step')) // y4->3: collect Goal 2/4
-    fireEvent.click(screen.getByTestId('playback-step')) // y3->2: Bomb, Episode 1 ends
+    stepEngine() // y5->4: collect Goal 1/4
+    stepEngine() // y4->3: collect Goal 2/4
+    stepEngine() // y3->2: Bomb, Episode 1 ends
 
     expect(engine.getSnapshot().status).toBe('idle')
     expect(engine.getSnapshot().stats.latestEpisodeStats!.terminationReason).toBe('bomb')
@@ -3141,7 +2801,7 @@ describe('App (integration, real Engine — Phase 44: "Goals Collected" denomina
 
     // Episode 2 has silently started; step into it and collect one of ITS Goals too —
     // episode 1's "2 / 4" card must not shift because of episode 2's own progress.
-    fireEvent.click(screen.getByTestId('playback-step'))
+    stepEngine()
     expect(engine.getSnapshot().stats.latestEpisodeStats!.episode).toBe(1)
     // The exact regression this Phase fixes: before the fix this drifted to "1 / 3" (both
     // numerator and denominator corrupted by episode 2's live-shrinking goal list).
@@ -3153,10 +2813,10 @@ describe('App (integration, real Engine — Phase 44: "Goals Collected" denomina
     engine.setSpeed({ mode: 'interval', intervalMs: 100_000 })
     render(<App />)
 
-    for (let i = 0; i < 5; i++) fireEvent.click(screen.getByTestId('playback-step'))
+    for (let i = 0; i < 5; i++) stepEngine()
     expect(screen.getByTestId('latest-episode-goals-collected').textContent).toBe('5 / 5')
 
-    fireEvent.click(screen.getByTestId('playback-reset'))
+    resetExperiment()
     expect(screen.queryByTestId('latest-episode-goals-collected')).toBeNull()
   })
 

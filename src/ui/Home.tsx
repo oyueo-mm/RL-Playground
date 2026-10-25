@@ -38,15 +38,21 @@ function GridDemo({ locale }: { locale: Locale }) {
   const ko = locale === 'ko'
   const [mode, setMode] = useState<'explore' | 'learned'>('explore')
   const [step, setStep] = useState(0)
-  const [playing, setPlaying] = useState(false)
+  const [playing, setPlaying] = useState(() => !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
   const path = mode === 'explore' ? exploration : exploitation
   const finished = step === path.length - 1
   useEffect(() => {
-    if (!playing || finished) return
-    const id = window.setInterval(() => setStep(value => Math.min(value + 1, path.length - 1)), 600)
+    if (!playing) return
+    const id = window.setInterval(() => setStep(value => (value + 1) % path.length), 600)
     return () => window.clearInterval(id)
   }, [playing, finished, path.length])
-  const choose = (next: 'explore' | 'learned') => { setMode(next); setStep(0); setPlaying(false) }
+  useEffect(() => {
+    const media = window.matchMedia?.('(prefers-reduced-motion: reduce)')
+    const change = () => { if (media?.matches) setPlaying(false) }
+    media?.addEventListener('change', change)
+    return () => media?.removeEventListener('change', change)
+  }, [])
+  const choose = (next: 'explore' | 'learned') => { setMode(next); setStep(0) }
   return <section className="demo-card" aria-label={ko ? '강화학습 설명용 시연' : 'Reinforcement learning illustrative demo'}>
     <div className="demo-heading"><span><span className="status-dot" /> GRIDWORLD</span><span className="demo-label">{ko ? '설명용 시연' : 'SCRIPTED DEMO'}</span></div>
     <div className="demo-tabs" role="group" aria-label={ko ? '행동 비교' : 'Compare behavior'}><button aria-pressed={mode === 'explore'} onClick={() => choose('explore')}>{ko ? '학습 전 · 탐색' : 'Before · exploration'}</button><button aria-pressed={mode === 'learned'} onClick={() => choose('learned')}>{ko ? '학습 후 · 경로 활용' : 'After · exploitation'}</button></div>
@@ -55,7 +61,7 @@ function GridDemo({ locale }: { locale: Locale }) {
       <div className="demo-agent" style={{ left: `${(path[step] % 6 + 0.5) * 100 / 6}%`, top: `${(Math.floor(path[step] / 6) + 0.5) * 100 / 5}%` }}><span>◉</span></div>
     </div>
     <div className="demo-legend">{(ko ? ['● 에이전트', '⚑ 목표', '■ 장애물', '× 위험'] : ['● Agent', '⚑ Goal', '■ Wall', '× Risk']).map(x => <span key={x}>{x}</span>)}</div>
-    <div className="demo-playback"><button className="demo-play" onClick={() => { if (finished) setStep(0); setPlaying(!playing || finished) }}>{playing && !finished ? (ko ? '일시정지' : 'Pause') : (ko ? '시연 재생' : 'Play demo')}</button><button onClick={() => { setPlaying(false); setStep(value => Math.min(value + 1, path.length - 1)) }} disabled={finished}>{ko ? '한 칸 이동' : 'Step'}</button><button aria-label={ko ? '시연 초기화' : 'Reset demo'} onClick={() => { setPlaying(false); setStep(0) }}>↺</button><span>{String(step).padStart(2, '0')} <small>STEPS</small></span></div>
+    <div className="demo-playback"><button className="demo-play" onClick={() => { if (finished && !playing) setStep(0); setPlaying(!playing) }}>{playing ? (ko ? '일시정지' : 'Pause') : (ko ? '시연 재생' : 'Play demo')}</button><button onClick={() => { setPlaying(false); setStep(value => Math.min(value + 1, path.length - 1)) }} disabled={finished}>{ko ? '한 칸 이동' : 'Step'}</button><button aria-label={ko ? '시연 초기화' : 'Reset demo'} onClick={() => { setPlaying(false); setStep(0) }}>↺</button><span>{String(step).padStart(2, '0')} <small>STEPS</small></span></div>
     <p className="demo-insight" aria-live="polite">{finished ? (ko ? '목표 도달! +10 보상. 이동마다 −0.1 비용이 있어 짧은 경로가 유리합니다.' : 'Goal reached! +10 reward. Each move costs −0.1, favoring shorter routes.') : mode === 'explore' ? (ko ? '탐색: 새로운 길을 시도하며, 같은 곳을 다시 방문하기도 합니다.' : 'Exploration: try new paths, sometimes revisiting the same state.') : (ko ? '활용: 가치가 높은 행동을 선택해 목표까지 짧게 이동합니다.' : 'Exploitation: select valuable actions for a shorter route to the goal.')}</p>
     <p className="demo-disclaimer">{ko ? '미리 정한 경로를 비교하는 애니메이션입니다. 실제 학습 결과가 아닙니다. 실제 Q-Learning·SARSA는 학습 환경에서 실행하세요.' : 'Predefined paths, not actual training results. Run real Q-Learning or SARSA in the learning environment.'}</p>
   </section>
