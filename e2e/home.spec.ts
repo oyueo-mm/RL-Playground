@@ -229,9 +229,9 @@ test('25 visual presets preview without applying, and selected draft can be appl
 test('home auto animation loops and reduced motion remains paused', async ({ page }) => {
   await page.goto('./')
   await expect(page.getByRole('button', { name: '일시정지', exact: true })).toBeVisible()
-  const demo = page.getByRole('img')
-  const initial = await demo.getAttribute('aria-label')
-  await expect.poll(() => demo.getAttribute('aria-label')).not.toBe(initial)
+  const demo = page.locator('[data-scenario=basic]')
+  const initial = await demo.getAttribute('data-step')
+  await expect.poll(() => demo.getAttribute('data-step')).not.toBe(initial)
   await page.getByRole('button', { name: '일시정지', exact: true }).click()
   await page.emulateMedia({ reducedMotion: 'reduce' })
   await page.reload()
