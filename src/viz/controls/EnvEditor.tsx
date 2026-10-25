@@ -25,6 +25,8 @@ import { FloatingToolbar } from '../../ui/FloatingToolbar'
 import { TooltipButton } from '../../ui/TooltipButton'
 import { toolbarTips } from '../../ui/toolbarTips'
 import { EditorIcon } from '../../ui/EditorIcon'
+import { ManualPlay } from '../../ui/ManualPlay'
+import { Notice } from '../../ui/Notice'
 import { useElementDrag } from '../../ui/hooks/useElementDrag'
 import { elementAt, nextPortalId, nextGroupId, placeElement, type EditError } from './editorOperations'
 import { useDraftHistory } from '../../ui/hooks/useDraftHistory'
@@ -97,6 +99,7 @@ export function EnvEditor({
     previousSeed.current = seedKey
   }, [seedKey, currentRenderModel, reseed, draft])
   const [mode, setMode] = useState<EditMode>('wall')
+  const [playing, setPlaying] = useState(false)
   const [presetId, setPresetId] = useState<string>('custom')
   const [propertiesOpen, setPropertiesOpen] = useState(false)
   const [selectedCell, setSelectedCell] = useState<StateKey | null>(null)
@@ -132,7 +135,7 @@ export function EnvEditor({
     if (tile) setGroupId(tile.groupId)
   }, [draft, selectedCell])
   useEffect(() => {
-    if (!active) return
+    if (!active || playing) return
     const handle = (event: KeyboardEvent) => {
       const target = event.target instanceof Element ? event.target : null
       if (target?.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])')) return
@@ -146,14 +149,15 @@ export function EnvEditor({
     return () => window.removeEventListener('keydown', handle)
   })
   useEffect(() => {
-    if (!active) return
+    if (!active || playing) return
     const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setPropertiesOpen(false) } }
     window.addEventListener('keydown', close)
     return () => window.removeEventListener('keydown', close)
-  }, [active])
+  }, [active, playing])
   // Phase 46 — Import/Export. `importError` is cleared on every successful Import (and
   // stays until then — a bad file otherwise leaves no visible trace it was rejected).
   const [importError, setImportError] = useState<string | null>(null)
+  const [importAttempt, setImportAttempt] = useState(0)
   const importFileInputRef = useRef<HTMLInputElement>(null)
 
   // validateDraft() itself always returns plain English messages (its own pure-function
@@ -369,6 +373,8 @@ export function EnvEditor({
     // onChange again (browsers otherwise treat an unchanged file input as a no-op).
     e.target.value = ''
     if (!file) return
+    setImportAttempt(value => value + 1)
+    setEditMessage('')
 
     const reader = new FileReader()
     reader.onload = () => {
@@ -381,6 +387,7 @@ export function EnvEditor({
       setImportError(null)
       setPresetId('custom')
       setDraft(result.draft)
+      setEditMessage(locale === 'ko' ? '환경 파일을 초안으로 불러왔습니다.' : 'Environment file loaded into draft.')
       if (!fullscreen) onApply(draftToGridWorldConfig(result.draft))
     }
     reader.onerror = () => setImportError('Could not read the selected file.')
@@ -437,6 +444,8 @@ export function EnvEditor({
   }
 
   if (fullscreen) return <div className="fullscreen-editor" data-testid="env-editor">
+    {playing && <ManualPlay config={draftToGridWorldConfig(draft)} locale={locale} active={active} onClose={() => { setPlaying(false); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-testid=manual-play-start]')?.focus()) }} />}
+    <div className="editor-edit-session" hidden={playing}>
     <h2 className="sr-only">{t.envEditor.heading}</h2>
     <FloatingToolbar className="editor-toolbar" active={active} label={locale === 'ko' ? '맵 편집 도구' : 'Map editing tools'}>
       <div className="tool-buttons" role="group" aria-label={locale === 'ko' ? '배치 요소' : 'Placement tools'}>{(['select', 'wall', 'start', 'goal', 'bomb', 'portal', 'oneWay', 'fragile', 'switch', 'toggleWall', 'erase'] as const).map(tool => <TooltipButton key={tool} tip={tips[tool]} aria-label={modeLabel[tool]} aria-pressed={mode === tool} onClick={() => setMode(tool)} data-testid={`env-editor-mode-${tool}`}><EditorIcon tool={tool} /></TooltipButton>)}</div>
@@ -447,6 +456,7 @@ export function EnvEditor({
       <TooltipButton tip={tips.redo} aria-label={locale === 'ko' ? '다시 실행' : 'Redo'} disabled={!canRedo} onClick={redo} data-testid="editor-redo"><EditorIcon tool="redo" /></TooltipButton>
       <TooltipButton tip={tips.properties} onClick={() => { onOpenProperties?.(); setPropertiesOpen(!propertiesOpen || panelBlocked) }} aria-expanded={propertiesOpen && !panelBlocked} aria-controls="editor-properties">{locale === 'ko' ? '속성 / 파일' : 'Properties / files'}</TooltipButton>
       <TooltipButton tip={tips.apply} className="toolbar-primary" onClick={handleApply} disabled={!isValid} data-testid="env-editor-apply">{t.envEditor.apply}</TooltipButton>
+      <TooltipButton tip={locale === 'ko' ? '현재 초안에서 방향키 / WASD로 플레이합니다. 학습 데이터는 변경되지 않습니다.' : 'Play this draft with arrows / WASD in an isolated environment.'} disabled={!isValid} onClick={() => setPlaying(true)} data-testid="manual-play-start">{locale === 'ko' ? '직접 플레이' : 'Play draft'}</TooltipButton>
     </FloatingToolbar>
     <div className={`editor-body ${mode === 'select' ? 'editor-move-mode' : ''} ${mode === 'select' && touchMove ? 'touch-element-mode' : ''}`} data-testid="env-editor-grid">
       <GridViewport width={draft.width} height={draft.height} active={active}><GridSvg interaction={drag.interaction} movable={mode === 'select' && (!touchDevice || touchMove)} renderModel={draftToRenderModel(draft)} selectedState={selectedCell} cellSize={48} onStateSelect={handleCellClick} className="stage-grid" />
@@ -479,7 +489,8 @@ export function EnvEditor({
           }}>{(locale === 'ko' ? ['↑ 위', '↓ 아래', '← 왼쪽', '→ 오른쪽'] : ['↑ Up', '↓ Down', '← Left', '→ Right']).map((label, index) => <option key={index} value={index}>{label}</option>)}</select></label>
           <p>{locale === 'ko' ? '포털은 같은 ID로 두 셀을 배치하세요. 벽 그룹에는 스위치와 토글 벽이 모두 필요합니다. 선택 도구로 요소를 누르면 연결선과 ID를 확인·수정할 수 있습니다. ID: 영문·숫자·_·- (1~24자).' : 'Place two portal cells with the same ID. Each wall group needs a switch and toggle wall. Select an element to inspect its links or edit its ID/direction. IDs: letters, numbers, _ and -, 1–24 characters.'}</p>
           <p data-testid="state-space-estimate">{locale === 'ko' ? '이론 상태 수 상한' : 'Theoretical state upper bound'}: {stateSpaceDetails(draft).text}<br />Goal {draft.goals.length} · Fragile {draft.fragiles?.length ?? 0} · {locale === 'ko' ? '벽 그룹' : 'Wall groups'} {stateSpaceDetails(draft).groups}</p>
-          {stateSpaceDetails(draft).large && <p className="complexity-warning" role="status">{locale === 'ko' ? '가능한 상태 조합이 매우 많습니다. 적용은 가능하며 실제 생성된 Q-table 상태 수로 자원을 관리합니다. 학습 시간과 메모리가 더 필요할 수 있습니다.' : 'Many possible state combinations. This map can be applied; resources are managed by actual Q-table rows. Training may need more time and memory.'}</p>}
+          {stateSpaceDetails(draft).large && <Notice inline className="complexity-warning" eventKey={seedKey} title={locale === 'ko' ? '가능한 상태 조합이 많습니다' : 'Many possible state combinations'} locale={locale} kind="warning">{locale === 'ko' ? '적용과 직접 플레이는 가능합니다. 실제 Q 상태로 자원을 관리하며 학습에는 많은 경험이 필요할 수 있습니다.' : 'Apply and manual play remain available. Resources use actual Q rows; learning may require many experiences.'}</Notice>}
+          {errors.length > 0 && <details><summary>{locale === 'ko' ? '적용 / 플레이 불가 이유' : 'Why apply / play is unavailable'}</summary>{errors.map(error => <p key={error}>{translateValidationError(error, locale)}</p>)}</details>}
           <label>{t.envEditor.width}<input type="number" min={3} max={20} value={draft.width} onChange={e => updateWidth(Number(e.target.value))} data-testid="env-editor-width-input" /></label>
           <label>{t.envEditor.height}<input type="number" min={3} max={20} value={draft.height} onChange={e => updateHeight(Number(e.target.value))} data-testid="env-editor-height-input" /></label>
           {(['stepReward', 'wallPenalty', 'goalReward', 'bombPenalty'] as const).map(key => <label key={key}>{({ stepReward: t.envEditor.stepReward, wallPenalty: t.envEditor.wallPenalty, goalReward: t.envEditor.goalReward, bombPenalty: t.envEditor.bombPenalty })[key]}<input type="number" step="0.1" value={draft[key]} data-testid={`env-editor-${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}-input`} onChange={e => recordInput(previous => ({ ...previous, [key]: Number(e.target.value) }), key)} /></label>)}
@@ -490,7 +501,8 @@ export function EnvEditor({
         </div>
       </aside>
     </div>
-    {(errors.length > 0 || importError || editMessage) && <div className="editor-validation" role="status" data-testid="env-editor-errors">{editMessage || (importError ? translateValidationError(importError, locale) : errors.map(error => translateValidationError(error, locale)).join(' '))}</div>}
+    {(errors.length > 0 || importError || editMessage) && <Notice eventKey={JSON.stringify([errors, importError, editMessage, importAttempt])} kind={errors.length || importError ? 'error' : 'info'} title={locale === 'ko' ? '편집 알림' : 'Editor notification'} locale={locale} testId="env-editor-errors">{editMessage || (importError ? translateValidationError(importError, locale) : errors.map(error => translateValidationError(error, locale)).join(' '))}</Notice>}
+    </div>
   </div>
 
   return (
