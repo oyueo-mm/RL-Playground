@@ -140,8 +140,11 @@ export class Scheduler {
     if (this.speed.mode === 'interval') {
       keepGoing = callbacks.performUnit()
     } else {
+      const started = this.timerSource.now()
       for (let i = 0; i < this.speed.stepsPerFrame && keepGoing; i++) {
         keepGoing = callbacks.performUnit()
+        // Yield the main thread within half a 60 Hz frame; never omit RL updates.
+        if (this.timerSource.now() - started >= 8) break
       }
     }
 

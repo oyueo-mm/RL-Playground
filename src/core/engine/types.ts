@@ -15,6 +15,7 @@
 import type { ActionSelection, StateKey, TDInfo, Transition } from '../types/rl'
 import type { AgentSnapshot, EnvRenderModel } from '../types/render'
 import type { Hyperparams } from '../types/hyperparams'
+import type { ResourceMetrics } from './resources'
 
 export type EngineStatus = 'idle' | 'running' | 'paused'
 
@@ -29,7 +30,7 @@ export interface ResetOverrides {
 // (SimulationEngine.ts's finishEpisode()), classified from the same EnvRenderModel
 // fields isSuccessTransition already read (goal/bombs) — no new Environment API. 'other'
 // covers any future terminalCells-only ending, or a non-'grid' EnvRenderModel kind.
-export type EpisodeTerminationReason = 'goal' | 'bomb' | 'other'
+export type EpisodeTerminationReason = 'goal' | 'bomb' | 'other' | 'truncated'
 
 /**
  * Phase 21 — one completed Episode's statistics. `steps`/`totalReward` are read from the
@@ -86,6 +87,7 @@ export interface EngineStats {
 }
 
 export interface EngineSnapshot {
+  resources?: ResourceMetrics
   status: EngineStatus
   /**
    * Phase 23 — the currently active Algorithm's registry id (e.g. "q-learning",

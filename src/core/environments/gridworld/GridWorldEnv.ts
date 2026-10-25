@@ -56,14 +56,6 @@ function clampPosition(pos: Position, config: GridWorldConfig): Position {
   }
 }
 
-function isWall(pos: Position, config: GridWorldConfig): boolean {
-  return config.walls.some((wall) => samePosition(wall, pos))
-}
-
-function isBomb(pos: Position, config: GridWorldConfig): boolean {
-  return config.bombs.some((bomb) => samePosition(bomb, pos))
-}
-
 function applyAction(pos: Position, action: number): Position {
   switch (action) {
     case 0:
@@ -99,7 +91,7 @@ export function normalizeGridWorldConfig(raw: unknown): GridWorldConfig {
   delete (result as unknown as Record<string, unknown>).rewardTiles
   const errors = validateFeatures(result)
   if (errors.length) throw new Error(errors.join(' '))
-  return result
+  return structuredClone(result)
 }
 
 export function createDefaultGridWorldConfig(): GridWorldConfig {
@@ -129,10 +121,46 @@ export class GridWorldEnv implements Environment {
   private collapsed = new Set<StateKey>()
   private openGroups = new Set<string>()
 
+  private wallIndex = new Set<string>()
+  private bombIndex = new Set<string>()
+  private terminalIndex = new Set<string>()
+  private goalBits = new Map<string, bigint>()
+  private fragileBits = new Map<string, bigint>()
+  private groupBits = new Map<string, bigint>()
+  private portalIndex = new Map<string, Position>()
+  private directionIndex = new Map<string, number>()
+  private switchIndex = new Map<string, string>()
+  private wallGroups = new Map<string, string>()
+  private goalMask = 0n
+  private fragileMask = 0n
+  private toggleMask = 0n
+  private fullGoalMask = 0n
+  private terrain: Omit<EnvRenderModel, 'agentPos'> | null = null
+
+  private indexConfig(): void {
+    this.wallIndex = new Set(this.config.walls.map(positionKey))
+    this.bombIndex = new Set(this.config.bombs.map(positionKey))
+    this.terminalIndex = new Set(this.config.terminalCells.map(positionKey))
+    this.goalBits = new Map(this.config.goals.map((p, i) => [positionKey(p), 1n << BigInt(i)]))
+    this.fragileBits = new Map(this.config.fragiles?.map((p, i) => [positionKey(p), 1n << BigInt(i)]))
+    this.groupBits = new Map(groupIds(this.config).map((id, i) => [id, 1n << BigInt(i)]))
+    this.portalIndex = new Map(this.config.portals?.flatMap(pair => [[positionKey(pair.ends[0]), pair.ends[1]], [positionKey(pair.ends[1]), pair.ends[0]]] as [string, Position][]))
+    this.directionIndex = new Map(this.config.oneWays?.map(tile => [positionKey(tile), tile.direction]))
+    this.switchIndex = new Map(this.config.switches?.map(tile => [positionKey(tile), tile.groupId]))
+    this.wallGroups = new Map(this.config.toggleWalls?.map(tile => [positionKey(tile), tile.groupId]))
+    this.fullGoalMask = (1n << BigInt(this.config.goals.length)) - 1n
+    // setConfig preserves episode contents until reset, including reordered bit indices.
+    this.goalMask = [...this.collectedGoals].reduce((mask, key) => mask | (this.goalBits.get(key) ?? 0n), 0n)
+    this.fragileMask = [...this.collapsed].reduce((mask, key) => mask | (this.fragileBits.get(key) ?? 0n), 0n)
+    this.toggleMask = [...this.openGroups].reduce((mask, id) => mask | (this.groupBits.get(id) ?? 0n), 0n)
+    this.terrain = null
+  }
+
   constructor(config: unknown) {
     this.config = normalizeGridWorldConfig(config)
     this.agent = { ...this.config.start }
     this.collectedGoals = new Set()
+    this.indexConfig()
   }
 
   reset(): StateKey {
@@ -140,6 +168,7 @@ export class GridWorldEnv implements Environment {
     this.collectedGoals = new Set()
     this.collapsed.clear()
     this.openGroups.clear()
+    this.goalMask = 0n; this.fragileMask = 0n; this.toggleMask = 0n; this.terrain = null
     return this.stateKeyFor(this.agent)
   }
 
@@ -156,23 +185,10 @@ export class GridWorldEnv implements Environment {
    * array order is used as each Goal's fixed index for the lifetime of this instance
    * (never reordered, `config.goals` itself never mutated — see the file header).
    */
-  private goalsMask(): bigint {
-    let mask = 0n
-    this.config.goals.forEach((goal, index) => {
-      if (this.collectedGoals.has(positionKey(goal))) mask |= 1n << BigInt(index)
-    })
-    return mask
-  }
-
-  /** Phase 34 — the actual RL State: grid position + this Episode's Goal-collection mask. */
   private stateKeyFor(pos: Position): StateKey {
-    const base = `${positionKey(pos)},${this.goalsMask()}`
+    const base = `${positionKey(pos)},${this.goalMask}`
     if (!this.config.fragiles?.length && !this.config.toggleWalls?.length) return base
-    let fragileMask = 0n
-    this.config.fragiles?.forEach((tile, index) => { if (this.collapsed.has(positionId(tile))) fragileMask |= 1n << BigInt(index) })
-    let toggleMask = 0n
-    groupIds(this.config).forEach((id, index) => { if (this.openGroups.has(id)) toggleMask |= 1n << BigInt(index) })
-    return `${base},${fragileMask.toString(16)},${toggleMask.toString(16)}`
+    return `${base},${this.fragileMask.toString(16)},${this.toggleMask.toString(16)}`
   }
 
   isTerminal(state: StateKey): boolean {
@@ -185,24 +201,23 @@ export class GridWorldEnv implements Environment {
     const pos: Position = { x: Number(xStr), y: Number(yStr) }
     const mask = BigInt(maskStr ?? '0')
 
-    if (this.config.bombs.some((bomb) => samePosition(bomb, pos))) return true
-    if (this.config.terminalCells.some((cell) => samePosition(cell, pos))) return true
-    if (!this.config.goals.some((goal) => samePosition(goal, pos))) return false
+    if (this.bombIndex.has(positionKey(pos))) return true
+    if (this.terminalIndex.has(positionKey(pos))) return true
+    if (!this.goalBits.has(positionKey(pos))) return false
     // `pos` is a Goal cell: terminal only once every Goal's bit is set in `mask`.
-    const fullMask = (1n << BigInt(this.config.goals.length)) - 1n
-    return mask === fullMask
+    return mask === this.fullGoalMask
   }
 
   step(action: number): StepResult {
     const current = this.agent
     let attempted = applyAction(current, action)
-    const oneWay = this.config.oneWays?.find(tile => samePosition(tile, current))
-    const blockedByDirection = oneWay !== undefined && oneWay.direction !== action
-    const closedWall = this.config.toggleWalls?.some(tile => samePosition(tile, attempted) && !this.openGroups.has(tile.groupId))
+    const oneWay = this.directionIndex.get(positionKey(current))
+    const blockedByDirection = oneWay !== undefined && oneWay !== action
+    const wallGroup = this.wallGroups.get(positionKey(attempted))
+    const closedWall = wallGroup !== undefined && !this.openGroups.has(wallGroup)
     const blockedByDynamic = this.collapsed.has(positionId(attempted)) || closedWall
-    if (!blockedByDirection && !blockedByDynamic && !isOutOfBounds(attempted, this.config) && !isWall(attempted, this.config)) {
-      const pair = this.config.portals?.find(portal => portal.ends.some(end => samePosition(end, attempted)))
-      if (pair) attempted = pair.ends.find(end => !samePosition(end, attempted))!
+    if (!blockedByDirection && !blockedByDynamic && !isOutOfBounds(attempted, this.config) && !this.wallIndex.has(positionKey(attempted))) {
+      attempted = this.portalIndex.get(positionKey(attempted)) ?? attempted
     }
 
     let next: Position
@@ -214,10 +229,10 @@ export class GridWorldEnv implements Environment {
     } else if (isOutOfBounds(attempted, this.config)) {
       next = clampPosition(attempted, this.config)
       reward = this.config.wallPenalty
-    } else if (isWall(attempted, this.config)) {
+    } else if (this.wallIndex.has(positionKey(attempted))) {
       next = current
       reward = this.config.wallPenalty
-    } else if (isBomb(attempted, this.config)) {
+    } else if (this.bombIndex.has(positionKey(attempted))) {
       // Phase 20: entering a Bomb is terminal, exactly like Goal, but with its own
       // penalty reward instead of goalReward. Bomb/Wall/Goal are mutually exclusive by
       // construction (Environment Editor prevents placing one on top of another), so
@@ -225,14 +240,14 @@ export class GridWorldEnv implements Environment {
       next = attempted
       reward = this.config.bombPenalty
     } else {
-      const goalKey = this.config.goals.find((g) => samePosition(g, attempted))
-      if (goalKey) {
-        const key = positionKey(goalKey)
+      const key = positionKey(attempted)
+      const goalBit = this.goalBits.get(key)
+      if (goalBit !== undefined) {
         const alreadyCollected = this.collectedGoals.has(key)
         // Phase 30 §10: goalReward is paid only on a Goal's first visit this Episode;
         // a revisit to an already-collected Goal behaves like any other plain cell.
         reward = alreadyCollected ? this.config.stepReward : this.config.goalReward
-        if (!alreadyCollected) this.collectedGoals.add(key)
+        if (!alreadyCollected) { this.collectedGoals.add(key); this.goalMask |= goalBit; this.terrain = null }
         next = attempted
       } else {
         next = attempted
@@ -241,11 +256,14 @@ export class GridWorldEnv implements Environment {
     }
 
     if (!samePosition(current, next)) {
-      if (this.config.fragiles?.some(tile => samePosition(tile, current))) this.collapsed.add(positionId(current))
-      const pressed = this.config.switches?.find(tile => samePosition(tile, next))
+      const bit = this.fragileBits.get(positionKey(current))
+      if (bit !== undefined) { this.collapsed.add(positionKey(current)); this.fragileMask |= bit; this.terrain = null }
+      const pressed = this.switchIndex.get(positionKey(next))
       if (pressed) {
-        if (this.openGroups.has(pressed.groupId)) this.openGroups.delete(pressed.groupId)
-        else this.openGroups.add(pressed.groupId)
+        if (this.openGroups.has(pressed)) this.openGroups.delete(pressed)
+        else this.openGroups.add(pressed)
+        this.toggleMask ^= this.groupBits.get(pressed)!
+        this.terrain = null
       }
     }
     this.agent = next
@@ -262,7 +280,7 @@ export class GridWorldEnv implements Environment {
   }
 
   getRenderModel(): EnvRenderModel {
-    return {
+    if (!this.terrain) this.terrain = {
       kind: 'grid',
       width: this.config.width,
       height: this.config.height,
@@ -282,16 +300,16 @@ export class GridWorldEnv implements Environment {
       // "the true total Goal count" (StatsPanel's "N / M Goals Collected") have a source
       // that cannot shrink as Goals are collected — see render.ts's doc comment.
       allGoals: this.config.goals.map(positionKey),
-      agentPos: positionKey(this.agent),
       ...(this.config.portals?.length || this.config.oneWays?.length || this.config.fragiles?.length || this.config.switches?.length || this.config.toggleWalls?.length ? {
         features: { portals: this.config.portals, oneWays: this.config.oneWays, fragiles: this.config.fragiles, switches: this.config.switches, toggleWalls: this.config.toggleWalls },
         staticWalls: this.config.walls.map(positionKey), collapsedFragiles: [...this.collapsed], openGroups: [...this.openGroups],
       } : {}),
     }
+    return { ...this.terrain, agentPos: positionKey(this.agent) }
   }
 
   getConfig(): unknown {
-    return this.config
+    return structuredClone(this.config)
   }
 
   setConfig(config: unknown): void {
@@ -299,6 +317,7 @@ export class GridWorldEnv implements Environment {
     // back at the new start must call reset() explicitly (Engine's reset(overrides)
     // flow does this, per ARCHITECTURE.md §5.5).
     this.config = normalizeGridWorldConfig(config)
+    this.indexConfig()
   }
 }
 

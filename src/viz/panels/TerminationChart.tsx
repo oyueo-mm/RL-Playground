@@ -25,11 +25,12 @@ const PADDING = 8
 const LABEL_WIDTH = 56
 const COUNT_WIDTH = 32
 
-const REASONS: EpisodeTerminationReason[] = ['goal', 'bomb', 'other']
+const REASONS: EpisodeTerminationReason[] = ['goal', 'bomb', 'other', 'truncated']
 const BAR_COLOR: Record<EpisodeTerminationReason, string> = {
   goal: '#22c55e',
   bomb: '#ef4444',
   other: '#9ca3af',
+  truncated: '#c29143',
 }
 
 export function TerminationChart({ episodeStatsHistory, t = translations.en }: TerminationChartProps) {
@@ -46,13 +47,14 @@ export function TerminationChart({ episodeStatsHistory, t = translations.en }: T
 
   // Aggregation only — no re-classification. Each Episode's terminationReason was
   // already decided once, by finishEpisode(), when it completed.
-  const counts: Record<EpisodeTerminationReason, number> = { goal: 0, bomb: 0, other: 0 }
+  const counts: Record<EpisodeTerminationReason, number> = { goal: 0, bomb: 0, other: 0, truncated: 0 }
   for (const ep of episodeStatsHistory) counts[ep.terminationReason] += 1
 
   const label: Record<EpisodeTerminationReason, string> = {
     goal: t.stats.terminationGoal,
     bomb: t.stats.terminationBomb,
     other: t.stats.terminationOther,
+    truncated: t.stats.terminationTruncated,
   }
 
   const maxCount = Math.max(1, ...REASONS.map((r) => counts[r])) // guards a 0/0 division below

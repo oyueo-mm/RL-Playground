@@ -1,7 +1,8 @@
 import type { GridFeatures, GridWorldConfig, Position } from './types'
 
 export const FEATURE_FIELDS = ['portals', 'oneWays', 'fragiles', 'switches', 'toggleWalls'] as const
-export const STATE_SPACE_BUDGET = 262_144
+/** Informational complexity threshold, never an admission limit. */
+export const STATE_SPACE_WARNING = 262_144
 export const positionId = (pos: Position) => `${pos.x},${pos.y}`
 const validId = (value: unknown): value is string => typeof value === 'string' && /^[A-Za-z0-9_-]{1,24}$/.test(value)
 const isPosition = (value: unknown): value is Position => typeof value === 'object' && value !== null && Number.isInteger((value as Position).x) && Number.isInteger((value as Position).y)
@@ -37,6 +38,16 @@ export function stateSpaceEstimate(map: Pick<GridWorldConfig, 'width' | 'height'
   return map.width * map.height * 2 ** (map.goals.length + (map.fragiles?.length ?? 0) + groupIds(map).length)
 }
 
+export function stateSpaceDetails(map: Pick<GridWorldConfig, 'width' | 'height' | 'goals'> & GridFeatures) {
+  const goals = map.goals.length, fragiles = map.fragiles?.length ?? 0, groups = groupIds(map).length
+  const cells = map.width * map.height
+  const log10 = Math.log10(cells) + (goals + fragiles + groups) * Math.LOG10E * Math.LN2
+  const valid = Number.isFinite(log10) && cells > 0
+  const exact = valid && Number.isSafeInteger(cells) && goals + fragiles + groups <= 1024 ? BigInt(cells) << BigInt(goals + fragiles + groups) : null
+  const text = !valid ? '—' : exact !== null && exact <= BigInt(Number.MAX_SAFE_INTEGER) ? exact.toLocaleString('en-US') : `≈ ${(10 ** (log10 - Math.floor(log10))).toFixed(2)} × 10^${Math.floor(log10)}`
+  return { goals, fragiles, groups, text, log10, large: valid && log10 > Math.log10(STATE_SPACE_WARNING) }
+}
+
 /** New features share no coordinates with each other or any ordinary map element. */
 export function validateFeatures(map: Pick<GridWorldConfig, 'width' | 'height' | 'start' | 'goals' | 'walls' | 'bombs'> & GridFeatures): string[] {
   const errors: string[] = []
@@ -45,6 +56,9 @@ export function validateFeatures(map: Pick<GridWorldConfig, 'width' | 'height' |
   if (!positions.length && !map.portals?.length) return errors
   if (!Number.isInteger(map.width) || !Number.isInteger(map.height) || map.width < 1 || map.height < 1 || map.width > 20 || map.height > 20) errors.push('Feature maps require integer dimensions between 1 and 20.')
   if (!map.goals.length) errors.push('At least one Goal is required.')
+  const base = [map.start, ...map.goals, ...map.walls, ...map.bombs]
+  if (base.some(pos => !isPosition(pos) || pos.x < 0 || pos.y < 0 || pos.x >= map.width || pos.y >= map.height)) errors.push('Base element coordinates are outside the map or invalid.')
+  if (new Set(base.map(positionId)).size !== base.length) errors.push('Base map elements cannot overlap.')
   if (positions.some(pos => pos.x < 0 || pos.y < 0 || pos.x >= map.width || pos.y >= map.height)) errors.push('Special element coordinates are outside the map.')
   const occupied = new Set([map.start, ...map.goals, ...map.walls, ...map.bombs].map(positionId))
   for (const pos of positions) {
@@ -57,8 +71,5 @@ export function validateFeatures(map: Pick<GridWorldConfig, 'width' | 'height' |
   const switches = new Set(map.switches?.map(tile => tile.groupId))
   const walls = new Set(groupIds(map))
   if ([...switches].some(id => !walls.has(id)) || [...walls].some(id => !switches.has(id))) errors.push('Each toggle group needs at least one switch and one wall.')
-  // Preserve all legacy static maps. Dynamic maps must budget the FULL state space,
-  // including goals; counting only fragile tiles or groups would underestimate it.
-  if (((map.fragiles?.length ?? 0) > 0 || walls.size > 0) && stateSpaceEstimate(map) > STATE_SPACE_BUDGET) errors.push(`Estimated state space exceeds ${STATE_SPACE_BUDGET} (cells × 2^(goals + fragile tiles + wall groups)). Reduce goals or dynamic elements.`)
   return [...new Set(errors)]
 }

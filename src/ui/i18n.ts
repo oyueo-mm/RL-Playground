@@ -131,6 +131,7 @@ export interface Dictionary {
     terminationGoal: string
     terminationBomb: string
     terminationOther: string
+    terminationTruncated: string
     exploration: string
     exploitation: string
     explorationRate: string
@@ -155,6 +156,7 @@ export interface Dictionary {
     terminationChartEmpty: string
   }
   rewardChart: {
+    sampledNotice: string
     empty: string
     heading: string
     /** Phase 19 — axis explanations, e.g. "X: Episode". */
@@ -346,6 +348,7 @@ const en: Dictionary = {
     terminationGoal: 'Goal',
     terminationBomb: 'Bomb',
     terminationOther: 'Other',
+    terminationTruncated: 'Time limit',
     exploration: 'Exploration',
     exploitation: 'Exploitation',
     explorationRate: 'Exploration Rate',
@@ -360,6 +363,7 @@ const en: Dictionary = {
     terminationChartEmpty: 'No Episode completed yet.',
   },
   rewardChart: {
+    sampledNotice: 'Display sampled to at most 800 points; full history is retained. Selection and global extrema are preserved.',
     empty: 'No reward history yet.',
     heading: 'Reward History',
     ariaLabel: 'Reward history chart',
@@ -503,6 +507,7 @@ const ko: Dictionary = {
     terminationGoal: 'Goal',
     terminationBomb: 'Bomb',
     terminationOther: '기타',
+    terminationTruncated: '스텝 제한',
     exploration: '탐험',
     exploitation: '활용',
     explorationRate: '탐험 비율',
@@ -517,6 +522,7 @@ const ko: Dictionary = {
     terminationChartEmpty: '아직 완료된 Episode가 없습니다.',
   },
   rewardChart: {
+    sampledNotice: '표시는 최대 800점으로 간추립니다. 전체 이력과 선택 지점·전체 최솟값/최댓값은 보존합니다.',
     empty: '보상 기록이 아직 없습니다.',
     heading: '보상 기록',
     ariaLabel: '보상 기록 차트',

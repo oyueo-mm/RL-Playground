@@ -14,6 +14,7 @@ import type { ActionSelection, StateKey, TDInfo, Transition } from '../types/rl'
 import { EventEmitter } from './EventEmitter'
 import { Scheduler, defaultTimerSource, type SpeedSetting, type TimerSource } from './Scheduler'
 import { buildSnapshot } from './snapshot'
+import { DEFAULT_RESOURCE_BUDGET, type ResourceBudget, type ResourceMetrics, type ResourcePauseReason } from './resources'
 import type { EngineSnapshot, EngineStatus, EpisodeStats, EpisodeTerminationReason, ResetOverrides } from './types'
 
 const DEFAULT_ENV_ID = 'gridworld'
@@ -103,6 +104,7 @@ export interface SimulationEngineOptions {
   hyperparams?: Hyperparams
   timerSource?: TimerSource
   speed?: SpeedSetting
+  resourceBudget?: Partial<ResourceBudget>
 }
 
 type RunMode = 'episodes' | 'single-episode'
@@ -114,6 +116,17 @@ export class SimulationEngine {
   private algorithm: Algorithm
   private agent: ConcreteAgent
   private hyperparams: Hyperparams
+
+  private readonly uiEmitter = new EventEmitter<EngineSnapshot>()
+  private resourceBudget: ResourceBudget = { ...DEFAULT_RESOURCE_BUDGET }
+  private resourcePauseReason: ResourcePauseReason = null
+  private totalSteps = 0
+  private recordedSteps = 0
+  private metrics = { stepsPerSecond: 0, uiUpdatesPerSecond: 0, qStateGrowth: 0 }
+  private rateWindow = { at: 0, steps: 0, states: 0, updates: 0 }
+  private lastUIAt = -Infinity
+  private timer: TimerSource = defaultTimerSource
+  private projectedHistory: { source: EpisodeStats[]; count: number; rewards: number[]; episodes: EpisodeStats[] } | null = null
 
   private status: EngineStatus = 'idle'
   private pendingAction: ActionSelection | null = null
@@ -140,6 +153,9 @@ export class SimulationEngine {
     this.algorithm = getAlgorithm(this.algorithmId)
     this.agent = createAgentFor(this.algorithm.requiredAgentKind, this.environment.getActionSpace())
     this.hyperparams = options.hyperparams ?? defaultHyperparams(this.algorithm)
+    this.setResourceBudget(options.resourceBudget ?? {})
+    this.timer = options.timerSource ?? defaultTimerSource
+    this.rateWindow.at = this.timer.now()
     this.scheduler = new Scheduler(options.timerSource ?? defaultTimerSource, options.speed ?? DEFAULT_SPEED)
   }
 
@@ -149,26 +165,63 @@ export class SimulationEngine {
     return this.emitter.subscribe(listener)
   }
 
-  getSnapshot(): EngineSnapshot {
+  subscribeUI(listener: (snapshot: EngineSnapshot) => void): () => void { return this.uiEmitter.subscribe(listener) }
+
+  getResourceMetrics(): ResourceMetrics {
+    const q = this.agent.kind === 'Q' ? this.agent : null
+    const ratio = Math.max((q?.size ?? 0) / this.resourceBudget.maxQStates, this.recordedSteps / this.resourceBudget.maxRecordedSteps)
+    return { qStates: q?.size ?? 0, qVersion: q?.version ?? 0, estimatedQBytes: q?.estimatedBytes ?? 0, totalSteps: this.totalSteps, completedEpisodes: this.stats.episode, episodeSteps: this.stats.episodeLength, recordedSteps: this.recordedSteps, ...this.metrics, pauseReason: this.resourcePauseReason, level: ratio >= .85 ? 'high' : ratio >= .6 ? 'warning' : 'normal', budget: { ...this.resourceBudget } }
+  }
+
+  setResourceBudget(overrides: Partial<ResourceBudget>): void {
+    for (const [key, value] of Object.entries(overrides)) {
+      if (!Number.isSafeInteger(value) || value! < (key === 'maxQStates' ? 10 : 1)) throw new Error('Resource budgets must be positive safe integers (Q states >= 10).')
+    }
+    this.resourceBudget = { ...this.resourceBudget, ...overrides }
+    this.resourcePauseReason = null
+    this.emitSnapshot()
+  }
+
+  getUISnapshot(): EngineSnapshot { return this.snapshot(true) }
+  getSnapshot(): EngineSnapshot { return this.snapshot(false) }
+
+  private snapshot(visible: boolean): EngineSnapshot {
+    const model = this.environment.getRenderModel()
+    const currentState = this.environment.getState()
+    const suffix = currentState.split(',').slice(2).join(',')
+    const keys = Array.from({ length: model.width * model.height }, (_, index) => `${index % model.width},${Math.floor(index / model.width)}${suffix ? ',' + suffix : ''}`)
+    if (visible && (this.projectedHistory?.source !== this.stats.episodeStatsHistory || this.projectedHistory.count !== this.stats.episodeStatsHistory.length)) {
+      this.projectedHistory = { source: this.stats.episodeStatsHistory, count: this.stats.episodeStatsHistory.length, rewards: [...this.stats.rewardHistory], episodes: [...this.stats.episodeStatsHistory] }
+    }
     return buildSnapshot({
+      copyHistory: !visible,
+      resources: this.getResourceMetrics(),
       status: this.status,
       algorithmId: this.algorithmId,
       episode: this.stats.episode,
       stepInCurrentEpisode: this.stats.episodeLength,
-      currentState: this.environment.getState(),
+      currentState,
       lastTransition: this.lastTransition,
       lastActionSelection: this.lastActionSelection,
       lastTdInfo: this.lastTdInfo,
-      envRenderModel: this.environment.getRenderModel(),
-      agentSnapshot: this.agent.toSnapshot(),
-      stats: this.stats,
+      envRenderModel: model,
+      agentSnapshot: visible && this.agent.kind === 'Q' ? this.agent.toVisibleSnapshot(keys) : this.agent.toSnapshot(),
+      stats: visible ? { ...this.stats, rewardHistory: this.projectedHistory!.rewards, episodeStatsHistory: this.projectedHistory!.episodes } : this.stats,
       hyperparams: this.hyperparams,
       isGreedyRun: this.greedyRun,
     })
   }
 
-  private emitSnapshot(): void {
-    this.emitter.emit(this.getSnapshot())
+  private emitSnapshot(force = true): void {
+    // Legacy full subscriptions remain opt-in. React uses only the bounded projection.
+    if (this.emitter.size) this.emitter.emit(this.getSnapshot())
+    const now = this.timer.now()
+    const interval = this.getResourceMetrics().level === 'high' ? 250 : 80
+    if (this.uiEmitter.size && (force || now - this.lastUIAt >= interval)) {
+      this.lastUIAt = now
+      this.rateWindow.updates++
+      this.uiEmitter.emit(this.getUISnapshot())
+    }
   }
 
   // ---- manual step ----
@@ -178,6 +231,7 @@ export class SimulationEngine {
     if (this.status !== 'idle') {
       throw new Error(`step() is only valid while idle (current status: "${this.status}")`)
     }
+    if (this.atResourceBoundary()) { this.status = 'paused'; this.emitSnapshot(); return }
     this.performOneStep()
     this.emitSnapshot()
   }
@@ -213,15 +267,18 @@ export class SimulationEngine {
     this.runMode = mode
     this.remainingEpisodes = episodes
     this.greedyRun = greedy
+    this.resourcePauseReason = null
     this.status = 'running'
     this.scheduler.start(this.schedulerCallbacks())
   }
 
   private schedulerCallbacks() {
+    let firstBatch = true
     return {
       performUnit: () => this.schedulerTick(),
-      afterBatch: () => this.emitSnapshot(),
+      afterBatch: () => { this.emitSnapshot(firstBatch); firstBatch = false },
       onStop: () => {
+        if (this.resourcePauseReason) { this.status = 'paused'; this.emitSnapshot(); return }
         this.status = 'idle'
         this.runMode = null
         this.remainingEpisodes = null
@@ -233,8 +290,9 @@ export class SimulationEngine {
 
   /** Returns true to keep the Scheduler loop going, false to stop it (target reached). */
   private schedulerTick(): boolean {
+    if (this.atResourceBoundary()) return false
     this.performOneStep(this.greedyRun)
-    const justFinishedEpisode = this.lastTransition?.done ?? false
+    const justFinishedEpisode = !!(this.lastTransition?.done || this.lastTransition?.truncated)
 
     if (this.runMode === 'single-episode') {
       return !justFinishedEpisode
@@ -257,6 +315,7 @@ export class SimulationEngine {
 
   resume(): void {
     if (this.status !== 'paused') return
+    this.resourcePauseReason = null
     this.status = 'running'
     this.scheduler.start(this.schedulerCallbacks())
   }
@@ -308,6 +367,9 @@ export class SimulationEngine {
     this.agent = createAgentFor(this.algorithm.requiredAgentKind, this.environment.getActionSpace())
     this.hyperparams = overrides?.hyperparams ?? defaultHyperparams(this.algorithm)
     this.stats = createEmptyStats()
+    this.totalSteps = 0; this.recordedSteps = 0; this.resourcePauseReason = null
+    this.metrics = { stepsPerSecond: 0, uiUpdatesPerSecond: 0, qStateGrowth: 0 }
+    this.rateWindow = { at: this.timer.now(), steps: 0, states: 0, updates: 0 }
 
     this.status = 'idle'
     this.pendingAction = null
@@ -349,6 +411,8 @@ export class SimulationEngine {
   restartEpisode(): void {
     this.scheduler.stop() // invalidate any in-flight callback before anything else changes
     this.environment.reset()
+    this.recordedSteps -= this.stats.episodeLength
+    this.resourcePauseReason = null
 
     this.status = 'idle'
     this.pendingAction = null
@@ -371,6 +435,13 @@ export class SimulationEngine {
 
   // ---- performStep() primitive (ARCHITECTURE.md §5.1) ----
 
+  private atResourceBoundary(): boolean {
+    const states = this.agent.kind === 'Q' ? this.agent.size : 0
+    // A step can lazily create current and next rows. Reserve both before acting.
+    this.resourcePauseReason = states + 2 > this.resourceBudget.maxQStates ? 'q-states' : this.recordedSteps >= this.resourceBudget.maxRecordedSteps ? 'recorded-steps' : null
+    return this.resourcePauseReason !== null
+  }
+
   private performOneStep(greedy = false): void {
     const state = this.environment.getState()
 
@@ -390,7 +461,8 @@ export class SimulationEngine {
     const action = this.pendingAction ?? this.algorithm.selectAction(state, this.agent, selectionHyperparams)
 
     const stepResult = this.environment.step(action.action)
-    const transition: Transition = { state, action: action.action, ...stepResult }
+    const truncated = !stepResult.done && this.stats.episodeLength + 1 >= this.resourceBudget.maxEpisodeSteps
+    const transition: Transition = { state, action: action.action, ...stepResult, ...(truncated ? { truncated: true } : {}) }
 
     if (greedy) {
       // Policy Evaluation/exhibition only — no TD update, no Q-table write. lastTdInfo is
@@ -412,6 +484,15 @@ export class SimulationEngine {
     this.stats.totalReward += transition.reward
     this.stats.episodeReward += transition.reward
     this.stats.episodeLength += 1
+    this.totalSteps++
+    this.recordedSteps++
+    const now = this.timer.now()
+    if (now - this.rateWindow.at >= 1000) {
+      const seconds = (now - this.rateWindow.at) / 1000
+      const states = this.agent.kind === 'Q' ? this.agent.size : 0
+      this.metrics = { stepsPerSecond: (this.totalSteps - this.rateWindow.steps) / seconds, uiUpdatesPerSecond: this.rateWindow.updates / seconds, qStateGrowth: states - this.rateWindow.states }
+      this.rateWindow = { at: now, steps: this.totalSteps, states, updates: 0 }
+    }
     // Phase 21: tallied from the real ActionSelection result `action` already computed
     // above (selectAction()/pendingAction) — never re-derived via a fresh RNG draw here.
     if (action.wasExploration) {
@@ -428,7 +509,7 @@ export class SimulationEngine {
     // only for the uniqueStates count), this preserves visit order and repeat visits.
     this.stats.episodeTrajectory.push(transition)
 
-    if (transition.done) {
+    if (transition.done || transition.truncated) {
       this.finishEpisode(transition)
     }
   }
@@ -465,6 +546,7 @@ export class SimulationEngine {
    * suffix back off before comparing, restoring the original position-only comparison.
    */
   private classifyTermination(transition: Transition): EpisodeTerminationReason {
+    if (transition.truncated) return 'truncated'
     const renderModel = this.environment.getRenderModel()
     if (renderModel.kind !== 'grid') return 'other'
     if (renderModel.bombs.includes(statePosition(transition.nextState))) return 'bomb'

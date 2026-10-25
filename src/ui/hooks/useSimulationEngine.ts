@@ -7,6 +7,8 @@ import type { EngineSnapshot } from '../../core/engine/types'
 
 export interface SubscribableEngine {
   subscribe(listener: (snapshot: EngineSnapshot) => void): () => void
+  subscribeUI?(listener: (snapshot: EngineSnapshot) => void): () => void
+  getUISnapshot?(): EngineSnapshot
   getSnapshot(): EngineSnapshot
 }
 
@@ -27,11 +29,11 @@ export interface SubscribableEngine {
  */
 export function useSimulationEngine(engine: SubscribableEngine): EngineSnapshot {
   const cachedSnapshot = useRef<EngineSnapshot | null>(null)
-  if (cachedSnapshot.current === null) cachedSnapshot.current = engine.getSnapshot()
+  if (cachedSnapshot.current === null) cachedSnapshot.current = (engine.getUISnapshot ?? engine.getSnapshot).call(engine)
 
   const subscribe = useCallback(
     (onStoreChange: () => void) =>
-      engine.subscribe((snapshot) => {
+      (engine.subscribeUI ?? engine.subscribe).call(engine, (snapshot) => {
         cachedSnapshot.current = snapshot
         onStoreChange()
       }),

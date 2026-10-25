@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createDefaultGridWorldConfig, GridWorldEnv } from './GridWorldEnv'
-import { stateSpaceEstimate, STATE_SPACE_BUDGET, validateFeatures } from './features'
+import { stateSpaceEstimate, STATE_SPACE_WARNING, validateFeatures } from './features'
 import { parseEnvImport, serializeEnvExport } from '../../../viz/controls/envEditorIO'
 import { draftFromRenderModel } from '../../../viz/controls/envEditorDraft'
 
@@ -39,8 +39,8 @@ describe('Switches and toggle walls', () => {
   it('accounts for goals, fragile bits and group bits together without restricting legacy maps', () => {
     expect(stateSpaceEstimate({ ...config, fragiles: [{ x: 2, y: 2 }] })).toBe(16 * 2 ** 3)
     const huge = { ...createDefaultGridWorldConfig(), fragiles: Array.from({ length: 15 }, (_, i) => ({ x: i % 7, y: Math.floor(i / 7) + 1 })) }
-    expect(stateSpaceEstimate(huge)).toBeGreaterThan(STATE_SPACE_BUDGET)
-    expect(validateFeatures(huge).some(error => error.includes('state space'))).toBe(true)
+    expect(stateSpaceEstimate(huge)).toBeGreaterThan(STATE_SPACE_WARNING)
+    expect(validateFeatures(huge)).toEqual([])
     expect(validateFeatures({ ...createDefaultGridWorldConfig(), goals: Array.from({ length: 35 }, (_, i) => ({ x: i % 7, y: Math.floor(i / 7) })) })).toEqual([])
   })
   it('round-trips group IDs and resets episode state', () => {

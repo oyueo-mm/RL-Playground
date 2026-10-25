@@ -7,6 +7,8 @@ export interface StepResult {
   nextState: StateKey
   reward: number
   done: boolean
+  /** Time limit, not MDP termination: the TD target still bootstraps from nextState. */
+  truncated?: boolean
 }
 
 // Transition = { state, action } & StepResult — composed rather than redeclaring

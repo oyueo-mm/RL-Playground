@@ -1,3 +1,5 @@
+import { memo } from 'react'
+import { extent, plotIndices, CHART_POINT_LIMIT } from './chartSampling'
 // Phase 25 — small SVG trend charts over episodeStatsHistory (Total Reward / Steps),
 // complementing (not replacing) the existing single-metric Reward Chart (RewardChart.tsx,
 // left completely untouched by this Phase) with a side-by-side comparison view — Phase
@@ -45,7 +47,9 @@ const CHART_WIDTH = 384
 const CHART_HEIGHT = 80
 
 interface MiniTrendChartProps {
-  points: { episode: number; value: number }[]
+  points: { episode: number; value: number; index?: number }[]
+  totalCount?: number
+  domain?: [number, number]
   selectedEpisode: number | null
   formatValue: (value: number) => string
   color: string
@@ -63,6 +67,8 @@ interface MiniTrendChartProps {
  * untouched per this Phase's §3 "don't replace the existing Reward Chart"). */
 function MiniTrendChart({
   points,
+  totalCount = points.length,
+  domain,
   selectedEpisode,
   formatValue,
   color,
@@ -75,8 +81,9 @@ function MiniTrendChart({
   testIdPrefix,
 }: MiniTrendChartProps) {
   const values = points.map((p) => p.value)
-  const min = Math.min(...values)
-  const max = Math.max(...values)
+  const bounds = extent(values)
+  const min = domain?.[0] ?? bounds.min
+  const max = domain?.[1] ?? bounds.max
   // All-equal (or single-point) history would otherwise divide by zero — same flat,
   // vertically centered treatment RewardChart.tsx uses.
   const isFlat = max - min < 1e-9
@@ -84,9 +91,10 @@ function MiniTrendChart({
   const innerWidth = CHART_WIDTH - PADDING_LEFT - PADDING
   const innerHeight = CHART_HEIGHT - PADDING - PADDING_BOTTOM
 
-  const plotted = points.map((p, index) => {
+  const plotted = points.map((p, itemIndex) => {
+    const index = p.index ?? itemIndex
     const x =
-      points.length === 1 ? PADDING_LEFT + innerWidth / 2 : PADDING_LEFT + (index / (points.length - 1)) * innerWidth
+      totalCount === 1 ? PADDING_LEFT + innerWidth / 2 : PADDING_LEFT + (index / (totalCount - 1)) * innerWidth
     const normalized = isFlat ? 0.5 : (p.value - min) / (max - min)
     const y = PADDING + (1 - normalized) * innerHeight
     return { x, y, episode: p.episode, value: p.value }
@@ -200,7 +208,7 @@ function formatReward(value: number): string {
   return value.toFixed(2)
 }
 
-export function LearningProgress({
+function LearningProgressView({
   episodeStatsHistory,
   selectedEpisode = null,
   t = translations.en,
@@ -216,15 +224,25 @@ export function LearningProgress({
     )
   }
 
+  let rewardMin = Infinity, rewardMax = -Infinity, stepsMin = Infinity, stepsMax = -Infinity
+  const extrema = [0, 0, 0, 0]
+  episodeStatsHistory.forEach((row, index) => {
+    if (row.totalReward < rewardMin) { rewardMin = row.totalReward; extrema[0] = index }
+    if (row.totalReward > rewardMax) { rewardMax = row.totalReward; extrema[1] = index }
+    if (row.steps < stepsMin) { stepsMin = row.steps; extrema[2] = index }
+    if (row.steps > stepsMax) { stepsMax = row.steps; extrema[3] = index }
+  })
+  const indices = plotIndices(episodeStatsHistory.length, [...extrema, episodeStatsHistory.findIndex(row => row.episode === selectedEpisode)])
   return (
     <div
       className="w-full max-w-lg overflow-x-auto rounded border border-gray-200 p-4"
       data-testid="learning-progress"
     >
       <h2 className="mb-2 text-sm font-semibold text-gray-700">{t.learningProgress.heading}</h2>
+      {episodeStatsHistory.length > CHART_POINT_LIMIT && <p className="chart-sample-notice">{t.rewardChart.sampledNotice}</p>}
       <div className="flex flex-col gap-3">
         <MiniTrendChart
-          points={episodeStatsHistory.map((e) => ({ episode: e.episode, value: e.totalReward }))}
+          totalCount={episodeStatsHistory.length} domain={[rewardMin, rewardMax]} points={indices.map(index => ({ episode: episodeStatsHistory[index].episode, value: episodeStatsHistory[index].totalReward, index }))}
           selectedEpisode={selectedEpisode}
           formatValue={formatReward}
           color="#2563eb"
@@ -237,7 +255,7 @@ export function LearningProgress({
           testIdPrefix="learning-progress-total-reward"
         />
         <MiniTrendChart
-          points={episodeStatsHistory.map((e) => ({ episode: e.episode, value: e.steps }))}
+          totalCount={episodeStatsHistory.length} domain={[stepsMin, stepsMax]} points={indices.map(index => ({ episode: episodeStatsHistory[index].episode, value: episodeStatsHistory[index].steps, index }))}
           selectedEpisode={selectedEpisode}
           formatValue={(v) => `${v}`}
           color="#16a34a"
@@ -253,3 +271,5 @@ export function LearningProgress({
     </div>
   )
 }
+
+export const LearningProgress = memo(LearningProgressView)

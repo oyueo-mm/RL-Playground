@@ -2,10 +2,13 @@ import type { ActionSelection, StateKey, TDInfo, Transition } from '../types/rl'
 import type { AgentSnapshot, EnvRenderModel } from '../types/render'
 import type { Hyperparams } from '../types/hyperparams'
 import type { EngineSnapshot, EngineStatus, EpisodeStats } from './types'
+import type { ResourceMetrics } from './resources'
 
 const DEFAULT_MOVING_WINDOW = 20
 
 export interface SnapshotInput {
+  copyHistory?: boolean
+  resources?: ResourceMetrics
   status: EngineStatus
   algorithmId: string
   episode: number
@@ -38,6 +41,7 @@ function movingAverage(history: number[], window = DEFAULT_MOVING_WINDOW): numbe
 /** Builds an immutable EngineSnapshot from Engine's mutable internal state (defensive copies only). */
 export function buildSnapshot(input: SnapshotInput): EngineSnapshot {
   return {
+    ...(input.resources ? { resources: input.resources } : {}),
     status: input.status,
     algorithmId: input.algorithmId,
     episode: input.episode,
@@ -54,9 +58,9 @@ export function buildSnapshot(input: SnapshotInput): EngineSnapshot {
       episodeLength: input.stats.episodeLength,
       successCount: input.stats.successCount,
       successRate: input.stats.successRate,
-      rewardHistory: [...input.stats.rewardHistory],
+      rewardHistory: input.copyHistory === false ? input.stats.rewardHistory : [...input.stats.rewardHistory],
       avgRewardMovingWindow: movingAverage(input.stats.rewardHistory),
-      episodeStatsHistory: [...input.stats.episodeStatsHistory],
+      episodeStatsHistory: input.copyHistory === false ? input.stats.episodeStatsHistory : [...input.stats.episodeStatsHistory],
       latestEpisodeStats: input.stats.episodeStatsHistory.at(-1) ?? null,
     },
     hyperparams: { ...input.hyperparams },

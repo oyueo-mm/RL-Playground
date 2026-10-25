@@ -16,7 +16,7 @@
 
 import { useEffect, useRef, useState, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
 import type { GridWorldConfig, Direction } from '../../core/environments/gridworld/types'
-import { featurePositions, positionId, stateSpaceEstimate, STATE_SPACE_BUDGET } from '../../core/environments/gridworld/features'
+import { featurePositions, positionId, stateSpaceDetails } from '../../core/environments/gridworld/features'
 import type { EnvRenderModel } from '../../core/types/render'
 import type { StateKey } from '../../core/types/rl'
 import { GridSvg } from '../grid/GridSvg'
@@ -437,7 +437,8 @@ export function EnvEditor({
             if (mode === 'select' && selectedCell) setDraft(prev => ({ ...prev, oneWays: prev.oneWays?.map(tile => positionId(tile) === selectedCell ? { ...tile, direction: next } : tile) }))
           }}>{(locale === 'ko' ? ['↑ 위', '↓ 아래', '← 왼쪽', '→ 오른쪽'] : ['↑ Up', '↓ Down', '← Left', '→ Right']).map((label, index) => <option key={index} value={index}>{label}</option>)}</select></label>
           <p>{locale === 'ko' ? '포털은 같은 ID로 두 셀을 배치하세요. 벽 그룹에는 스위치와 토글 벽이 모두 필요합니다. 선택 도구로 요소를 누르면 연결선과 ID를 확인·수정할 수 있습니다. ID: 영문·숫자·_·- (1~24자).' : 'Place two portal cells with the same ID. Each wall group needs a switch and toggle wall. Select an element to inspect its links or edit its ID/direction. IDs: letters, numbers, _ and -, 1–24 characters.'}</p>
-          <p data-testid="state-space-estimate">{locale === 'ko' ? '추정 상태 수 상한' : 'Estimated state upper bound'}: {stateSpaceEstimate(draft) > Number.MAX_SAFE_INTEGER ? stateSpaceEstimate(draft).toExponential(2) : stateSpaceEstimate(draft).toLocaleString()} · {locale === 'ko' ? '동적 맵 제한' : 'Dynamic-map limit'} {STATE_SPACE_BUDGET.toLocaleString()}</p>
+          <p data-testid="state-space-estimate">{locale === 'ko' ? '이론 상태 수 상한' : 'Theoretical state upper bound'}: {stateSpaceDetails(draft).text}<br />Goal {draft.goals.length} · Fragile {draft.fragiles?.length ?? 0} · {locale === 'ko' ? '벽 그룹' : 'Wall groups'} {stateSpaceDetails(draft).groups}</p>
+          {stateSpaceDetails(draft).large && <p className="complexity-warning" role="status">{locale === 'ko' ? '가능한 상태 조합이 매우 많습니다. 적용은 가능하며 실제 생성된 Q-table 상태 수로 자원을 관리합니다. 학습 시간과 메모리가 더 필요할 수 있습니다.' : 'Many possible state combinations. This map can be applied; resources are managed by actual Q-table rows. Training may need more time and memory.'}</p>}
           <label>{t.envEditor.width}<input type="number" min={3} max={20} value={draft.width} onChange={e => updateWidth(Number(e.target.value))} data-testid="env-editor-width-input" /></label>
           <label>{t.envEditor.height}<input type="number" min={3} max={20} value={draft.height} onChange={e => updateHeight(Number(e.target.value))} data-testid="env-editor-height-input" /></label>
           {(['stepReward', 'wallPenalty', 'goalReward', 'bombPenalty'] as const).map(key => <label key={key}>{({ stepReward: t.envEditor.stepReward, wallPenalty: t.envEditor.wallPenalty, goalReward: t.envEditor.goalReward, bombPenalty: t.envEditor.bombPenalty })[key]}<input type="number" step="0.1" value={draft[key]} data-testid={`env-editor-${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}-input`} onChange={e => recordInput(previous => ({ ...previous, [key]: Number(e.target.value) }), key)} /></label>)}

@@ -5,6 +5,7 @@ export type Listener<T> = (value: T) => void
 
 export class EventEmitter<T> {
   private readonly listeners = new Set<Listener<T>>()
+  get size(): number { return this.listeners.size }
 
   /** Returns an unsubscribe function, so callers don't need to keep the listener reference. */
   subscribe(listener: Listener<T>): () => void {

@@ -55,6 +55,7 @@ export function EpisodeTrajectory({
     goal: t.stats.terminationGoal,
     bomb: t.stats.terminationBomb,
     other: t.stats.terminationOther,
+    truncated: t.stats.terminationTruncated,
   }
 
   const trajectory = episode.trajectory

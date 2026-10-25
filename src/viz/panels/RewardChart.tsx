@@ -1,3 +1,5 @@
+import { memo } from 'react'
+import { extent, plotIndices, CHART_POINT_LIMIT } from './chartSampling'
 // Phase 6 — simple SVG line chart over EngineSnapshot.stats.rewardHistory. Pure
 // presentational component: rendering is determined entirely by the `rewardHistory`
 // prop, no Engine access and no simulation triggered from here (Phase 6 §12).
@@ -37,7 +39,7 @@ const PADDING = 8
 const PADDING_LEFT = 32
 const PADDING_BOTTOM = 16
 
-export function RewardChart({
+function RewardChartView({
   rewardHistory,
   // Phase 28 §2/§3: widened from 320 to make use of the extra column width freed up by
   // App.tsx's wider layout. All geometry below is already parameterized by `width`, not
@@ -59,8 +61,8 @@ export function RewardChart({
     )
   }
 
-  const min = Math.min(...rewardHistory)
-  const max = Math.max(...rewardHistory)
+  const { min, max, minIndex, maxIndex } = extent(rewardHistory)
+  const selectedIndex = selectedEpisode == null ? -1 : episodeNumbers.indexOf(selectedEpisode)
   // All-equal (or single-point) reward history would otherwise divide by zero — treat
   // it as a flat, vertically centered line instead of letting NaN/Infinity through.
   const isFlat = max - min < 1e-9
@@ -68,7 +70,8 @@ export function RewardChart({
   const innerWidth = width - PADDING_LEFT - PADDING
   const innerHeight = height - PADDING - PADDING_BOTTOM
 
-  const points = rewardHistory.map((value, index) => {
+  const points = plotIndices(rewardHistory.length, [selectedIndex, minIndex, maxIndex]).map(index => {
+    const value = rewardHistory[index]
     const x =
       rewardHistory.length === 1
         ? PADDING_LEFT + innerWidth / 2
@@ -76,13 +79,12 @@ export function RewardChart({
     const normalized = isFlat ? 0.5 : (value - min) / (max - min)
     // Higher reward renders higher on the chart (smaller y = up in SVG coordinates).
     const y = PADDING + (1 - normalized) * innerHeight
-    return { x, y }
+    return { x, y, index }
   })
 
   const d = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ')
 
-  const selectedIndex = selectedEpisode == null ? -1 : episodeNumbers.indexOf(selectedEpisode)
-  const selectedPoint = selectedIndex >= 0 ? points[selectedIndex] : undefined
+  const selectedPoint = points.find(point => point.index === selectedIndex)
 
   // Phase 28 §7 — numeric axis ticks. X domain falls back to [1, length] (index+1) when
   // episodeNumbers is omitted, which is exactly what a contiguous, never-evicted history
@@ -107,6 +109,7 @@ export function RewardChart({
   return (
     <div className="w-full max-w-lg overflow-x-auto rounded border border-gray-200 p-4" data-testid="reward-chart">
       <h2 className="mb-2 text-sm font-semibold text-gray-700">{t.rewardChart.heading}</h2>
+      {rewardHistory.length > CHART_POINT_LIMIT && <p className="chart-sample-notice">{t.rewardChart.sampledNotice}</p>}
       <svg
         width={width}
         height={height}
@@ -196,3 +199,5 @@ export function RewardChart({
     </div>
   )
 }
+
+export const RewardChart = memo(RewardChartView)

@@ -70,5 +70,5 @@ export type EnvRenderModel = {
 // Future non-grid environments add a member to this union (e.g. { kind: 'graph'; ... }).
 
 export type AgentSnapshot =
-  | { kind: 'Q'; qTable: Record<StateKey, number[]> }
+  | { kind: 'Q'; qTable: Record<StateKey, number[]>; version?: number; totalStates?: number; scope?: 'visible' }
   | { kind: 'V'; vTable: Record<StateKey, number> }

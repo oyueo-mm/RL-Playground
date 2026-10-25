@@ -105,6 +105,7 @@ export function StatsPanel({
     goal: t.stats.terminationGoal,
     bomb: t.stats.terminationBomb,
     other: t.stats.terminationOther,
+    truncated: t.stats.terminationTruncated,
   }
 
   const recentEpisodes = stats.episodeStatsHistory.slice(-EPISODE_HISTORY_DISPLAY_LIMIT).reverse()
