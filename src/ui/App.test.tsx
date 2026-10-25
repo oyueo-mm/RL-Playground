@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render as baseRender, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render as baseRender, screen, within, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDefaultGridWorldConfig } from '../core/environments/gridworld/GridWorldEnv'
 // Existing simulator regression suite; shell/navigation is covered in Home.test.tsx.
@@ -2320,7 +2320,7 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
     expect(screen.getByTestId('learning-progress-total-reward-x-tick-1')).toBeTruthy()
   })
 
-  it('D. runs past the old 200-Episode cap (201) and all Episodes remain in Reward Chart/Episode History data', () => {
+  it('D. runs past the old 200-Episode cap (201) and all Episodes remain in Reward Chart/Episode History data', async () => {
     engine.reset({ envConfig: corridorConfig, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 100_000 })
     render(<App />)
@@ -2328,7 +2328,8 @@ describe('App (integration, real Engine — Phase 28: UX / Layout / Episode scal
 
     fireEvent.click(screen.getByTestId('playback-run-episode'))
 
-    expect(engine.getSnapshot().episode).toBe(201)
+    // The 8ms work budget may yield between batches under CPU/GC load.
+    await waitFor(() => expect(engine.getSnapshot().episode).toBe(201))
     expect(engine.getSnapshot().stats.rewardHistory.length).toBe(201)
     expect(engine.getSnapshot().stats.episodeStatsHistory.length).toBe(201)
     expect(engine.getSnapshot().stats.episodeStatsHistory[0].episode).toBe(1) // not evicted

@@ -4,6 +4,8 @@ import { Home } from './Home'
 import { AlgorithmGuide } from './guide/AlgorithmGuide'
 import { LanguageSelector } from '../viz/controls/LanguageSelector'
 import { translations, type Locale } from './i18n'
+import { engine } from './engine'
+import { draftToGridWorldConfig } from '../viz/controls/envEditorDraft'
 
 type Page = 'home' | 'environment' | 'editor' | 'results' | 'guide'
 const labels = {
@@ -62,7 +64,7 @@ export default function App() {
       <header className="topbar"><div className="breadcrumb"><button id="mobile-menu" aria-label={l.menu} aria-expanded={mobileOpen} aria-controls="sidebar" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><span>Workspace</span><span>/</span><strong>{l[page]}</strong></div></header>
       <main id="page-content" className="page-content" tabIndex={-1}>
         <h1 ref={heading} tabIndex={-1} className="sr-only">{page === 'home' ? l.title : l[page]}</h1>
-        {page === 'home' && <Home locale={locale} onEditor={() => navigate('editor')} onStart={() => navigate('environment')} onGuide={() => navigate('guide')} />}
+        {page === 'home' && <Home locale={locale} onEditor={() => navigate('editor')} onStart={() => navigate('environment')} onGuide={() => navigate('guide')} onExperiment={preset => { if (window.confirm(translations[locale].envEditor.applyConfirm)) { engine.reset({ envConfig: draftToGridWorldConfig(preset.draft) }); navigate('environment') } }} />}
         {page === 'guide' && <AlgorithmGuide locale={locale} onStart={() => navigate('environment')} />}
         <div hidden={!experimentVisible} className="experiment-workspace" data-testid="experiment-workspace"><Simulator locale={locale} section={section} active={experimentVisible} presetsOpen={presetsOpen} onClosePresets={() => setPresetsOpen(false)} /></div>
       </main>

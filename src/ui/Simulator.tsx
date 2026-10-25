@@ -34,7 +34,6 @@ import { ResourceInfo } from './ResourceInfo'
 import { FloatingToolbar } from './FloatingToolbar'
 import { Notice } from './Notice'
 import { MapGallery } from '../viz/controls/MapGallery'
-import { ENVIRONMENT_PRESETS } from '../viz/controls/environmentPresets'
 import { draftToGridWorldConfig } from '../viz/controls/envEditorDraft'
 
 interface SimulatorProps {
@@ -64,6 +63,9 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
   const [settingsTab, setSettingsTab] = useState<'learning' | 'visuals'>('learning')
   const [presetRequest, setPresetRequest] = useState<{ draft: GridEditorDraft } | null>(null)
   const tips = toolbarTips[locale]
+  useEffect(() => {
+    if (snapshot.episode === 0 && snapshot.resources?.totalSteps === 0) { setSelectedState(null); setSelectedEpisode(null); setViewedStep(null) }
+  }, [snapshot.stats.episodeStatsHistory, snapshot.episode, snapshot.resources?.totalSteps])
   useEffect(() => { if (presetsOpen) setAnalysisOpen(false) }, [presetsOpen])
   useEffect(() => { setViewedStep(null) }, [selectedEpisode])
   useEffect(() => {
@@ -86,7 +88,6 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
   const handleStateSelect = useCallback((state: StateKey) => { if (!model.walls.includes(state)) setSelectedState(state) }, [model.walls])
   const clearSelections = () => { setSelectedState(null); setSelectedEpisode(null); setViewedStep(null) }
   const idle = snapshot.status === 'idle'
-  const labels = Object.fromEntries(ENVIRONMENT_PRESETS.map(preset => [preset.id, (t.envEditor as unknown as Record<string, string>)[`preset${preset.id[0].toUpperCase()}${preset.id.slice(1)}`] ?? preset.id]))
   const analysisVisible = !presetsOpen && (section === 'results' || (section === 'environment' && analysisOpen))
   return <section className={`simulator fullscreen-simulator ${section === 'results' ? 'results-view' : ''}`} aria-label={ko ? '강화학습 실험실' : 'Reinforcement learning lab'}>
     {section !== 'editor' && snapshot.resources?.pauseReason && <Notice eventKey={`${snapshot.resources.pauseReason}:${snapshot.resources.budget.maxQStates}:${snapshot.resources.totalSteps}`} title={ko ? 'Q 상태 예산으로 학습 일시정지' : 'Training paused at Q row budget'} kind="warning" locale={locale} testId="resource-pause-reason"><button onClick={() => { setSettingsOpen(true); setSettingsTab('learning') }}>{ko ? '설정에서 예산 조절' : 'Adjust budget in settings'}</button></Notice>}
@@ -184,7 +185,7 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
           />
       </div></DeferredPanel>
     </aside>
-    {active && presetsOpen && <MapGallery locale={locale} labels={labels} actionLabel={section === 'editor' ? (ko ? '편집기로 불러오기' : 'Load into editor') : (ko ? '맵 적용' : 'Apply map')} onClose={onClosePresets} onSelect={draft => {
+    {active && presetsOpen && <MapGallery locale={locale} actionLabel={section === 'editor' ? (ko ? '편집기로 불러오기' : 'Load into editor') : (ko ? '맵 적용' : 'Apply map')} onClose={onClosePresets} onSelect={draft => {
       if (section === 'editor') { setPresetRequest({ draft }); return }
       if (window.confirm(t.envEditor.applyConfirm)) { engine.reset({ envConfig: draftToGridWorldConfig(draft) }); clearSelections() }
     }} />}

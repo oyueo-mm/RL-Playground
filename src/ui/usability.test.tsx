@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, expect, it, vi } from 'vitest'
 import { Notice } from './Notice'
 import { ManualPlay } from './ManualPlay'
-import { HOME_SCENARIOS } from './homeScenarios'
+import { HOME_SCENARIOS } from '../test/homeScenarioFixtures'
 import App from './App'
 import { engine } from './engine'
 import { DEFAULT_RESOURCE_BUDGET } from '../core/engine/resources'
@@ -23,7 +23,7 @@ it.each(HOME_SCENARIOS)('manual play uses actual $id rules, completes, restarts 
   const before = engine.getSnapshot(), close = vi.fn()
   render(<ManualPlay config={scenario.config} locale="en" active onClose={close} />)
   const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']
-  for (const action of scenario.explore) fireEvent.keyDown(window, { key: keys[action] })
+  for (const action of scenario.explore) { fireEvent.keyDown(window, { key: keys[action] }); fireEvent.keyUp(window, { key: keys[action] }) }
   expect(screen.getByTestId('manual-progress').textContent).toContain('Success')
   fireEvent.keyDown(window, { key: 'r' })
   expect(screen.getByTestId('manual-progress').textContent).toContain('0 steps')

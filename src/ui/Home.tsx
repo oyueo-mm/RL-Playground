@@ -1,7 +1,8 @@
 import { GridDemo } from './GridDemo'
 import type { Locale } from './i18n'
+import type { EnvironmentPreset } from '../data/presets/manifest'
 
-export function Home({ locale, onStart, onGuide, onEditor = onStart, guideOnly = false }: { locale: Locale; onStart: () => void; onGuide: () => void; onEditor?: () => void; guideOnly?: boolean }) {
+export function Home({ locale, onStart, onGuide, onEditor = onStart, guideOnly = false, onExperiment }: { locale: Locale; onStart: () => void; onGuide: () => void; onEditor?: () => void; guideOnly?: boolean; onExperiment?: (preset: EnvironmentPreset) => void }) {
   const ko = locale === 'ko'
   return <div className="home-page">
     {!guideOnly && <>
@@ -15,7 +16,7 @@ export function Home({ locale, onStart, onGuide, onEditor = onStart, guideOnly =
           <div className="hero-meta">↳ {ko ? '설치 없이, 브라우저에서 바로 실험하세요.' : 'Your next experiment starts in your browser.'}</div>
           <div className="algorithm-tags"><span>Q-Learning</span><span>SARSA</span><span>GridWorld</span></div>
         </section>
-        <GridDemo locale={locale} />
+        <GridDemo locale={locale} onExperiment={onExperiment} />
       </div>
       <section className="home-feature-links" aria-label={ko ? '실험실 바로가기' : 'Explore the workspace'}>
         {[
