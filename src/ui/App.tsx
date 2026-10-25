@@ -19,6 +19,7 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
+  const [homeAppliedDifficulty, setHomeAppliedDifficulty] = useState<string>()
   const [homeAppliedVersion, setHomeAppliedVersion] = useState(0)
   const [section, setSection] = useState<'environment' | 'editor' | 'results'>('environment')
   const heading = useRef<HTMLHeadingElement>(null)
@@ -64,9 +65,9 @@ export default function App() {
       <header className="topbar"><div className="breadcrumb"><button id="mobile-menu" aria-label={l.menu} aria-expanded={mobileOpen} aria-controls="sidebar" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><span>Workspace</span><span>/</span><strong>{l[page]}</strong></div></header>
       <main id="page-content" className="page-content" tabIndex={-1}>
         <h1 ref={heading} tabIndex={-1} className="sr-only">{page === 'home' ? l.title : l[page]}</h1>
-        {page === 'home' && <Home locale={locale} onEditor={() => navigate('editor')} onStart={() => navigate('environment')} onGuide={() => navigate('guide')} onExperiment={preset => { if (window.confirm(translations[locale].envEditor.applyConfirm)) { engine.reset({ envConfig: draftToGridWorldConfig(preset.draft) }); setHomeAppliedVersion(value => value + 1); navigate('environment') } }} />}
+        {page === 'home' && <Home locale={locale} onEditor={() => navigate('editor')} onStart={() => navigate('environment')} onGuide={() => navigate('guide')} onExperiment={preset => { if (window.confirm(translations[locale].envEditor.applyConfirm)) { engine.reset({ envConfig: draftToGridWorldConfig(preset.draft) }); setHomeAppliedDifficulty(preset.metadata.difficulty.id); setHomeAppliedVersion(value => value + 1); navigate('environment') } }} />}
         {page === 'guide' && <AlgorithmGuide locale={locale} onStart={() => navigate('environment')} />}
-        <div hidden={!experimentVisible && !presetsOpen} className="experiment-workspace" data-testid="experiment-workspace"><Simulator homeAppliedVersion={homeAppliedVersion} onEditPreset={() => navigate('editor')} onApplied={() => navigate('environment')} locale={locale} section={section} active={experimentVisible || presetsOpen} presetsOpen={presetsOpen} onClosePresets={() => setPresetsOpen(false)} /></div>
+        <div hidden={!experimentVisible && !presetsOpen} className="experiment-workspace" data-testid="experiment-workspace"><Simulator homeAppliedDifficulty={homeAppliedDifficulty} homeAppliedVersion={homeAppliedVersion} onEditPreset={() => navigate('editor')} onApplied={() => navigate('environment')} locale={locale} section={section} active={experimentVisible || presetsOpen} presetsOpen={presetsOpen} onClosePresets={() => setPresetsOpen(false)} /></div>
       </main>
     </div>
     <div className="mobile-language"><LanguageSelector locale={locale} onChange={setLocale} t={translations[locale]} /></div>

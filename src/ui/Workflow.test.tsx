@@ -8,6 +8,8 @@ import { TooltipButton } from './TooltipButton'
 import { useDraftHistory } from './hooks/useDraftHistory'
 import { defaultDraft } from '../viz/controls/envEditorDraft'
 import { serializeEnvExport } from '../viz/controls/envEditorIO'
+import { ENVIRONMENT_PRESETS } from '../data/presets/manifest'
+import { defaultEpisodesForDifficulty } from '../data/presets/defaultEpisodes'
 
 beforeEach(() => { engine.reset({ envConfig: createDefaultGridWorldConfig() }); engine.setSpeed({ mode: 'interval', intervalMs: 100000 }) })
 afterEach(() => { cleanup(); engine.reset(); vi.useRealTimers(); vi.restoreAllMocks() })
@@ -27,6 +29,71 @@ const cell = (key: string) => editor().getByTestId(`cell-${key}`)
 const wall = (key: string) => cell(key).getAttribute('data-cell-kind') === 'wall'
 
 describe('Preset and settings workflow', () => {
+  it('shows paused turbo progress on Results and can stop for fresh analysis without clearing Q',()=>{
+    vi.useFakeTimers()
+    engine.reset({envConfig:{...createDefaultGridWorldConfig(),width:3,height:3,start:{x:0,y:0},goals:[{x:2,y:2}],walls:[{x:1,y:0},{x:0,y:1}]}})
+    render(<App/>);click('nav-environment')
+    fireEvent.change(screen.getByTestId('training-mode'),{target:{value:'turbo'}})
+    fireEvent.change(screen.getByTestId('episode-count-input'),{target:{value:'1000000'}})
+    click('playback-run-episode');click('nav-results')
+    expect(engine.getSnapshot().status).toBe('paused')
+    expect(screen.getByTestId('turbo-results').textContent).toContain('고속 학습이 일시정지')
+    const before=engine.getSnapshot().agentSnapshot
+    fireEvent.click(screen.getByRole('button',{name:'학습 중단 후 분석 보기'}))
+    expect(screen.queryByTestId('turbo-results')).toBeNull()
+    expect(screen.getByTestId('analysis-panel').hidden).toBe(false)
+    expect(engine.getSnapshot().agentSnapshot).toEqual(before)
+  })
+  it('applies the home demo difficulty default only after confirmation and preserves custom input on navigation',()=>{
+    render(<App/>);click('nav-environment')
+    const input=screen.getByTestId('episode-count-input') as HTMLInputElement
+    fireEvent.change(input,{target:{value:'4321'}});click('nav-home')
+    const card=document.querySelector('.mini-demo')!,id=card.getAttribute('data-scenario')!
+    const expected=defaultEpisodesForDifficulty(ENVIRONMENT_PRESETS.find(p=>p.id===id)!.metadata.difficulty.id)
+    fireEvent.click(within(card as HTMLElement).getByTestId('home-demo-grid'))
+    const confirm=vi.spyOn(window,'confirm').mockReturnValue(false)
+    fireEvent.click(screen.getByRole('button',{name:/이 맵으로 실험하기/}));expect(input.value).toBe('4321')
+    confirm.mockReturnValue(true);fireEvent.click(screen.getByRole('button',{name:/이 맵으로 실험하기/}))
+    expect(input.value).toBe(String(expected));expect(screen.getByTestId('nav-environment').getAttribute('aria-current')).toBe('page')
+    fireEvent.change(input,{target:{value:'6789'}});click('nav-editor');click('nav-environment');expect(input.value).toBe('6789')
+  })
+  it.each([['01_meadow_walk','100'],['07_forked_village','250'],['13_crossroads_expedition','500'],['19_multi_goal_expedition','1000'],['25_obsidian_citadel','2000']])('applies difficulty defaults only on accepted application of %s',(id,count)=>{
+    render(<App/>);click('nav-environment')
+    const input=screen.getByTestId('episode-count-input') as HTMLInputElement
+    fireEvent.change(input,{target:{value:'5000'}})
+    click('nav-presets');click(`preset-${id}`)
+    expect(input.value).toBe('5000')
+    const confirm=vi.spyOn(window,'confirm').mockReturnValue(false)
+    fireEvent.click(screen.getByRole('button',{name:'맵 적용하기'}));expect(input.value).toBe('5000')
+    confirm.mockReturnValue(true);fireEvent.click(screen.getByRole('button',{name:'맵 적용하기'}));expect(input.value).toBe(count)
+    fireEvent.change(input,{target:{value:'10000'}});click('nav-home');click('nav-results');click('nav-environment');expect(input.value).toBe('10000')
+    click('nav-presets');click('preset-01_meadow_walk');fireEvent.click(screen.getByRole('button',{name:'편집기로 불러오기'}));expect(input.value).toBe('10000')
+  })
+  it('keeps visualization preferences across turbo completion, normal mode and policy execution',()=>{
+    vi.useFakeTimers()
+    engine.reset({envConfig:{...createDefaultGridWorldConfig(),start:{x:0,y:2},goals:[{x:0,y:0}]},hyperparams:{alpha:.1,gamma:.9,epsilon:0}})
+    render(<App/>);click('nav-environment')
+    expect((screen.getByTestId('toggle-rewards') as HTMLInputElement).checked).toBe(true)
+    expect((screen.getByTestId('toggle-live-rewards') as HTMLInputElement).checked).toBe(false)
+    expect((screen.getByTestId('toggle-reward-animation') as HTMLInputElement).checked).toBe(true)
+    expect(screen.queryByTestId('reward-readout')).toBeNull()
+    click('toggle-live-rewards');click('toggle-policy')
+    fireEvent.change(screen.getByTestId('episode-count-input'),{target:{value:'5'}})
+    fireEvent.change(screen.getByTestId('training-mode'),{target:{value:'turbo'}})
+    click('playback-run-episode')
+    expect(engine.getSnapshot().turbo).toMatchObject({state:'completed',completedEpisodes:5,progress:1})
+    expect(screen.getByTestId('turbo-dashboard')).toBeTruthy()
+    expect(within(screen.getByTestId('learning-grid')).queryByTestId('grid-svg')).toBeNull()
+    expect((screen.getByTestId('toggle-live-rewards') as HTMLInputElement).checked).toBe(true)
+    expect((screen.getByTestId('toggle-policy') as HTMLInputElement).checked).toBe(false)
+    const before=engine.getSnapshot().agentSnapshot
+    click('playback-run-greedy')
+    expect(screen.queryByTestId('turbo-dashboard')).toBeNull()
+    expect(within(screen.getByTestId('learning-grid')).getByTestId('grid-svg')).toBeTruthy()
+    expect((screen.getByTestId('speed-slider') as HTMLInputElement).value).toBe('45')
+    click('playback-stop');expect(engine.getSnapshot().agentSnapshot).toEqual(before)
+    expect((screen.getByTestId('toggle-reward-animation') as HTMLInputElement).checked).toBe(true)
+  })
   it.each(['home','environment','editor'] as const)('applies exactly once from %s, preserves cancellation and separates editor loading', page => {
     render(<App />)
     click(`nav-${page}`);click('nav-presets');click('preset-19_multi_goal_expedition')
