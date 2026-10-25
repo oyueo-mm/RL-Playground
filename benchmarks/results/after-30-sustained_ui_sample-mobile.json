@@ -1,0 +1,56 @@
+{
+  "project": "mobile",
+  "samples": [
+    {
+      "elapsedMs": 5069,
+      "heap": 28328720,
+      "qStates": "5,278",
+      "steps": "60400",
+      "episodes": "85 / 2106"
+    },
+    {
+      "elapsedMs": 10119,
+      "heap": 31219648,
+      "qStates": "7,818",
+      "steps": "117400",
+      "episodes": "148 / 931"
+    },
+    {
+      "elapsedMs": 15147,
+      "heap": 19683168,
+      "qStates": "9,900",
+      "steps": "174400",
+      "episodes": "221 / 215"
+    },
+    {
+      "elapsedMs": 20716,
+      "heap": 34722316,
+      "qStates": "11,214",
+      "steps": "235300",
+      "episodes": "296 / 1013"
+    },
+    {
+      "elapsedMs": 25773,
+      "heap": 18944384,
+      "qStates": "12,751",
+      "steps": "293600",
+      "episodes": "362 / 481"
+    },
+    {
+      "elapsedMs": 30816,
+      "heap": 24234808,
+      "qStates": "14,434",
+      "steps": "349700",
+      "episodes": "431 / 1212"
+    }
+  ],
+  "pauseMs": 301,
+  "resumeMs": 203,
+  "stopMs": 52,
+  "frameCount": 1849,
+  "meanFrameGapMs": 16.674634937807443,
+  "p95FrameGapMs": 26.600000023841858,
+  "beforeBytes": 4911464,
+  "afterStopGcBytes": 11524200,
+  "after10CyclesGcBytes": 12312308
+}

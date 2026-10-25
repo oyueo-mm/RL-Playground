@@ -101,9 +101,9 @@ test('all nine complex maps exceed 500000 steps with bounded retained heap', asy
     const result = await page.evaluate(async index => {
       const enginePath = '/RL-Playground/src/core/engine/SimulationEngine.ts', presetPath = '/RL-Playground/src/viz/controls/environmentPresets.ts', draftPath = '/RL-Playground/src/viz/controls/envEditorDraft.ts'
       const { SimulationEngine } = await import(enginePath) as typeof import('../src/core/engine/SimulationEngine')
-      const { ENVIRONMENT_PRESETS } = await import(presetPath) as typeof import('../src/viz/controls/complexPresets')
+      const { ENVIRONMENT_PRESETS } = await import(presetPath) as typeof import('../src/viz/controls/environmentPresets')
       const { draftToGridWorldConfig } = await import(draftPath) as typeof import('../src/viz/controls/envEditorDraft')
-      const preset = [...ENVIRONMENT_PRESETS.slice(0,8), ENVIRONMENT_PRESETS.at(-1)!][index]
+      const preset = [...ENVIRONMENT_PRESETS.slice(0,5), ...ENVIRONMENT_PRESETS.slice(6,9), ENVIRONMENT_PRESETS.find(p=>p.id==='23_final_proving_grounds')!][index]
       let seed = 42
       const random = Math.random
       Math.random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296 }

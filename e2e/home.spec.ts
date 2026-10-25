@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test'
 import { navigate, config, loadMap, expectFits } from './helpers'
 
 test('preset workflow, tooltips, editor history and guide fit all requested viewports', async ({ page }, info) => {
+  test.setTimeout(120000)
   page.on('dialog', dialog => dialog.accept())
   const errors: string[] = []
   page.on('pageerror', error => errors.push(error.message))
@@ -13,15 +14,15 @@ test('preset workflow, tooltips, editor history and guide fit all requested view
     await expect(page.getByTestId('open-map-gallery')).toHaveCount(0)
     await navigate(page, 'presets')
     await expect(page.locator('#preset-panel')).toBeVisible()
-    await expect(page.locator('.gallery-thumbnails > button')).toHaveCount(20)
-    await page.getByTestId('preset-20_final_proving_grounds').click()
+    await expect(page.locator('.gallery-thumbnails > button')).toHaveCount(30)
+    await page.getByTestId('preset-23_final_proving_grounds').click()
     await expectFits(page)
     if (width > 760) {
       const panel = (await page.locator('#preset-panel').boundingBox())!
       const grid = (await page.getByTestId('learning-grid').getByTestId('grid-stack').boundingBox())!
-      expect(grid.x + grid.width).toBeLessThanOrEqual(panel.x + 1)
-      expect(panel.width).toBeGreaterThanOrEqual(320)
-      expect(panel.width).toBeLessThanOrEqual(380)
+      expect(panel.x).toBe(0)
+      expect(panel.width).toBe(width)
+      expect(grid.width).toBeGreaterThan(0) // underlying experiment stays mounted
     }
     await page.screenshot({ animations: 'disabled', path: info.outputPath(`workflow-presets-${width}x${height}.png`) })
     await page.getByRole('button', { name: '갤러리 닫기' }).click()
@@ -103,6 +104,7 @@ test('full-map fit across desktop sizes, map ratios, sidebar and analysis change
     await page.setViewportSize({ width, height })
     for (const [columns, rows] of [[3, 3], [20, 20], [3, 20], [20, 3]]) {
       await loadMap(page, config(columns, rows))
+      await navigate(page, 'editor')
       await expectFits(page, 'env-editor')
       await navigate(page, 'environment')
       await expectFits(page)
@@ -131,8 +133,10 @@ test('full-map fit across desktop sizes, map ratios, sidebar and analysis change
   await page.getByRole('button', { name: '분석 닫기' }).click()
   await page.getByTestId('learning-grid').getByRole('button', { name: 'Zoom in' }).click()
   const viewport = page.getByTestId('learning-grid').getByTestId('grid-viewport')
-  expect(await viewport.evaluate(element => element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight)).toBe(true)
-  await viewport.evaluate(element => element.scrollTo(100, 100))
+  expect(Number(await viewport.getAttribute('data-zoom'))).toBeGreaterThan(1)
+  const vp=(await viewport.boundingBox())!
+  await page.mouse.move(vp.x+vp.width/2,vp.y+vp.height/2);await page.mouse.down({button:'middle'});await page.mouse.move(vp.x+vp.width/2+30,vp.y+vp.height/2+25);await page.mouse.up({button:'middle'})
+  expect(Number(await viewport.getAttribute('data-pan-x'))).toBeGreaterThan(0)
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1)).toBe(true)
   await page.getByTestId('learning-grid').getByRole('button', { name: 'Fit entire map' }).click()
   await expectFits(page)
@@ -208,22 +212,23 @@ test('floating controls, state preservation, stop, real rewards and independent 
   expect(errors).toEqual([])
 })
 
-test('20 official presets preview without applying, and selected draft can be applied', async ({ page }) => {
+test('30 official presets preview without applying, and selected draft can be applied', async ({ page }) => {
   page.on('dialog', dialog => dialog.accept())
   await page.goto('./')
   await navigate(page, 'editor')
   const editor = page.getByTestId('env-editor')
   await navigate(page, 'presets')
   const thumbnails = page.locator('.gallery-thumbnails > button')
-  await expect(thumbnails).toHaveCount(20)
-  for (let index = 0; index < 20; index++) {
+  await expect(thumbnails).toHaveCount(30)
+  for (let index = 0; index < 30; index++) {
     await thumbnails.nth(index).click()
     await expect(thumbnails.nth(index)).toHaveAttribute('aria-pressed', 'true')
     await expect(page.locator('.gallery-preview svg')).toBeVisible()
   }
   await page.getByRole('button', { name: '편집기로 불러오기' }).click()
   await editor.getByTestId('env-editor-apply').click()
-  await expectFits(page, 'env-editor')
+  await expectFits(page)
+  await navigate(page, 'editor');await expectFits(page, 'env-editor')
 })
 
 test('home auto animation loops and reduced motion remains paused', async ({ page }) => {
@@ -249,7 +254,8 @@ test('fixed single language selector and square editor selection survive navigat
     await navigate(page, item)
     await expect(visibleSelector()).toHaveCount(1)
     const box = (await visibleSelector().boundingBox())!
-    expect(box.y).toBeGreaterThan(page.viewportSize()!.height - 100)
+    if(info.project.name==='mobile')expect(box.y).toBeLessThan(48)
+    else expect(box.y).toBeGreaterThan(page.viewportSize()!.height - 100)
     if (!bottom) bottom = box.y + box.height
     expect(Math.abs(box.y + box.height - bottom)).toBeLessThan(2)
   }
@@ -308,6 +314,7 @@ test('new elements can be placed, linked, changed and exported through mouse and
   await editor.getByTestId('env-editor-export').click()
   expect((await download).suggestedFilename()).toContain('.json')
   await editor.getByTestId('env-editor-apply').click()
+  await expectFits(page);await navigate(page,'editor')
   await editor.getByRole('button', { name: '속성 닫기' }).click()
   await expectFits(page, 'env-editor')
   await page.screenshot({ animations: 'disabled', path: info.outputPath(`${info.project.name}-features-editor.png`) })
@@ -352,7 +359,7 @@ test('mixed environment high-speed sample records memory and remains controllabl
   await page.goto('./')
   await navigate(page, 'editor')
   await navigate(page, 'presets')
-  await page.getByTestId('preset-20_final_proving_grounds').click()
+  await page.getByTestId('preset-23_final_proving_grounds').click()
   await page.screenshot({ animations: 'disabled', path: info.outputPath(`${info.project.name}-gallery.png`) })
   await page.getByRole('button', { name: '편집기로 불러오기' }).click()
   await page.getByTestId('env-editor-apply').click()

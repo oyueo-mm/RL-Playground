@@ -30,7 +30,7 @@ test('home rendering memory and timer cleanup sample', async ({ page }, info) =>
   const sorted = frames.slice().sort((a,b) => a-b)
   const cpuAfter = await cdp.send('Performance.getMetrics')
   const costs = Object.fromEntries(['ScriptDuration','LayoutDuration','RecalcStyleDuration','TaskDuration'].map(name => [name+'Ms', 1000*((cpuAfter.metrics.find(m=>m.name===name)?.value??0)-(cpuBefore.metrics.find(m=>m.name===name)?.value??0))]))
-  const result = { project: info.project.name, label: process.env.HOME_BENCH_LABEL ?? 'after-catalog', durationMs: 5000, intervals, cells, meanFrameGapMs: frames.reduce((a,b) => a+b,0)/frames.length, p95FrameGapMs: sorted[Math.floor(sorted.length*.95)], beforeGcBytes: before.usedSize, afterFiveCyclesGcBytes: after.usedSize, costsIncludingNavigation: costs }
+  const result = { project: info.project.name, label: process.env.HOME_BENCH_LABEL ?? 'after-30', durationMs: 5000, intervals, cells, meanFrameGapMs: frames.reduce((a,b) => a+b,0)/frames.length, p95FrameGapMs: sorted[Math.floor(sorted.length*.95)], beforeGcBytes: before.usedSize, afterFiveCyclesGcBytes: after.usedSize, costsIncludingNavigation: costs }
   mkdirSync('benchmarks/results', { recursive: true }); writeFileSync(`benchmarks/results/${result.label}-home-${info.project.name}.json`, JSON.stringify(result, null, 2))
 })
 
@@ -55,5 +55,5 @@ test('30-second live home animation keeps bounded memory and independently rotat
   }
   expect(seen.size).toBeGreaterThan(4)
   await navigate(page,'environment');expect(await page.evaluate(()=>(window as unknown as {__activeIntervals:number}).__activeIntervals)).toBe(0)
-  writeFileSync(`benchmarks/results/after-catalog-home-30s-${info.project.name}.json`,JSON.stringify({project:info.project.name,samples,uniqueMaps:seen.size},null,2))
+  writeFileSync(`benchmarks/results/after-30-home-30s-${info.project.name}.json`,JSON.stringify({project:info.project.name,samples,uniqueMaps:seen.size},null,2))
 })

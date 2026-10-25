@@ -1,0 +1,296 @@
+{
+  "mode": "Synchronous production engine steps, no UI subscriber. CPU time is not interactive UI throughput.",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0",
+  "samples": [
+    {
+      "preset": "01_meadow_walk",
+      "elapsedMs": 992.5999999940395,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 30305
+        }
+      },
+      "qStates": 166,
+      "qVersion": 500266,
+      "estimatedQBytes": 22908,
+      "totalSteps": 500100,
+      "completedEpisodes": 30305,
+      "episodeSteps": 5,
+      "recordedSteps": 1599,
+      "stepsPerSecond": 0,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 0,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 11107652,
+      "afterGcBytes": 12818288,
+      "retainedDeltaBytes": 1710636
+    },
+    {
+      "preset": "02_first_portal_lesson",
+      "elapsedMs": 2436.600000023842,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 28442
+        }
+      },
+      "qStates": 167,
+      "qVersion": 500267,
+      "estimatedQBytes": 23046,
+      "totalSteps": 500100,
+      "completedEpisodes": 28442,
+      "episodeSteps": 1,
+      "recordedSteps": 1684,
+      "stepsPerSecond": 206482,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 3,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 10331364,
+      "afterGcBytes": 12131320,
+      "retainedDeltaBytes": 1799956
+    },
+    {
+      "preset": "03_one_switch_one_door",
+      "elapsedMs": 2536.5999999940395,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 20455
+        }
+      },
+      "qStates": 252,
+      "qVersion": 500352,
+      "estimatedQBytes": 36792,
+      "totalSteps": 500100,
+      "completedEpisodes": 20455,
+      "episodeSteps": 5,
+      "recordedSteps": 2341,
+      "stepsPerSecond": 201242,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 0,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 10410856,
+      "afterGcBytes": 12281628,
+      "retainedDeltaBytes": 1870772
+    },
+    {
+      "preset": "04_fragile_bridge",
+      "elapsedMs": 2557.0999999940395,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 19908
+        }
+      },
+      "qStates": 748,
+      "qVersion": 500848,
+      "estimatedQBytes": 109208,
+      "totalSteps": 500100,
+      "completedEpisodes": 19908,
+      "episodeSteps": 4,
+      "recordedSteps": 2363,
+      "stepsPerSecond": 200578.4215784216,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 8,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 10467472,
+      "afterGcBytes": 12413128,
+      "retainedDeltaBytes": 1945656
+    },
+    {
+      "preset": "05_arrow_alley",
+      "elapsedMs": 2479.9000000059605,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 18390
+        }
+      },
+      "qStates": 440,
+      "qVersion": 500540,
+      "estimatedQBytes": 60720,
+      "totalSteps": 500100,
+      "completedEpisodes": 18390,
+      "episodeSteps": 8,
+      "recordedSteps": 2587,
+      "stepsPerSecond": 206661,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 4,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 14343292,
+      "afterGcBytes": 15849004,
+      "retainedDeltaBytes": 1505712
+    },
+    {
+      "preset": "07_forked_village",
+      "elapsedMs": 2383.5,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 9380
+        }
+      },
+      "qStates": 1174,
+      "qVersion": 501274,
+      "estimatedQBytes": 162856,
+      "totalSteps": 500100,
+      "completedEpisodes": 9380,
+      "episodeSteps": 0,
+      "recordedSteps": 4963,
+      "stepsPerSecond": 216723,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 4,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 11245412,
+      "afterGcBytes": 13249636,
+      "retainedDeltaBytes": 2004224
+    },
+    {
+      "preset": "08_marsh_detour",
+      "elapsedMs": 2320.800000011921,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "bomb": 400,
+          "goal": 15043
+        }
+      },
+      "qStates": 410,
+      "qVersion": 500510,
+      "estimatedQBytes": 56580,
+      "totalSteps": 500100,
+      "completedEpisodes": 15443,
+      "episodeSteps": 24,
+      "recordedSteps": 3142,
+      "stepsPerSecond": 219249,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 3,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 11801684,
+      "afterGcBytes": 13721684,
+      "retainedDeltaBytes": 1920000
+    },
+    {
+      "preset": "09_twin_portal_plaza",
+      "elapsedMs": 2471.5999999940395,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 12108
+        }
+      },
+      "qStates": 1236,
+      "qVersion": 501336,
+      "estimatedQBytes": 171454,
+      "totalSteps": 500100,
+      "completedEpisodes": 12108,
+      "episodeSteps": 20,
+      "recordedSteps": 4035,
+      "stepsPerSecond": 206798,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 14,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 10424504,
+      "afterGcBytes": 12398196,
+      "retainedDeltaBytes": 1973692
+    },
+    {
+      "preset": "23_final_proving_grounds",
+      "elapsedMs": 3354.4000000059605,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "bomb": 569,
+          "goal": 39
+        }
+      },
+      "qStates": 19567,
+      "qVersion": 519667,
+      "estimatedQBytes": 2950234,
+      "totalSteps": 500100,
+      "completedEpisodes": 608,
+      "episodeSteps": 218,
+      "recordedSteps": 85009,
+      "stepsPerSecond": 153270,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 4219,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 1000000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      },
+      "beforeGcBytes": 10825428,
+      "afterGcBytes": 17998076,
+      "retainedDeltaBytes": 7172648
+    }
+  ]
+}

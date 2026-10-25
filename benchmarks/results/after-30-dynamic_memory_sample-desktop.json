@@ -1,0 +1,10 @@
+{
+  "project": "desktop",
+  "durationMs": 3000,
+  "theoreticalStates": 204800,
+  "episodes": 0,
+  "beforeBytes": 6504776,
+  "afterBytes": 14449052,
+  "afterStopGcBytes": 9088360,
+  "after10ScreenCyclesGcBytes": 9228756
+}

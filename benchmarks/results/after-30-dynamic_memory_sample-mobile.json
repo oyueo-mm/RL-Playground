@@ -1,0 +1,10 @@
+{
+  "project": "mobile",
+  "durationMs": 3000,
+  "theoreticalStates": 204800,
+  "episodes": 0,
+  "beforeBytes": 6600036,
+  "afterBytes": 16506336,
+  "afterStopGcBytes": 9276212,
+  "after10ScreenCyclesGcBytes": 9385992
+}

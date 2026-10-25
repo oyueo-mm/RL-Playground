@@ -1,6 +1,7 @@
 import { expect, type Page } from '@playwright/test'
 
 export async function navigate(page: Page, item: string) {
+  if (item !== 'presets' && await page.locator('#preset-panel').isVisible()) await page.locator('#preset-panel > header button').click()
   const menu = page.locator('#mobile-menu')
   if (await menu.isVisible()) await menu.click()
   await page.getByTestId(`nav-${item}`).click()
@@ -13,9 +14,8 @@ export async function loadMap(page: Page, data: object) {
   await editor.getByRole('button', { name: /속성 \/ 파일/ }).click()
   await editor.getByTestId('env-editor-import-input').setInputFiles({ name: 'map.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data)) })
   await editor.getByTestId('env-editor-apply').click()
-  await expectFits(page, 'env-editor')
-  await editor.getByRole('button', { name: '속성 닫기' }).click()
-  await expectFits(page, 'env-editor')
+  await expect(page.getByTestId('learning-grid')).toBeVisible()
+  await expectFits(page)
 }
 export async function expectFits(page: Page, scope = 'learning-grid') {
   const grid = page.getByTestId(scope).getByTestId('grid-stack')
