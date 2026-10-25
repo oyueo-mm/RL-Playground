@@ -82,9 +82,10 @@ export class Scheduler {
    * next one under the new cadence.
    */
   setSpeed(speed: SpeedSetting): void {
+    // Cancel using the OLD mode: timeout and rAF handles are different APIs.
+    this.cancelActiveTimer()
     this.speed = speed
     if (!this.running) return
-    this.cancelActiveTimer()
     this.generation += 1
     this.armNext()
   }

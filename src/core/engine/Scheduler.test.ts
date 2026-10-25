@@ -47,6 +47,25 @@ function callbacksAlwaysContinue(): SchedulerCallbacks & { performUnit: ReturnTy
 }
 
 describe('Scheduler — interval mode', () => {
+  it('cancels timeout and animation handles with their original API during mode changes', () => {
+    const timer = createManualTimerSource()
+    const clear = vi.spyOn(timer, 'clearTimeout')
+    const cancel = vi.spyOn(timer, 'cancelAnimationFrame')
+    const scheduler = new Scheduler(timer, { mode: 'interval', intervalMs: 100 })
+    const callbacks = callbacksAlwaysContinue()
+    scheduler.start(callbacks)
+    scheduler.setSpeed({ mode: 'batch', stepsPerFrame: 2 })
+    expect(clear).toHaveBeenCalledWith(1)
+    expect(cancel).not.toHaveBeenCalled()
+    timer.fire(1)
+    expect(callbacks.performUnit).toHaveBeenCalledTimes(1)
+    scheduler.setSpeed({ mode: 'interval', intervalMs: 200 })
+    expect(cancel).toHaveBeenCalledWith(2)
+    timer.fire(2)
+    expect(callbacks.performUnit).toHaveBeenCalledTimes(1)
+    scheduler.stop()
+    expect(clear).toHaveBeenCalledWith(3)
+  })
   it('runs one performUnit synchronously on start(), then arms the next via setTimeout', () => {
     const timer = createManualTimerSource()
     const scheduler = new Scheduler(timer, { mode: 'interval', intervalMs: 100 })
