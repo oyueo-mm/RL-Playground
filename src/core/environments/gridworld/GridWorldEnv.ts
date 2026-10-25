@@ -86,6 +86,8 @@ function applyAction(pos: Position, action: number): Position {
  * so this is the single place that needs to know about the legacy shape.
  */
 export function normalizeGridWorldConfig(raw: unknown): GridWorldConfig {
+  const legacyRewards = (raw as Record<string, unknown>).rewardTiles
+  if (legacyRewards !== undefined && (!Array.isArray(legacyRewards) || legacyRewards.length > 0)) throw new Error('Reward tiles are no longer supported. Remove rewardTiles explicitly before loading this map.')
   const input = raw as LegacyGridWorldConfigInput
   const goals = input.goals ?? (input.goal ? [input.goal] : [])
   // Legacy configs had no separate wall penalty — they reused stepReward for wall/boundary
@@ -211,12 +213,6 @@ export class GridWorldEnv implements Environment {
       }
     }
 
-    // Entry-only reward tiles are memoryless: revisits pay again, but a blocked
-    // action while standing on a tile does not. Terminal/wall/start overlaps are
-    // rejected by the editor and import boundary.
-    if (!samePosition(current, next) && !this.config.bombs.some(b => samePosition(b, next)) && !this.config.goals.some(g => samePosition(g, next))) {
-      reward += this.config.rewardTiles?.find(tile => samePosition(tile, next))?.reward ?? 0
-    }
     this.agent = next
     // Phase 34: computed AFTER `this.agent = next` and after any `collectedGoals.add()`
     // above, so `nextState`'s mask correctly reflects "post-action, post-collection-
@@ -252,7 +248,6 @@ export class GridWorldEnv implements Environment {
       // that cannot shrink as Goals are collected — see render.ts's doc comment.
       allGoals: this.config.goals.map(positionKey),
       agentPos: positionKey(this.agent),
-      ...(this.config.rewardTiles?.length ? { cellRewards: Object.fromEntries(this.config.rewardTiles.map(tile => [positionKey(tile), tile.reward])) } : {}),
     }
   }
 

@@ -51,7 +51,7 @@ test('full-map fit across desktop sizes, map ratios, sidebar and analysis change
       const box = (await page.getByTestId('learning-grid').getByTestId('grid-stack').boundingBox())!
       expect(box.width / box.height).toBeCloseTo(columns / rows, 2)
     }
-    await loadMap(page, { ...config(20, 20), walls: [{ x: 4, y: 4 }, { x: 4, y: 5 }, { x: 4, y: 6 }, { x: 5, y: 6 }, { x: 6, y: 6 }, { x: 12, y: 9 }, { x: 12, y: 10 }, { x: 12, y: 11 }], bombs: [{ x: 13, y: 13 }], rewardTiles: [{ x: 8, y: 9, reward: 2 }] })
+    await loadMap(page, { ...config(20, 20), walls: [{ x: 4, y: 4 }, { x: 4, y: 5 }, { x: 4, y: 6 }, { x: 5, y: 6 }, { x: 6, y: 6 }, { x: 12, y: 9 }, { x: 12, y: 10 }, { x: 12, y: 11 }], bombs: [{ x: 13, y: 13 }] })
     await navigate(page, 'environment')
     await expectFits(page)
     await page.screenshot({ animations: 'disabled', path: info.outputPath(`${info.project.name}-${width}x${height}.png`) })
@@ -103,7 +103,7 @@ test('floating controls, state preservation, stop, real rewards and independent 
   page.on('pageerror', error => errors.push(error.message))
   page.on('dialog', dialog => dialog.accept())
   await page.goto('./')
-  await loadMap(page, { ...config(3, 3), start: { x: 0, y: 1 }, rewardTiles: [{ x: 0, y: 0, reward: 5 }] })
+  await loadMap(page, { ...config(3, 3), start: { x: 0, y: 1 } })
   await page.screenshot({ animations: 'disabled', path: info.outputPath(`${info.project.name}-editor.png`) })
   await navigate(page, 'environment')
   await expectFits(page)
@@ -123,7 +123,7 @@ test('floating controls, state preservation, stop, real rewards and independent 
   await page.getByTestId('playback-run-episode').click()
   await page.getByTestId('playback-pause').click()
   await page.getByTestId('toggle-analysis').click()
-  await expect(page.getByTestId('inspector-reward')).toHaveText('4.900')
+  await expect(page.getByTestId('inspector-reward')).toHaveText('-0.100')
   const qBefore = await page.getByTestId('qvalue-bars').textContent()
   await page.getByRole('button', { name: '분석 닫기' }).click()
   await navigate(page, 'home')

@@ -316,3 +316,22 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
   .simulator > div > div { width: 100%; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+/* Fixed language access, exactly one visible selector per screen. */
+.sidebar { height: 100dvh; }
+.sidebar nav { min-height: 0; overflow-y: auto; }
+.sidebar-bottom { margin-top: 24px; }
+.sidebar-language { margin-top: auto; padding-top: 24px; flex-shrink: 0; }
+.mobile-language { display: none; }
+/* SVG rect focus uses a flat stroke, not the browser's rounded SVG outline. */
+.grid-drawing rect[role=button]:focus { outline: none; }
+.grid-drawing rect[role=button]:focus-visible { outline: none; stroke: #176d86; stroke-width: 2px; vector-effect: non-scaling-stroke; }
+.grid-drawing rect[role=button]:hover { filter: brightness(.97); }
+.stage-grid { overflow: visible; }
+@media (max-width: 760px) {
+  .sidebar-language { display: none; }
+  .mobile-language { display: block; position: fixed; left: 8px; bottom: 8px; padding: 5px; background: #ffffffed; border: 1px solid #d4dfcd; border-radius: 5px; z-index: 23; }
+  .mobile-language label { font-size: 0; gap: 0; }
+  .mobile-language select { font-size: 11px; padding: 4px; max-width: 82px; }
+  .mobile-open .sidebar-language { display: block; }
+  .mobile-open .mobile-language { display: none; }
+}

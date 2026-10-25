@@ -89,7 +89,7 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
               y={cell.y * cellSize}
               width={cellSize}
               height={cellSize}
-              fill={cell.kind === 'empty' && renderModel.cellRewards?.[cell.key] !== undefined ? (renderModel.cellRewards[cell.key] >= 0 ? '#eff6df' : '#fff0ef') : cellFill[cell.kind]}
+              fill={cellFill[cell.kind]}
               stroke="#d1d5db"
               style={{ cursor: onStateSelect ? 'pointer' : undefined }}
               onClick={onStateSelect ? () => onStateSelect(cell.key) : undefined}
@@ -105,7 +105,6 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
               data-testid={`cell-${cell.key}`}
               data-cell-kind={cell.kind}
             />
-            {renderModel.cellRewards?.[cell.key] !== undefined && <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontSize={cellSize * 0.25} fill={renderModel.cellRewards[cell.key] >= 0 ? '#22775a' : '#a04646'} pointerEvents="none" data-testid={`reward-tile-${cell.key}`}>{renderModel.cellRewards[cell.key] >= 0 ? '+' : ''}{renderModel.cellRewards[cell.key]}</text>}
             {/*
               Phase 20: a simple bomb glyph (body + fuse + spark) built from the same
               SVG primitives already used elsewhere in this file (circle/line) — no icon
@@ -137,8 +136,10 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
           width={cellSize}
           height={cellSize}
           fill="none"
-          stroke="#f59e0b"
-          strokeWidth={3}
+          stroke="#26352f"
+          strokeWidth={2.5}
+          vectorEffect="non-scaling-stroke"
+          rx={0}
           pointerEvents="none"
           data-testid="selected-cell-outline"
         />

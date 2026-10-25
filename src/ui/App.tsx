@@ -55,7 +55,7 @@ export default function App() {
       <div className="sidebar-language"><LanguageSelector locale={locale} onChange={setLocale} t={translations[locale]} /></div>
     </aside>
     <div className="workspace" inert={mobileOpen}>
-      <header className="topbar"><div className="breadcrumb"><button id="mobile-menu" aria-label={l.menu} aria-expanded={mobileOpen} aria-controls="sidebar" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><span>Workspace</span><span>/</span><strong>{l[page]}</strong></div><LanguageSelector locale={locale} onChange={setLocale} t={translations[locale]} /></header>
+      <header className="topbar"><div className="breadcrumb"><button id="mobile-menu" aria-label={l.menu} aria-expanded={mobileOpen} aria-controls="sidebar" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><span>Workspace</span><span>/</span><strong>{l[page]}</strong></div></header>
       <main id="page-content" className="page-content" tabIndex={-1}>
         <h1 ref={heading} tabIndex={-1} className="sr-only">{page === 'home' ? l.title : l[page]}</h1>
         {page === 'home' && <Home locale={locale} onStart={() => navigate('environment')} onGuide={() => navigate('guide')} />}
@@ -63,5 +63,6 @@ export default function App() {
         <div hidden={!experimentVisible} className="experiment-workspace" data-testid="experiment-workspace"><Simulator locale={locale} section={section} active={experimentVisible} /></div>
       </main>
     </div>
+    <div className="mobile-language"><LanguageSelector locale={locale} onChange={setLocale} t={translations[locale]} /></div>
   </div>
 }

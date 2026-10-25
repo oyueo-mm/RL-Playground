@@ -61,7 +61,6 @@ export type EnvRenderModel = {
    */
   allGoals?: StateKey[]
   agentPos: StateKey
-  cellRewards?: Record<StateKey, number>
 }
 // Future non-grid environments add a member to this union (e.g. { kind: 'graph'; ... }).
 

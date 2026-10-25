@@ -3,7 +3,19 @@ export interface Position {
   y: number
 }
 
-export interface GridWorldConfig {
+export type Direction = 0 | 1 | 2 | 3
+export interface PortalPair { id: string; ends: Position[] }
+export interface OneWayTile extends Position { direction: Direction }
+export interface GroupTile extends Position { groupId: string }
+export interface GridFeatures {
+  portals?: PortalPair[]
+  oneWays?: OneWayTile[]
+  fragiles?: Position[]
+  switches?: GroupTile[]
+  toggleWalls?: GroupTile[]
+}
+
+export interface GridWorldConfig extends GridFeatures {
   width: number
   height: number
   start: Position
@@ -29,8 +41,6 @@ export interface GridWorldConfig {
    */
   bombs: Position[]
   bombPenalty: number
-  /** Nonterminal, additional reward on every successful entry; collisions never pay. */
-  rewardTiles?: (Position & { reward: number })[]
 }
 
 /**

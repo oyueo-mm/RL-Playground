@@ -314,7 +314,6 @@ type EnvRenderModel =
       start: StateKey;
       goals: StateKey[];
       agentPos: StateKey;
-      cellRewards?: Record<StateKey, number>;
     };
   // 향후 비-grid 환경 추가 시 유니온 멤버 추가 (예: { kind: "graph"; ... })
 

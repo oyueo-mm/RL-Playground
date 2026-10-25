@@ -202,7 +202,7 @@ ARCHITECTURE.md/ROADMAP.md 어디에도 명시적으로 다뤄지지 않은 기�
 | 발견 | 심각도 |
 |---|---|
 | `TDInfo.algorithm`이 `"q-learning" \| "sarsa" \| "td0"` 리터럴 유니온으로 하드코딩되어 있다. 새 알고리즘을 registry에 등록하는 것만으로 확장 가능해야 한다는 NFR-4와 정면으로 충돌 — 새 알고리즘 추가 시 이 공용 타입을 수정해야 한다. **수정안**: `algorithm: string`(registry id)로 완화. | Medium |
-| `EngineSnapshot.envRenderModel: unknown`, `agentSnapshot: unknown` — Visualization 레이어가 타입 안전하게 그릴 수 없고 매번 캐스팅이 필요하다. **수정안**: `EnvRenderModel`을 `{ kind: "grid"; width; height; walls; start; goal; agentPos; cellRewards? }` 형태의 판별 유니온으로, `AgentSnapshot`을 `{ kind: "Q"; qTable: Record<StateKey, number[]> } \| { kind: "V"; vTable: Record<StateKey, number> }`로 구체화(Q2의 Agent 분리와 직결). | Medium |
+| `EngineSnapshot.envRenderModel: unknown`, `agentSnapshot: unknown` — Visualization 레이어가 타입 안전하게 그릴 수 없고 매번 캐스팅이 필요하다. **수정안**: `EnvRenderModel`을 `{ kind: "grid"; width; height; walls; start; goal; agentPos }` 형태의 판별 유니온으로, `AgentSnapshot`을 `{ kind: "Q"; qTable: Record<StateKey, number[]> } \| { kind: "V"; vTable: Record<StateKey, number> }`로 구체화(Q2의 Agent 분리와 직결). | Medium |
 | `StepResult`(`{nextState, reward, done}`)와 `Transition`(`{state, action, reward, nextState, done}`)이 필드가 중복 정의될 위험 — 두 타입이 각자 따로 선언되면 드리프트 가능. **수정안**: `Transition = { state: StateKey; action: number } & StepResult`로 합성. | Low |
 | `EnvironmentDefinition`(레지스트리에 등록되는 "환경의 종류": id/factory/defaultConfig/editorSchema)과 `Environment`(런타임 인스턴스)가 문서상 구분되지 않고 섞여 쓰인다. **수정안**: 두 타입을 명시적으로 분리 명명. | Low |
 | 순환 의존성 자체는 발견되지 않음 — `core/types`가 leaf이고 `environments/agents/algorithms`가 그 위에서만 의존하는 단방향 구조이기 때문에 타입 레벨 circular import는 구조적으로 방지되어 있다. | 없음(양호) |

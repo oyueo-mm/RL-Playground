@@ -29,7 +29,6 @@ export interface EnvExportFile {
   wallPenalty: number
   goalReward: number
   bombPenalty: number
-  rewardTiles?: (Position & { reward: number })[]
 }
 
 export function draftToExportFile(draft: GridEditorDraft): EnvExportFile {
@@ -46,7 +45,6 @@ export function draftToExportFile(draft: GridEditorDraft): EnvExportFile {
     wallPenalty: draft.wallPenalty,
     goalReward: draft.goalReward,
     bombPenalty: draft.bombPenalty,
-    ...(draft.rewardTiles?.length ? { rewardTiles: draft.rewardTiles } : {}),
   }
 }
 
@@ -95,6 +93,7 @@ export function parseEnvImport(text: string): ImportResult {
     return { ok: false, error: 'File does not contain a JSON object.' }
   }
   const candidate = parsed as Record<string, unknown>
+  if (candidate.rewardTiles !== undefined && (!Array.isArray(candidate.rewardTiles) || candidate.rewardTiles.length > 0)) return { ok: false, error: 'Reward tiles are no longer supported. Remove rewardTiles explicitly before importing this map.' }
 
   if (candidate.version !== ENV_EXPORT_VERSION) {
     return { ok: false, error: `Unsupported export version (expected ${ENV_EXPORT_VERSION}).` }
@@ -116,8 +115,6 @@ export function parseEnvImport(text: string): ImportResult {
   const bombs = candidate.bombs === undefined ? [] : candidate.bombs
   if (!isPositionArray(walls)) return { ok: false, error: 'Walls must be an array of positions with numeric x/y.' }
   if (!isPositionArray(bombs)) return { ok: false, error: 'Bombs must be an array of positions with numeric x/y.' }
-  const rewardTiles = candidate.rewardTiles
-  if (rewardTiles !== undefined && (!Array.isArray(rewardTiles) || !rewardTiles.every(tile => isPosition(tile) && isFiniteNumber((tile as unknown as Record<string, unknown>).reward)))) return { ok: false, error: 'Invalid reward tiles.' }
 
   // Reward fields fall back to envEditorDraft.ts's own defaults when missing/malformed —
   // same fallback convention draftFromRenderModel() already uses for an older/synthetic
@@ -141,7 +138,6 @@ export function parseEnvImport(text: string): ImportResult {
     wallPenalty,
     goalReward,
     bombPenalty,
-    ...(rewardTiles !== undefined ? { rewardTiles: rewardTiles as (Position & { reward: number })[] } : {}),
   }
 
   // Structural checks above only prove "this parses into the right SHAPE" — width/height

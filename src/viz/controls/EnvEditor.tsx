@@ -69,7 +69,7 @@ export function EnvEditor({
   const [draft, setDraftState] = useState<GridEditorDraft>(() => draftFromRenderModel(currentRenderModel))
   const dirty = useRef(false)
   const setDraft: Dispatch<SetStateAction<GridEditorDraft>> = action => { dirty.current = true; setDraftState(action) }
-  const seedKey = JSON.stringify([currentRenderModel.width, currentRenderModel.height, currentRenderModel.start, currentRenderModel.allGoals ?? currentRenderModel.goals, currentRenderModel.walls, currentRenderModel.bombs, currentRenderModel.stepReward, currentRenderModel.wallPenalty, currentRenderModel.goalReward, currentRenderModel.bombPenalty, currentRenderModel.cellRewards])
+  const seedKey = JSON.stringify([currentRenderModel.width, currentRenderModel.height, currentRenderModel.start, currentRenderModel.allGoals ?? currentRenderModel.goals, currentRenderModel.walls, currentRenderModel.bombs, currentRenderModel.stepReward, currentRenderModel.wallPenalty, currentRenderModel.goalReward, currentRenderModel.bombPenalty])
   const previousSeed = useRef(seedKey)
   useEffect(() => {
     if (previousSeed.current !== seedKey && !dirty.current) setDraftState(draftFromRenderModel(currentRenderModel))
@@ -79,7 +79,6 @@ export function EnvEditor({
   const [presetId, setPresetId] = useState<string>('custom')
   const [propertiesOpen, setPropertiesOpen] = useState(false)
   const [galleryOpen, setGalleryOpen] = useState(false)
-  const [tileReward, setTileReward] = useState(1)
   const [selectedCell, setSelectedCell] = useState<StateKey | null>(null)
   useEffect(() => {
     if (!active) return
@@ -104,7 +103,6 @@ export function EnvEditor({
       walls: prev.walls.filter((w) => w.x < value),
       bombs: prev.bombs.filter((b) => b.x < value),
       goals: prev.goals.filter((g) => g.x < value),
-      ...(prev.rewardTiles ? { rewardTiles: prev.rewardTiles.filter(tile => tile.x < value) } : {}),
     }))
   }
 
@@ -115,7 +113,6 @@ export function EnvEditor({
       walls: prev.walls.filter((w) => w.y < value),
       bombs: prev.bombs.filter((b) => b.y < value),
       goals: prev.goals.filter((g) => g.y < value),
-      ...(prev.rewardTiles ? { rewardTiles: prev.rewardTiles.filter(tile => tile.y < value) } : {}),
     }))
   }
 
@@ -154,23 +151,11 @@ export function EnvEditor({
   function handleCellClick(stateKey: StateKey) {
     const pos = parseStateKey(stateKey)
     setSelectedCell(stateKey)
-    if (mode === 'select') {
-      const tile = draft.rewardTiles?.find(tile => samePosition(tile, pos))
-      if (tile) setTileReward(tile.reward)
-      setPropertiesOpen(true)
-      return
-    }
+    if (mode === 'select') { setPropertiesOpen(true); return }
     if (mode === 'erase') {
-      setDraft(prev => ({ ...prev, walls: prev.walls.filter(p => !samePosition(p, pos)), bombs: prev.bombs.filter(p => !samePosition(p, pos)), goals: prev.goals.filter(p => !samePosition(p, pos)), rewardTiles: prev.rewardTiles?.filter(p => !samePosition(p, pos)) }))
+      setDraft(prev => ({ ...prev, walls: prev.walls.filter(p => !samePosition(p, pos)), bombs: prev.bombs.filter(p => !samePosition(p, pos)), goals: prev.goals.filter(p => !samePosition(p, pos)) }))
       return
     }
-    if (mode === 'reward') {
-      if ([draft.start, ...draft.goals, ...draft.walls, ...draft.bombs].some(p => samePosition(p, pos))) return
-      setDraft(prev => ({ ...prev, rewardTiles: [...(prev.rewardTiles ?? []).filter(p => !samePosition(p, pos)), { ...pos, reward: tileReward }] }))
-      return
-    }
-    // Replacing an element also removes any reward tile beneath it.
-    setDraft(prev => prev.rewardTiles ? { ...prev, rewardTiles: prev.rewardTiles.filter(p => !samePosition(p, pos)) } : prev)
 
     if (mode === 'start') {
       setDraft((prev) => ({
@@ -286,7 +271,6 @@ export function EnvEditor({
     start: t.envEditor.modeStart,
     goal: t.envEditor.modeGoal,
     bomb: t.envEditor.modeBomb,
-    reward: locale === 'ko' ? '보상' : 'Reward',
     erase: locale === 'ko' ? '지우개' : 'Erase',
     select: locale === 'ko' ? '선택' : 'Select',
   }
@@ -327,7 +311,7 @@ export function EnvEditor({
   if (fullscreen) return <div className="fullscreen-editor" data-testid="env-editor">
     <h2 className="sr-only">{t.envEditor.heading}</h2>
     <FloatingToolbar className="editor-toolbar" active={active} label={locale === 'ko' ? '맵 편집 도구' : 'Map editing tools'}>
-      <div className="tool-buttons" role="group" aria-label={locale === 'ko' ? '배치 요소' : 'Placement tool'}>{(['select', 'wall', 'start', 'goal', 'bomb', 'reward', 'erase'] as EditMode[]).map(tool => <button key={tool} aria-pressed={mode === tool} onClick={() => setMode(tool)} data-testid={`env-editor-mode-${tool}`}>{modeLabel[tool]}</button>)}</div>
+      <div className="tool-buttons" role="group" aria-label={locale === 'ko' ? '배치 요소' : 'Placement tool'}>{(['select', 'wall', 'start', 'goal', 'bomb', 'erase'] as EditMode[]).map(tool => <button key={tool} aria-pressed={mode === tool} onClick={() => setMode(tool)} data-testid={`env-editor-mode-${tool}`}>{modeLabel[tool]}</button>)}</div>
       <button onClick={() => setGalleryOpen(!galleryOpen)} data-testid="open-map-gallery">{locale === 'ko' ? '맵 프리셋' : 'Map presets'}</button>
       <button onClick={() => setPropertiesOpen(!propertiesOpen)} aria-expanded={propertiesOpen} aria-controls="editor-properties">{locale === 'ko' ? '속성 / 파일' : 'Properties / files'}</button>
       <button className="toolbar-primary" onClick={handleApply} disabled={!isValid} data-testid="env-editor-apply">{t.envEditor.apply}</button>
@@ -340,12 +324,6 @@ export function EnvEditor({
           <label>{t.envEditor.width}<input type="number" min={3} max={20} value={draft.width} onChange={e => updateWidth(Number(e.target.value))} data-testid="env-editor-width-input" /></label>
           <label>{t.envEditor.height}<input type="number" min={3} max={20} value={draft.height} onChange={e => updateHeight(Number(e.target.value))} data-testid="env-editor-height-input" /></label>
           {(['stepReward', 'wallPenalty', 'goalReward', 'bombPenalty'] as const).map(key => <label key={key}>{({ stepReward: t.envEditor.stepReward, wallPenalty: t.envEditor.wallPenalty, goalReward: t.envEditor.goalReward, bombPenalty: t.envEditor.bombPenalty })[key]}<input type="number" step="0.1" value={draft[key]} data-testid={`env-editor-${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}-input`} onChange={e => setDraft(previous => ({ ...previous, [key]: Number(e.target.value) }))} /></label>)}
-          <label>{locale === 'ko' ? '보상 타일 값' : 'Reward tile value'}<input type="number" min={-100} max={100} value={tileReward} data-testid="tile-reward-input" onChange={e => {
-            const reward = Math.max(-100, Math.min(100, Number(e.target.value)))
-            setTileReward(reward)
-            if (selectedCell && mode === 'select') setDraft(prev => ({ ...prev, rewardTiles: prev.rewardTiles?.map(tile => samePosition(tile, parseStateKey(selectedCell)) ? { ...tile, reward } : tile) }))
-          }} /></label>
-          <p>{locale === 'ko' ? '보상 타일: 진입할 때마다 이동 보상에 추가됩니다. 벽 충돌에는 지급하지 않습니다. 반복 방문도 지급하므로 순환 보상에 유의하세요.' : 'Reward tiles add to the movement reward on every entry, including revisits. Blocked moves do not pay. Positive loops can encourage reward farming.'}</p>
           <button onClick={handleImportClick} data-testid="env-editor-import">{t.envEditor.importButton}</button><button onClick={handleExport} data-testid="env-editor-export">{t.envEditor.exportButton}</button>
           <input hidden ref={importFileInputRef} type="file" accept=".json,application/json" onChange={handleImportFileChange} data-testid="env-editor-import-input" />
           <p>{locale === 'ko' ? '가져오기는 초안만 변경합니다. 적용은 현재 학습을 초기화합니다.' : 'Import changes only the draft. Applying resets the current experiment.'}</p>
