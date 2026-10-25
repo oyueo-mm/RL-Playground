@@ -2,7 +2,8 @@
 import { cleanup, fireEvent, render as rtlRender, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDefaultGridWorldConfig } from '../core/environments/gridworld/GridWorldEnv'
-import App from './App'
+// Existing simulator regression suite; shell/navigation is covered in Home.test.tsx.
+import App from './Simulator'
 import { engine } from './engine'
 
 afterEach(cleanup)

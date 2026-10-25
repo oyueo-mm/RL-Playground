@@ -74,7 +74,7 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
       height={svgHeight}
       viewBox={`0 0 ${svgWidth} ${svgHeight}`}
       className={className}
-      role="img"
+      role={onStateSelect ? 'group' : 'img'}
       aria-label="GridWorld"
       data-testid="grid-svg"
     >
@@ -92,6 +92,15 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
               stroke="#d1d5db"
               style={{ cursor: onStateSelect ? 'pointer' : undefined }}
               onClick={onStateSelect ? () => onStateSelect(cell.key) : undefined}
+              role={onStateSelect ? 'button' : undefined}
+              tabIndex={onStateSelect ? 0 : undefined}
+              aria-label={onStateSelect ? `Cell ${cell.key}: ${cell.kind}` : undefined}
+              onKeyDown={onStateSelect ? (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault()
+                  onStateSelect(cell.key)
+                }
+              } : undefined}
               data-testid={`cell-${cell.key}`}
               data-cell-kind={cell.kind}
             />
