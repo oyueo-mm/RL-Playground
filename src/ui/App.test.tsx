@@ -779,19 +779,17 @@ describe('App (integration — Phase 16: layout stability, structural)', () => {
   // oscillation; `md:min-w-[260px]` (a fixed, equally content-independent floor)
   // prevents Phase 37's collapse-to-0 regression from coming back. This test's role is
   // unchanged: guard the specific classes this fix depends on.
-  it('the two-column row and the right column carry the width-stabilizing classes the Phase 16/37/42 fixes depend on', () => {
+  it('keeps the full-width canvas and collapsed analysis as independent layout siblings', () => {
     render(<App />)
 
-    const twoColRow = screen.getByTestId('grid-stack').closest('.md\\:flex-row')
-    expect(twoColRow).toBeTruthy()
-    expect(twoColRow!.className).toContain('w-full')
-
-    const rightColumn = screen.getByTestId('stats-panel').parentElement!
-    expect(rightColumn.className).toContain('md:grow')
-    expect(rightColumn.className).toContain('md:shrink')
-    expect(rightColumn.className).toContain('md:basis-0')
-    expect(rightColumn.className).toContain('md:min-w-[260px]')
-    expect(rightColumn.className).toContain('md:max-w-lg')
+    const canvas = screen.getByTestId('grid-stack').closest('.experiment-canvas')
+    const layout = canvas!.parentElement!
+    expect(layout.className).toContain('lab-layout')
+    expect(layout.className).toContain('w-full')
+    const analysis = screen.getByTestId('analysis-panel')
+    expect(analysis.parentElement).toBe(layout)
+    expect(analysis.contains(canvas)).toBe(false)
+    expect(analysis.hidden).toBe(true)
   })
 })
 
@@ -807,7 +805,7 @@ describe('App (integration — Phase 42: dynamic Inspector content does not affe
   // structural claim the fix depends on: the right column's sizing classes are static
   // JSX literals, never derived from Inspector's own content, so a short vs. long
   // targetFormula can never change them.
-  it('the right column keeps its content-independent sizing classes whether Inspector shows a short or long TD formula', () => {
+  it('analysis stays separate from the canvas for both short and long TD formulas', () => {
     // A short, "nice" TD formula (no bootstrap yet).
     engine.reset({ envConfig: createDefaultGridWorldConfig(), hyperparams: { alpha: 0.37, gamma: 0.83, epsilon: 0 } })
     render(<App />)
@@ -827,8 +825,8 @@ describe('App (integration — Phase 42: dynamic Inspector content does not affe
 
     const rightColumnLong = screen.getByTestId('stats-panel').parentElement!
     expect(rightColumnLong.className).toBe(classNameShort) // identical regardless of content length
-    expect(rightColumnLong.className).toContain('md:basis-0')
-    expect(rightColumnLong.className).toContain('md:min-w-[260px]')
+    expect(rightColumnLong.className).toContain('analysis-content')
+    expect(screen.getByTestId('analysis-panel').contains(screen.getByTestId('grid-stack'))).toBe(false)
   })
 })
 
@@ -867,7 +865,7 @@ describe('App (integration — Phase 49: Step Viewer positioned near the Grid, n
     expect(rightColumn.contains(stepViewer)).toBe(false)
   })
 
-  it('the Step Viewer appears immediately after grid-stack in DOM order (directly under the Grid, before the overlay toggles)', () => {
+  it('places execution controls and overlays before the episode Step Viewer', () => {
     render(<App />)
 
     const gridColumn = screen.getByTestId('grid-stack').parentElement!
@@ -876,7 +874,9 @@ describe('App (integration — Phase 49: Step Viewer positioned near the Grid, n
     const stepViewerWrapper = screen.getByTestId('step-viewer-empty').parentElement!
     const stepViewerIndex = children.indexOf(stepViewerWrapper)
 
-    expect(stepViewerIndex).toBe(gridIndex + 1)
+    const controlsIndex = children.indexOf(screen.getByTestId('speed-slider').closest('.lab-run-controls')!)
+    expect(controlsIndex).toBe(gridIndex + 1)
+    expect(stepViewerIndex).toBeGreaterThan(controlsIndex)
   })
 
   it('EpisodeStepViewer itself received no functional/behavioral changes this Phase (still controlled purely by App-owned step/onStepChange props)', () => {
@@ -915,7 +915,8 @@ describe('App (integration — Phase 37: responsive Grid, structural)', () => {
     expect(gridStack.className).toContain('w-full')
     const renderModel = engine.getSnapshot().envRenderModel
     const width = renderModel.kind === 'grid' ? renderModel.width : 0
-    expect(gridStack.style.maxWidth).toBe(`${width * 48}px`)
+    const height = renderModel.kind === 'grid' ? renderModel.height : 1
+    expect(gridStack.style.maxWidth).toBe(`${Math.min(960, Math.max(420, window.innerHeight - 280) * width / height)}px`)
   })
 
   it('the live GridSvg is CSS-responsive (block, w-full, h-auto) — the standard responsive-SVG technique paired with its unchanged viewBox', () => {
@@ -1044,7 +1045,7 @@ describe('App (integration — Phase 54: viewport-height-aware Grid cell size)',
       reset20x20()
       render(<App />)
       // available = 700 - 92 - 40 = 568; fit = floor(568/20) = 28
-      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('560px') // 20 * 28
+      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('420px') // 20 * 28
       expect(screen.getByTestId('grid-svg').getAttribute('width')).toBe('560')
       expect(screen.getByTestId('grid-svg').getAttribute('height')).toBe('560')
     })
@@ -1054,7 +1055,7 @@ describe('App (integration — Phase 54: viewport-height-aware Grid cell size)',
     withWindowInnerHeight(700, () => {
       // 7x7 is the default env (createDefaultGridWorldConfig()) — engine already starts there.
       render(<App />)
-      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('336px') // 7 * 48, unchanged
+      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('420px') // 7 * 48, unchanged
       expect(screen.getByTestId('grid-svg').getAttribute('width')).toBe('336')
     })
   })
@@ -1064,7 +1065,7 @@ describe('App (integration — Phase 54: viewport-height-aware Grid cell size)',
       reset20x20()
       render(<App />)
       // available = 200 - 92 - 40 = 68; fit = floor(68/20) = 3, clamped up to the 24px floor
-      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('480px') // 20 * 24
+      expect(screen.getByTestId('grid-stack').style.maxWidth).toBe('420px') // 20 * 24
       expect(screen.getByTestId('grid-svg').getAttribute('width')).toBe('480')
     })
   })
@@ -1094,7 +1095,7 @@ describe('App (integration — Phase 54: viewport-height-aware Grid cell size)',
       reset20x20()
       render(<App />)
       const stepViewerWrapper = screen.getByTestId('step-viewer-empty').parentElement!
-      expect(stepViewerWrapper.style.maxWidth).toBe('560px')
+      expect(stepViewerWrapper.style.maxWidth).toBe('420px')
       expect(stepViewerWrapper.style.maxWidth).toBe(screen.getByTestId('grid-stack').style.maxWidth)
     })
   })
@@ -1502,7 +1503,7 @@ describe('App (integration, real Engine — Phase 21: Episode Statistics)', () =
     // Switch to a batch speed before resuming — resume()'s own synchronous first batch
     // then finishes the remaining (known-deterministic) steps in one call, letting this
     // test verify completion without depending on real timers.
-    fireEvent.click(screen.getByTestId('speed-very-fast'))
+    fireEvent.change(screen.getByTestId('speed-slider'), { target: { value: '100' } })
     fireEvent.click(screen.getByTestId('playback-resume'))
 
     expect(engine.getSnapshot().status).toBe('idle')
@@ -1694,7 +1695,7 @@ describe('App (integration, real Engine — Phase 22: Alpha/Gamma controls)', ()
 
   it('the two-column layout / PlaybackControls structure is unaffected by the new controls (Phase 14/16 stabilizing classes still present)', () => {
     render(<App />)
-    const twoColRow = screen.getByTestId('grid-stack').closest('.md\\:flex-row')
+    const twoColRow = screen.getByTestId('grid-stack').closest('.lab-layout')
     expect(twoColRow).toBeTruthy()
     expect(twoColRow!.className).toContain('w-full')
     expect(screen.getByTestId('playback-pause-resume-slot')).toBeTruthy()
@@ -1934,7 +1935,7 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
 
   it('the two-column layout / PlaybackControls structure is unaffected by the new AlgorithmSelector row (Phase 14/16 stabilizing classes still present)', () => {
     render(<App />)
-    const twoColRow = screen.getByTestId('grid-stack').closest('.md\\:flex-row')
+    const twoColRow = screen.getByTestId('grid-stack').closest('.lab-layout')
     expect(twoColRow).toBeTruthy()
     expect(twoColRow!.className).toContain('w-full')
     expect(screen.getByTestId('playback-pause-resume-slot')).toBeTruthy()
@@ -2121,7 +2122,7 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
     fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
-    const twoColRow = screen.getByTestId('grid-stack').closest('.md\\:flex-row')
+    const twoColRow = screen.getByTestId('grid-stack').closest('.lab-layout')
     expect(twoColRow).toBeTruthy()
     expect(twoColRow!.className).toContain('w-full')
     expect(screen.getByTestId('playback-pause-resume-slot')).toBeTruthy()
@@ -2229,7 +2230,7 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     fireEvent.click(screen.getByTestId('playback-pause'))
     expect(screen.getByTestId('learning-progress-empty')).toBeTruthy() // no premature point
 
-    fireEvent.click(screen.getByTestId('speed-very-fast'))
+    fireEvent.change(screen.getByTestId('speed-slider'), { target: { value: '100' } })
     fireEvent.click(screen.getByTestId('playback-resume'))
 
     expect(screen.getByTestId('learning-progress')).toBeTruthy()
@@ -2304,7 +2305,7 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
 
-    const twoColRow = screen.getByTestId('grid-stack').closest('.md\\:flex-row')
+    const twoColRow = screen.getByTestId('grid-stack').closest('.lab-layout')
     expect(twoColRow).toBeTruthy()
     expect(twoColRow!.className).toContain('w-full')
     expect(screen.getByTestId('playback-pause-resume-slot')).toBeTruthy()
@@ -2485,7 +2486,7 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     fireEvent.click(screen.getByTestId('playback-pause'))
     expect(screen.getByTestId('episode-history-empty')).toBeTruthy() // nothing to select yet
 
-    fireEvent.click(screen.getByTestId('speed-very-fast'))
+    fireEvent.change(screen.getByTestId('speed-slider'), { target: { value: '100' } })
     fireEvent.click(screen.getByTestId('playback-resume'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
@@ -2567,7 +2568,7 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('episode-history-row-1'))
 
-    const twoColRow = screen.getByTestId('grid-stack').closest('.md\\:flex-row')
+    const twoColRow = screen.getByTestId('grid-stack').closest('.lab-layout')
     expect(twoColRow).toBeTruthy()
     expect(twoColRow!.className).toContain('w-full')
     expect(screen.getByTestId('playback-pause-resume-slot')).toBeTruthy()

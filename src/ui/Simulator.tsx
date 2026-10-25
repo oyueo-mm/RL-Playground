@@ -93,6 +93,7 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
   const [showPath, setShowPath] = useState(true)
   const [speed, setSpeed] = useState<SpeedSetting>(() => engine.getSpeed())
   const [showEditor, setShowEditor] = useState(false)
+  const [analysisOpen, setAnalysisOpen] = useState(false)
   // Phase 15: how many episodes "학습하기"/Train runs — pure UI state, never written into
   // Engine/Core. Once engine.run({ episodes: episodeCount }) is called, the Engine's own
   // remainingEpisodes takes over as the sole source of truth for the in-flight run;
@@ -112,13 +113,18 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
   const locale = sharedLocale ?? localLocale
   useEffect(() => {
     if (section === 'editor') setShowEditor(true)
+    if (section === 'results') setAnalysisOpen(true)
   }, [section])
   useEffect(() => {
     if (!active) return
-    const target = section === 'editor' ? '#environment-editor' : section === 'results' ? '[data-testid=stats-panel]' : null
+    const target = section === 'editor' ? '#environment-editor' : section === 'results' && analysisOpen ? '[data-testid=stats-panel]' : analysisOpen ? '#analysis-panel' : null
     if (target) document.querySelector(target)?.scrollIntoView?.({ block: 'start' })
-  }, [section, showEditor, active])
+  }, [section, showEditor, active, analysisOpen])
   const t = translations[locale]
+  const analysisLabel = locale === 'ko' ? '통계 및 분석' : 'Statistics & analysis'
+  const analysisToggle = analysisOpen
+    ? (locale === 'ko' ? '통계 숨기기' : 'Hide analysis')
+    : (locale === 'ko' ? '통계 보기' : 'Show analysis')
 
   // Phase 54 — see the responsiveCellSize.ts / useViewportHeight.ts comments for the
   // full reasoning. `liveCellSize` replaces the fixed `CELL_SIZE` constant everywhere
@@ -136,6 +142,12 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
           availableHeightPx: viewportHeight - GRID_TOP_OFFSET - GRID_VERTICAL_MARGIN,
         })
       : CELL_SIZE
+
+  // Display width is independent of panel contents. All SVG layers retain their
+  // common logical cell size/viewBox and scale together in this larger canvas.
+  const displayGridWidth = snapshot.envRenderModel.kind === 'grid'
+    ? Math.min(960, Math.max(420, viewportHeight - 280) * snapshot.envRenderModel.width / snapshot.envRenderModel.height)
+    : 760
 
   const handleSpeedChange = (next: SpeedSetting) => {
     engine.setSpeed(next)
@@ -173,51 +185,9 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
         <h1 className="text-3xl font-semibold">RL Playground</h1>
         <LanguageSelector locale={locale} onChange={setLocale} t={t} />
       </div>
-
-      {/*
-        Phase 16: this row previously had no explicit width, so it was shrink-to-fit
-        content-sized — and `items-center` on <main> re-centers each of its direct
-        children as a block. That meant whenever InspectorPanel's rendered width changed
-        (its short "empty" placeholder vs. the full populated panel — see Phase 15
-        report), the row's own natural width changed, so its centered position shifted,
-        dragging the left column (PlaybackControls included) ~18px sideways with it —
-        even though nothing in the left column itself had changed.
-        Fix: `w-full` makes this row's own width stable (matches <main>'s available
-        width, same pattern the h1/language-selector row above already uses), which
-        removes it from `items-center`'s content-driven re-centering. The right column
-        below gets `md:flex-1 md:max-w-lg` instead of being shrink-to-fit — its box width
-        is now determined by leftover flex space (stable, viewport-driven), capped at the
-        same max-w-lg every child already used, so switching between InspectorPanel's
-        empty/populated content changes what's inside that box, never the box itself.
-
-        Phase 28 §2: `md:justify-center` changed to `md:justify-start` — with a
-        symmetric-centered row inside a symmetric-centered <main>, widening <main> alone
-        does not actually reduce the empty space around the (narrower) actual content —
-        centering nests losslessly, so the slop just moves from outside <main> to inside
-        it. Left-aligning this row instead anchors the Grid near the actual left margin,
-        so a wider <main> visibly translates into less empty space on the left, with any
-        remaining slop pushed to a single block on the right rather than split evenly
-        around content that isn't using it. Phase 14/16's own layout-stability guarantee
-        (playback-reset/playback-pause-resume-slot never moving BETWEEN engine statuses)
-        is unaffected — nothing here varies with `status`.
-      */}
-      <div className="flex w-full flex-col items-center gap-4 md:flex-row md:items-start md:justify-start">
-        {/*
-          Phase 37: `flex-none` (shrink:0) is what let a large Grid (e.g. 20x20 @ 48px =
-          960px) force this whole row past the viewport width once md:flex-row puts it
-          side by side with the right column — the item simply refused to ever shrink
-          below its natural content width, so the row (and <main>/<body> with it) grew
-          wider than the viewport instead. Dropping it (default flex is `0 1 auto`: still
-          won't grow, but can now shrink) plus `min-w-0` (overrides the flex item's
-          default `min-width:auto`, the same fix already applied to the right column
-          below for the identical reason) lets the browser actually shrink this column
-          when space is tight. This alone changes nothing for any grid/viewport
-          combination that already fit (there's no pressure to shrink into), so every
-          previously-verified breakpoint behavior (Phase 14/16/28) is unaffected — see
-          `grid-stack` below for the half of the fix that makes the shrink visually
-          correct (a CSS-responsive SVG) rather than just clipped.
-        */}
-        <div className="flex min-w-0 flex-col items-center gap-4">
+      <div className="lab-toolbar"><div><span className="section-number">GRIDWORLD / LIVE EXPERIMENT</span><p>{locale === 'ko' ? '격자에서 실험하고, 필요한 순간 분석하세요.' : 'Experiment on the grid. Inspect when you need to.'}</p></div><button type="button" className="analysis-toggle" data-testid="toggle-analysis" aria-expanded={analysisOpen} aria-controls="analysis-panel" onClick={() => setAnalysisOpen(open => !open)}>{analysisToggle}<span aria-hidden="true"> {analysisOpen ? '−' : '+'}</span></button></div>
+      <div className="lab-layout w-full">
+        <div className="experiment-canvas flex min-w-0 flex-col items-center gap-4">
           {snapshot.envRenderModel.kind === 'grid' ? (
             <div
               className="relative w-full"
@@ -228,7 +198,7 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
               // whatever size this container actually ends up rendering at — no changes
               // needed there. Phase 54: `liveCellSize` (not the fixed `CELL_SIZE`) —
               // "natural full-size" itself is now viewport-height-aware, see above.
-              style={{ maxWidth: snapshot.envRenderModel.width * liveCellSize }}
+              style={{ maxWidth: displayGridWidth }}
               data-testid="grid-stack"
             >
               <GridSvg
@@ -273,14 +243,6 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
                   className="absolute inset-0 h-auto w-full"
                 />
               )}
-              {/*
-                Phase 26: drawn automatically whenever an Episode is selected (same
-                auto-linking behavior Reward Chart/Learning Progress/Episode Detail
-                already have since Phase 24/25) — no separate show/hide toggle, since
-                selecting a History row is itself already the deliberate "show me this"
-                action. Renders nothing (returns null) if the selected Episode isn't
-                found or has an empty trajectory, so it never errors on a stale selection.
-              */}
               {showPath && (
                 <TrajectoryOverlay
                   renderModel={snapshot.envRenderModel}
@@ -298,69 +260,7 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
               )}
             </div>
           ) : null}
-
-          {/*
-            Phase 49 — moved here from the bottom of the right column (Phase 46) so the
-            Step Viewer sits directly under the Grid it controls, instead of scrolled far
-            away past Inspector/Statistics/charts. Only the POSITION changed — same
-            component, same props, same read-only behavior.
-
-            The wrapper's `maxWidth` mirrors `grid-stack` above exactly (both are a pure
-            function of `envRenderModel.width`, never of per-Step/dynamic content) so this
-            never becomes a new width-computation input for the left column: on a small
-            Grid (narrower than EpisodeStepViewer's own `max-w-lg` cap) it now matches the
-            Grid's width pixel-for-pixel rather than potentially exceeding it and silently
-            becoming the column's new widest child. This is the same deterministic-maxWidth
-            technique Phase 37 already established for grid-stack itself — no new content-
-            dependent sizing is introduced (Phase 42's Layout Shake fix is unaffected: that
-            fix concerns the RIGHT column's width, which this move doesn't touch).
-          */}
-          {snapshot.envRenderModel.kind === 'grid' && (
-            // Phase 54: `liveCellSize`, matching grid-stack's own wrapper above exactly
-            // — the Step Viewer's width stays pixel-for-pixel aligned with the Grid's
-            // actual rendered width, including when the Grid has shrunk to fit a short
-            // viewport's height.
-            <div className="w-full" style={{ maxWidth: snapshot.envRenderModel.width * liveCellSize }}>
-              <EpisodeStepViewer
-                episode={selectedEpisodeStats}
-                step={effectiveStep}
-                onStepChange={setViewedStep}
-                allGoals={snapshot.envRenderModel.allGoals ?? []}
-                t={t}
-              />
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={showPolicy}
-                onChange={(e) => setShowPolicy(e.target.checked)}
-                data-testid="toggle-policy"
-              />
-              {t.overlay.policy}
-            </label>
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={showValue}
-                onChange={(e) => setShowValue(e.target.checked)}
-                data-testid="toggle-value"
-              />
-              {t.overlay.value}
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowPath((prev) => !prev)}
-              aria-pressed={showPath}
-              data-testid="toggle-episode-path"
-              className="rounded bg-gray-100 px-2 py-1 font-medium text-gray-700 hover:bg-gray-200"
-            >
-              {showPath ? t.episodePath.hide : t.episodePath.show}
-            </button>
-          </div>
-
+          <div className="lab-run-controls">
           <PlaybackControls
             status={snapshot.status}
             onStep={() => engine.step()}
@@ -393,16 +293,54 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
           />
 
           <SpeedControl speed={speed} onChange={handleSpeedChange} t={t} />
+          </div>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <label className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={showPolicy}
+                onChange={(e) => setShowPolicy(e.target.checked)}
+                data-testid="toggle-policy"
+              />
+              {t.overlay.policy}
+            </label>
+            <label className="flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={showValue}
+                onChange={(e) => setShowValue(e.target.checked)}
+                data-testid="toggle-value"
+              />
+              {t.overlay.value}
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowPath((prev) => !prev)}
+              aria-pressed={showPath}
+              data-testid="toggle-episode-path"
+              className="rounded bg-gray-100 px-2 py-1 font-medium text-gray-700 hover:bg-gray-200"
+            >
+              {showPath ? t.episodePath.hide : t.episodePath.show}
+            </button>
+          </div>
 
-          {/*
-            Phase 23: reads directly from EngineSnapshot.algorithmId (Engine's existing
-            source of truth, no mirrored React state). Changing it calls the existing
-            reset({ algorithmId }) path (ResetOverrides.algorithmId has existed since
-            Phase 1/2) — this gives a fresh Agent/stats/hyperparams for the newly
-            selected Algorithm while preserving the current Environment config, exactly
-            like the plain Reset button already does. Disabled outside IDLE so the
-            update rule can never change mid-Episode.
-          */}
+          {snapshot.envRenderModel.kind === 'grid' && (
+            // Phase 54: `liveCellSize`, matching grid-stack's own wrapper above exactly
+            // — the Step Viewer's width stays pixel-for-pixel aligned with the Grid's
+            // actual rendered width, including when the Grid has shrunk to fit a short
+            // viewport's height.
+            <div className="w-full" style={{ maxWidth: displayGridWidth }}>
+              <EpisodeStepViewer
+                episode={selectedEpisodeStats}
+                step={effectiveStep}
+                onStepChange={setViewedStep}
+                allGoals={snapshot.envRenderModel.allGoals ?? []}
+                t={t}
+              />
+            </div>
+          )}
+
+          <details className="lab-settings"><summary>{locale === 'ko' ? '알고리즘 및 학습 설정' : 'Algorithm & learning settings'}</summary><div className="lab-settings-content">
           <AlgorithmSelector
             algorithmId={snapshot.algorithmId}
             onChange={(algorithmId) => {
@@ -413,23 +351,12 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
             disabled={snapshot.status !== 'idle'}
             t={t}
           />
-
-          {/*
-            Phase 18: reads directly from EngineSnapshot.hyperparams.epsilon rather than
-            mirroring its own React state — unlike `speed` above (which has to be
-            mirrored because EngineSnapshot doesn't expose it), epsilon IS now in the
-            snapshot, so there's a single source of truth and no possibility of drifting
-            from the Engine's actual value across reset()/setHyperparams().
-          */}
           <EpsilonControl
             epsilon={snapshot.hyperparams.epsilon}
             onChange={(epsilon) => engine.setHyperparams({ epsilon })}
             t={t}
             locale={locale}
           />
-
-          {/* Phase 22 — same source-of-truth reasoning as EpsilonControl above: reads
-              directly from EngineSnapshot.hyperparams, never mirrored into local state. */}
           <AlphaControl
             alpha={snapshot.hyperparams.alpha}
             onChange={(alpha) => engine.setHyperparams({ alpha })}
@@ -444,6 +371,7 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
             locale={locale}
           />
 
+          </div></details>
           <button
             type="button"
             onClick={() => setShowEditor((prev) => !prev)}
@@ -478,67 +406,8 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
             /></div>
           ) : null}
         </div>
-
-        {/*
-          `min-w-0` overrides the flex item's default `min-width:auto` — without it, a
-          child with a large fixed-pixel intrinsic size (RewardChart's SVG is a fixed
-          384px wide, not responsive — widened from 320px in Phase 28 §2/§3 to make use
-          of the extra space freed up by the wider `<main>`) can force this column wider
-          than its flex-computed share once it appears, which is otherwise invisible
-          until content actually exceeds the available width (only reproduces at the
-          tightest tested viewport, 768px, and only once the Reward Chart replaces its
-          empty-state placeholder — see the Phase 16 report). RewardChart.tsx itself also
-          gets `overflow-x-auto` as a defensive fallback so if a chart still doesn't fit,
-          it scrolls inside its own card instead of pushing the surrounding layout.
-
-          Phase 28 §2/§3: max-w-md (28rem/448px) raised to max-w-lg (32rem/512px) — same
-          bump applied to every individual panel's own `w-full max-w-lg` (StatsPanel,
-          RewardChart, LearningProgress, EpisodeTrajectory, InspectorPanel, QValueBars,
-          EnvEditor), so the extra column width actually reaches the panels themselves
-          instead of becoming unused padding around still-448px-capped children.
-        */}
-        {/*
-          Phase 37: `md:flex-1` is shorthand for `flex: 1 1 0%` — a **zero** flex-basis.
-          In a genuine space deficit (not enough room for both columns, e.g. a large Grid
-          at a narrow viewport), the browser's flex-shrink distribution is weighted by
-          each item's flex-basis; with this column's basis pinned at 0, it contributed
-          ~0 to the shrink calculation and simply never grew back (flex-grow only
-          activates when there's a *surplus*, not a deficit) — so it collapsed to a
-          literal 0px box while its own children (charts/tables, not all internally
-          shrinkable) still rendered at their natural size and stuck out past that 0px
-          box, which is what actually produced the horizontal overflow (verified via
-          real-browser measurement: rightColWidth was 0 in every failing case). Phase 39
-          fixed that by switching to `md:basis-auto` (content-based size).
-
-          Phase 42: `basis-auto` turned out to have its own defect — it measures this
-          column's preferred width from its children's actual rendered content, which
-          includes InspectorPanel's `targetFormula` (an unrounded TD-target string whose
-          length varies every Step depending on floating-point noise, e.g. 50 vs 86
-          characters — see qLearning.ts/sarsa.ts's `targetFormula`, deliberately left
-          untouched this Phase per its own instructions). At Grid sizes large enough that
-          the row is already space-constrained (empirically: 15x15+ at 1440x900/1280x720,
-          14x14+ at 1024x768/768x1024), that per-Step length swing was enough to tip the
-          row in and out of a shrink deficit, so this column's resolved width — and the
-          Grid's, right next to it — visibly oscillated by exactly the pixel difference
-          the two formula lengths produced (measured: 18.703125px) on every Step, for as
-          long as a Run kept generating new TD values. Pausing (freezing the content)
-          made it stop immediately, confirming the content-length dependency.
-
-          Fix: `md:basis-0` — like Phase 37's original bug, a zero basis makes this
-          column's *preferred* size a fixed, content-independent number (0) rather than
-          something recomputed from whatever InspectorPanel happens to be showing, so a
-          longer or shorter targetFormula string can no longer change how the deficit is
-          distributed between the two columns. To avoid reintroducing Phase 37's
-          collapse-to-0 regression, `md:min-w-[260px]` gives this column an explicit,
-          equally content-independent floor the flex algorithm always honors (CSS clamps
-          flex-shrink results to `min-width` before finalizing, redistributing any
-          remaining deficit to whichever sibling can still shrink — the Grid column here,
-          via its own `min-w-0`) — so this column can shrink under real pressure exactly
-          as before, just never below a safe, constant floor, and never because of
-          Inspector's own content. `md:grow` still fills any leftover surplus up to
-          `md:max-w-lg`, unchanged from every already-working case.
-        */}
-        <div className="flex min-w-0 flex-col gap-4 md:grow md:shrink md:basis-0 md:min-w-[260px] md:max-w-lg">
+        <section id="analysis-panel" aria-label={analysisLabel} hidden={!analysisOpen} className="analysis-panel" data-testid="analysis-panel"><div className="analysis-heading"><div><span className="section-number">EXPERIMENT INSIGHTS</span><h2>{analysisLabel}</h2></div><button type="button" onClick={() => { setAnalysisOpen(false); document.querySelector<HTMLButtonElement>('[data-testid=toggle-analysis]')?.focus() }}>{locale === 'ko' ? '통계 숨기기' : 'Hide analysis'} −</button></div>
+        <div className="analysis-content">
           <InspectorPanel
             lastTransition={snapshot.lastTransition}
             lastActionSelection={snapshot.lastActionSelection}
@@ -565,10 +434,6 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
             // Goals still remaining right now. See render.ts's doc comment.
             goals={snapshot.envRenderModel.kind === 'grid' ? (snapshot.envRenderModel.allGoals ?? []) : []}
           />
-          {/* Phase 28 §10/§11 — grouped directly with Statistics (its data source),
-              showing the Goal/Bomb/Other distribution across all of episodeStatsHistory,
-              independent of any selected Episode (Episode Detail already covers that
-              single Episode's own termination reason). */}
           <TerminationChart episodeStatsHistory={snapshot.stats.episodeStatsHistory} t={t} />
           <RewardChart
             rewardHistory={snapshot.stats.rewardHistory}
@@ -576,18 +441,11 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
             selectedEpisode={selectedEpisode}
             t={t}
           />
-          {/* Phase 25 — reuses the same episodeStatsHistory/selectedEpisode Phase 24
-              already established as the single source of truth; no new Engine reads. */}
           <LearningProgress
             episodeStatsHistory={snapshot.stats.episodeStatsHistory}
             selectedEpisode={selectedEpisode}
             t={t}
           />
-          {/*
-            Phase 26 — `key` remounts this panel whenever the selection changes, so its
-            internal "Show all steps" toggle always starts collapsed again for a newly
-            selected Episode rather than staying expanded from a previous, unrelated one.
-          */}
           <EpisodeTrajectory
             key={selectedEpisode ?? 'none'}
             episodeStatsHistory={snapshot.stats.episodeStatsHistory}
@@ -595,7 +453,7 @@ function Simulator({ locale: sharedLocale, section = 'environment', active = tru
             t={t}
             locale={locale}
           />
-        </div>
+        </div></section>
       </div>
     </Container>
   )

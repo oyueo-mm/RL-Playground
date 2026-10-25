@@ -58,6 +58,8 @@ export interface Dictionary {
   }
   speed: {
     label: string
+    intervalUnit: string
+    batchUnit: string
     slow: string
     normal: string
     fast: string
@@ -301,7 +303,7 @@ const en: Dictionary = {
   overlay: { policy: 'Policy', value: 'Value' },
   envToggle: { show: 'Edit Environment', hide: 'Hide Environment Editor' },
   episodePath: { show: 'Show Episode Path', hide: 'Hide Episode Path' },
-  speed: { label: 'Speed:', slow: 'Slow', normal: 'Normal', fast: 'Fast', veryFast: 'Very Fast' },
+  speed: { label: 'Speed:', slow: 'Slow', normal: 'Normal', fast: 'Fast', veryFast: 'Very Fast', intervalUnit: 'ms / step', batchUnit: 'steps / frame' },
   epsilon: { label: 'Epsilon (ε)' },
   alpha: { label: 'Alpha (α)' },
   gamma: { label: 'Gamma (γ)' },
@@ -456,7 +458,7 @@ const ko: Dictionary = {
   overlay: { policy: '정책', value: '가치' },
   envToggle: { show: '환경 편집', hide: '환경 편집기 닫기' },
   episodePath: { show: '경로 표시', hide: '경로 숨기기' },
-  speed: { label: '속도:', slow: '느림', normal: '보통', fast: '빠름', veryFast: '매우 빠름' },
+  speed: { label: '속도:', slow: '느림', normal: '보통', fast: '빠름', veryFast: '매우 빠름', intervalUnit: 'ms / 스텝', batchUnit: '스텝 / 프레임' },
   epsilon: { label: '엡실론 (ε)' },
   alpha: { label: '알파 (α)' },
   gamma: { label: '감마 (γ)' },
