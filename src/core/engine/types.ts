@@ -30,7 +30,7 @@ export interface ResetOverrides {
 // (SimulationEngine.ts's finishEpisode()), classified from the same EnvRenderModel
 // fields isSuccessTransition already read (goal/bombs) — no new Environment API. 'other'
 // covers any future terminalCells-only ending, or a non-'grid' EnvRenderModel kind.
-export type EpisodeTerminationReason = 'goal' | 'bomb' | 'other' | 'truncated' | 'trapped' | 'policy-loop'
+export type EpisodeTerminationReason = 'goal' | 'bomb' | 'other' | 'truncated'
 
 /**
  * Phase 21 — one completed Episode's statistics. `steps`/`totalReward` are read from the
@@ -120,5 +120,4 @@ export interface EngineSnapshot {
    * above always still reflects the user's real, untouched setting throughout.
    */
   isGreedyRun: boolean
-  policyLoopDetected?: boolean
 }

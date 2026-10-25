@@ -19,6 +19,7 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [presetsOpen, setPresetsOpen] = useState(false)
+  const [homeAppliedVersion, setHomeAppliedVersion] = useState(0)
   const [section, setSection] = useState<'environment' | 'editor' | 'results'>('environment')
   const heading = useRef<HTMLHeadingElement>(null)
   const previousPage = useRef(page)
@@ -55,7 +56,6 @@ export default function App() {
       <button className="collapse-button" aria-label={l.menu} aria-controls="sidebar-navigation" aria-expanded={!collapsed} onClick={() => { if (window.innerWidth <= 760) setMobileOpen(false); else setCollapsed(!collapsed) }}><span aria-hidden="true" className="sidebar-toggle-icon">☰</span><span className="sidebar-label">{locale === 'ko' ? '사이드바' : 'Sidebar'}</span><span aria-hidden="true" className="sidebar-label sidebar-toggle-arrow">‹</span></button>
       <nav id="sidebar-navigation" aria-label={l.workspace}>{(['home', 'environment', 'editor', 'presets', 'results', 'guide'] as const).map((item, i) => <button key={item} title={l[item]} aria-label={l[item]} aria-current={item !== 'presets' && page === item ? 'page' : undefined} aria-expanded={item === 'presets' ? presetsOpen : undefined} aria-controls={item === 'presets' ? 'preset-panel' : undefined} onClick={() => {
         if (item !== 'presets') { navigate(item); return }
-        if (page !== 'environment' && page !== 'editor') { setPage('environment'); setSection('environment') }
         setPresetsOpen(open => !open); setMobileOpen(false)
       }} data-testid={`nav-${item}`}><span aria-hidden="true" className="nav-icon">{['⌂', '▦', '⊞', '▧', '▥', '≡'][i]}</span><span className="sidebar-label">{l[item]}</span></button>)}</nav>
       <div className="sidebar-language"><LanguageSelector locale={locale} onChange={setLocale} t={translations[locale]} /></div>
@@ -64,9 +64,9 @@ export default function App() {
       <header className="topbar"><div className="breadcrumb"><button id="mobile-menu" aria-label={l.menu} aria-expanded={mobileOpen} aria-controls="sidebar" onClick={() => setMobileOpen(!mobileOpen)}>☰</button><span>Workspace</span><span>/</span><strong>{l[page]}</strong></div></header>
       <main id="page-content" className="page-content" tabIndex={-1}>
         <h1 ref={heading} tabIndex={-1} className="sr-only">{page === 'home' ? l.title : l[page]}</h1>
-        {page === 'home' && <Home locale={locale} onEditor={() => navigate('editor')} onStart={() => navigate('environment')} onGuide={() => navigate('guide')} onExperiment={preset => { if (window.confirm(translations[locale].envEditor.applyConfirm)) { engine.reset({ envConfig: draftToGridWorldConfig(preset.draft) }); navigate('environment') } }} />}
+        {page === 'home' && <Home locale={locale} onEditor={() => navigate('editor')} onStart={() => navigate('environment')} onGuide={() => navigate('guide')} onExperiment={preset => { if (window.confirm(translations[locale].envEditor.applyConfirm)) { engine.reset({ envConfig: draftToGridWorldConfig(preset.draft) }); setHomeAppliedVersion(value => value + 1); navigate('environment') } }} />}
         {page === 'guide' && <AlgorithmGuide locale={locale} onStart={() => navigate('environment')} />}
-        <div hidden={!experimentVisible} className="experiment-workspace" data-testid="experiment-workspace"><Simulator onApplied={() => navigate('environment')} locale={locale} section={section} active={experimentVisible} presetsOpen={presetsOpen} onClosePresets={() => setPresetsOpen(false)} /></div>
+        <div hidden={!experimentVisible && !presetsOpen} className="experiment-workspace" data-testid="experiment-workspace"><Simulator homeAppliedVersion={homeAppliedVersion} onEditPreset={() => navigate('editor')} onApplied={() => navigate('environment')} locale={locale} section={section} active={experimentVisible || presetsOpen} presetsOpen={presetsOpen} onClosePresets={() => setPresetsOpen(false)} /></div>
       </main>
     </div>
     <div className="mobile-language"><LanguageSelector locale={locale} onChange={setLocale} t={translations[locale]} /></div>

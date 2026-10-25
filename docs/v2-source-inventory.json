@@ -1,0 +1,146 @@
+[
+  {
+    "path": "src/data/presets/maps/19_multi_goal_expedition.json",
+    "sha256": "e8455c19f82e10121f8c67d1b03d368f5334fd673fa3e539a879e2cc632bd862"
+  },
+  {
+    "path": "src/data/presets/maps/20_sealed_research_base.json",
+    "sha256": "a8462c7ab48d847af3033b096c854c2c844dfb9a873d0a71351306f6dd055061"
+  },
+  {
+    "path": "src/data/presets/maps/21_collapsing_archipelago.json",
+    "sha256": "5cd1fb51ad342a88a0f41a747c39dfb3bddf69298ae5d3c0a77a484c27d06170"
+  },
+  {
+    "path": "src/data/presets/maps/22_warp_nexus.json",
+    "sha256": "36d0b1679dec87321c3a3a8e9ad6181dffaf09ba33f35911e6b53d7937302e11"
+  },
+  {
+    "path": "src/data/presets/maps/23_final_proving_grounds.json",
+    "sha256": "e788922287a479216635b5448204fe97da2f097a01383dc2d6334f26b44ce8eb"
+  },
+  {
+    "path": "src/data/presets/maps/24_the_sealed_observatory.json",
+    "sha256": "b8067451ad52ed0ebebc14d7a2d515994a4f23b74a9f12ec8853fa994e60e515"
+  },
+  {
+    "path": "src/data/presets/maps/25_obsidian_citadel.json",
+    "sha256": "fc96d8ad114c52105cf4cd2bd4e29f00f1d137ff1f1fbbfaf6854daefe1f42fe"
+  },
+  {
+    "path": "src/data/presets/maps/26_abyssal_fortress.json",
+    "sha256": "f0d5c9d41cdfb0bf65190ba92afa9048a88761c6e9c1c6336cb56fa4c3e36a94"
+  },
+  {
+    "path": "src/data/presets/maps/27_fractured_metropolis.json",
+    "sha256": "b43bacd38c02ce83b0198772ee716f1c16fc86048ec3466d28b92e398e113e4e"
+  },
+  {
+    "path": "src/data/presets/maps/28_nemesis_complex.json",
+    "sha256": "489b405fc27d565f51d95dedede833ac4f77873e3cedda06135ac1c5c2a90eff"
+  },
+  {
+    "path": "src/data/presets/maps/29_empire_of_oblivion.json",
+    "sha256": "68b7ae5be343f16d758dbd7cfa49bef9f455f62934ac58b37c2985b9196b971c"
+  },
+  {
+    "path": "src/data/presets/maps/30_the_endless_labyrinth.json",
+    "sha256": "7b538752eca3ee7abf7073e1cee7785dfce8464b8eb051e60554f4d448a2a6fa"
+  },
+  {
+    "path": "src/data/presets/solutions/19_multi_goal_expedition_solution.json",
+    "sha256": "4e4b723d24cd388f58fc1b780ef3d5a6e97dc1e9f2ad46c15715df61f77becc8"
+  },
+  {
+    "path": "src/data/presets/solutions/20_sealed_research_base_solution.json",
+    "sha256": "d121e4e92b3264951667d4421c02957039cd2cf13607673a26819a52aff98ba4"
+  },
+  {
+    "path": "src/data/presets/solutions/21_collapsing_archipelago_solution.json",
+    "sha256": "e2ece4d5c7df517b575c8e20e273b82d8f073b20a7d9a6ed98b8af0ceb099105"
+  },
+  {
+    "path": "src/data/presets/solutions/22_warp_nexus_solution.json",
+    "sha256": "60c4a0ef674ca593affbd484469cdf7147571d89e6b9c8b91ba35cd05958186d"
+  },
+  {
+    "path": "src/data/presets/solutions/23_final_proving_grounds_solution.json",
+    "sha256": "f235434abbf6448d41301d7f8cfb2d480e3eecac0e82f3726a0e7561bbbf09b2"
+  },
+  {
+    "path": "src/data/presets/solutions/24_the_sealed_observatory_solution.json",
+    "sha256": "1a3fe4983b15f3c34dbffba5db8ebaa1204b635a96cb2c10041703182de6e5f1"
+  },
+  {
+    "path": "src/data/presets/solutions/25_obsidian_citadel_solution.json",
+    "sha256": "0210056394427d1e6c98ef260afdd05c37f37644bf9cd04f4d0442657fef663b"
+  },
+  {
+    "path": "src/data/presets/solutions/26_abyssal_fortress_solution.json",
+    "sha256": "3e1eefd14200cc7a3e6b9ba4c71d31977f1ea80ada8901500ffc0da56a78ccfa"
+  },
+  {
+    "path": "src/data/presets/solutions/27_fractured_metropolis_solution.json",
+    "sha256": "8101e1eb192007f8d6b2f296bfc5c56dd218b92c2ddfef8d95af7a7f8dbc19b7"
+  },
+  {
+    "path": "src/data/presets/solutions/28_nemesis_complex_solution.json",
+    "sha256": "2a88458e9c4f8b41782b5737badb47051e5f84f1bc58756725b6ccdefab392db"
+  },
+  {
+    "path": "src/data/presets/solutions/29_empire_of_oblivion_solution.json",
+    "sha256": "35f44c36091e43a349f1e19e8e00c94d88e41a9ea89b6ce22fa6b088c9da260f"
+  },
+  {
+    "path": "src/data/presets/solutions/30_the_endless_labyrinth_solution.json",
+    "sha256": "d61ba4105afb9cfbafb8374cad6a71dbfe2f23c297297390fbde4076f33efa46"
+  },
+  {
+    "path": "src/data/presets/previews/19_multi_goal_expedition.png",
+    "sha256": "137b0ef995b15c67c0c8567773a8af885f7b7bdac03871b7796338e374d97228"
+  },
+  {
+    "path": "src/data/presets/previews/20_sealed_research_base.png",
+    "sha256": "13c6ee2be34f488b034f3d0db297502d28fa1ad9ed37788b6667e765785cb21c"
+  },
+  {
+    "path": "src/data/presets/previews/21_collapsing_archipelago.png",
+    "sha256": "6b6fee40122e39b11d5278cda45b56bbc8a2f8fd6bfd6d1396c4638e1e640840"
+  },
+  {
+    "path": "src/data/presets/previews/22_warp_nexus.png",
+    "sha256": "032175f9f5615a68c9cd60584e0857709a7236b6c8f1ec911de9a8eca5ff8b22"
+  },
+  {
+    "path": "src/data/presets/previews/23_final_proving_grounds.png",
+    "sha256": "b9e84d15a8a3550401484e6b31eb776b031635a97d88ba92d721b2273807dfa8"
+  },
+  {
+    "path": "src/data/presets/previews/24_the_sealed_observatory.png",
+    "sha256": "68999c9816151a5240e299bf9666761f428fedb76f1987dda5346b31b84855ff"
+  },
+  {
+    "path": "src/data/presets/previews/25_obsidian_citadel.png",
+    "sha256": "2651a7e5275a3e1a3c2a2c2557b2262102a04604a6d96f2ce0dc04137c41b04b"
+  },
+  {
+    "path": "src/data/presets/previews/26_abyssal_fortress.png",
+    "sha256": "600b90403549f77147c4b614e75e7ffb66be313b14fd33eb3527e8e9daffb6bf"
+  },
+  {
+    "path": "src/data/presets/previews/27_fractured_metropolis.png",
+    "sha256": "185beeeb816e5cbb685ce38b640bb408af3c9b91e1e569e08f1b7eaffb3fd431"
+  },
+  {
+    "path": "src/data/presets/previews/28_nemesis_complex.png",
+    "sha256": "60e86dabe0e61be92e6e4fd1384cbc67f593caa1bb0da977618db611d9f3151c"
+  },
+  {
+    "path": "src/data/presets/previews/29_empire_of_oblivion.png",
+    "sha256": "28ef6e59a9a70375f9fa4ead0784a4eb1ee9abc0fcf3949f67ea4b9606566d22"
+  },
+  {
+    "path": "src/data/presets/previews/30_the_endless_labyrinth.png",
+    "sha256": "0268b9741fbb1cedef0f598fccd1321eea2e8ce2749b77ba585d4004e9aef93f"
+  }
+]

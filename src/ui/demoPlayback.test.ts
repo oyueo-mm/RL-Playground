@@ -9,7 +9,7 @@ describe('Official randomized home playback', () => {
     const bag = new ShuffleBag(ENVIRONMENT_PRESETS.map(p=>p.id),random()), active: string[] = [], seen: string[] = []
     for (let i=0;i<30;i++) { const id=bag.next(new Set(active)); expect(active).not.toContain(id);seen.push(id);active.push(id);if(active.length>4)active.shift() }
     expect(new Set(seen).size).toBe(30)
-    for(const tier of ['Easy','Medium','Hard','Very Hard','Extreme'])expect(seen.filter(id=>ENVIRONMENT_PRESETS.find(p=>p.id===id)!.metadata.difficulty.en===tier)).toHaveLength(6)
+    for(const tier of ['Very Easy','Easy','Medium','Hard','Very Hard'])expect(seen.filter(id=>ENVIRONMENT_PRESETS.find(p=>p.id===id)!.metadata.difficulty.en===tier)).toHaveLength(6)
   })
   it('is deterministic with injected RNG and always chooses four distinct new maps on shuffle', () => {
     const a=new DemoPlayback(random()),b=new DemoPlayback(random())

@@ -3,7 +3,7 @@
 // by step(), runEpisode(), and run(): they differ only in how many times it's called
 // and when the loop stops, per §5.1.
 
-import { GridWorldEnv } from '../environments/gridworld/GridWorldEnv'
+import { sliderToSpeed } from '../../viz/controls/speedSlider'
 import { TabularQAgent } from '../agents/TabularQAgent'
 import { TabularValueAgent } from '../agents/TabularValueAgent'
 import type { Algorithm } from '../algorithms/Algorithm'
@@ -151,9 +151,6 @@ export class SimulationEngine {
   // action selection ONLY (never written into `this.hyperparams` — see run()'s comment
   // for why this is not the same as calling setHyperparams({ epsilon: 0 })).
   private savedTrainingSpeed: SpeedSetting | null = null
-  private policyStates = new Set<string>()
-  private policyLoopDetected = false
-  private blockedSteps = 0
   private greedyRun = false
 
   private readonly emitter = new EventEmitter<EngineSnapshot>()
@@ -227,7 +224,7 @@ export class SimulationEngine {
       stats: visible ? { ...this.stats, rewardHistory: this.projectedHistory!.rewards, episodeStatsHistory: this.projectedHistory!.episodes } : this.stats,
       hyperparams: this.hyperparams,
       isGreedyRun: this.greedyRun,
-    }), policyLoopDetected: this.policyLoopDetected }
+    }) }
   }
 
   private emitSnapshot(force = true): void {
@@ -283,9 +280,7 @@ export class SimulationEngine {
   private startRun(mode: RunMode, episodes: number | null, greedy = false): void {
     if (this.status === 'running') return // never spin up a duplicate Scheduler loop
     this.restoreTrainingSpeed()
-    this.policyLoopDetected = false
-    this.policyStates.clear()
-    if (greedy) { this.pendingAction = null; this.savedTrainingSpeed = this.scheduler.getSpeed(); this.scheduler.setSpeed({ mode: 'interval', intervalMs: 250 }) }
+    if (greedy) { this.pendingAction = null; this.savedTrainingSpeed = this.scheduler.getSpeed(); this.scheduler.setSpeed(sliderToSpeed(45)) }
     this.runMode = mode
     this.remainingEpisodes = episodes
     this.greedyRun = greedy
@@ -351,8 +346,8 @@ export class SimulationEngine {
   // ---- speed ----
 
   setSpeed(speed: SpeedSetting): void {
-    if (this.savedTrainingSpeed) { this.savedTrainingSpeed = speed; return }
     this.scheduler.setSpeed(speed)
+    this.emitSnapshot()
   }
 
   getSpeed(): SpeedSetting {
@@ -386,7 +381,7 @@ export class SimulationEngine {
     const envId = overrides?.envId ?? this.envId
     const envConfig = overrides?.envConfig ?? this.environment.getConfig()
     this.envId = envId
-    this.restoreTrainingSpeed(); this.policyLoopDetected = false; this.policyStates.clear(); this.blockedSteps = 0
+    this.restoreTrainingSpeed()
     this.environment = createEnvironment(envId, envConfig)
 
     const algorithmId = overrides?.algorithmId ?? this.algorithmId
@@ -440,7 +435,7 @@ export class SimulationEngine {
    */
   restartEpisode(): void {
     this.scheduler.stop() // invalidate any in-flight callback before anything else changes
-    this.restoreTrainingSpeed(); this.policyLoopDetected = false; this.policyStates.clear(); this.blockedSteps = 0
+    this.restoreTrainingSpeed()
     this.environment.reset()
     this.recordedSteps -= this.stats.episodeTrajectory.length
     this.resourcePauseReason = null
@@ -492,15 +487,10 @@ export class SimulationEngine {
     const action = greedy && this.agent.kind === 'Q'
       ? (() => { const candidateValues = this.agent.peekQVector(state); return { action: candidateValues.indexOf(Math.max(...candidateValues)), wasExploration: false, candidateValues } })()
       : this.pendingAction ?? this.algorithm.selectAction(state, this.agent, selectionHyperparams)
-    if (greedy) this.policyStates.add(state)
 
     const stepResult = this.environment.step(action.action)
-    this.blockedSteps = stepResult.nextState === state ? this.blockedSteps + 1 : 0
-    const trapped = !greedy && !stepResult.done && this.blockedSteps >= 16 && this.environment instanceof GridWorldEnv && this.environment.isImmobile()
-    const loop = greedy && !stepResult.done && this.policyStates.has(stepResult.nextState)
-    if (loop) this.policyLoopDetected = true
-    const truncated = !stepResult.done && (trapped || loop || this.stats.episodeLength + 1 >= this.resourceBudget.maxEpisodeSteps)
-    const transition: Transition = { state, action: action.action, ...stepResult, ...(truncated ? { truncated: true } : {}), ...(trapped ? { cutoffReason: 'trapped' as const } : loop ? { cutoffReason: 'policy-loop' as const } : {}) }
+    const truncated = !stepResult.done && this.stats.episodeLength + 1 >= this.resourceBudget.maxEpisodeSteps
+    const transition: Transition = { state, action: action.action, ...stepResult, ...(truncated ? { truncated: true } : {}) }
 
     if (greedy) {
       // Policy Evaluation/exhibition only — no TD update, no Q-table write. lastTdInfo is
@@ -588,7 +578,6 @@ export class SimulationEngine {
    * suffix back off before comparing, restoring the original position-only comparison.
    */
   private classifyTermination(transition: Transition): EpisodeTerminationReason {
-    if (transition.cutoffReason) return transition.cutoffReason
     if (transition.truncated) return 'truncated'
     const renderModel = this.environment.getRenderModel()
     if (renderModel.kind !== 'grid') return 'other'
@@ -597,8 +586,6 @@ export class SimulationEngine {
   }
 
   private finishEpisode(transition: Transition): void {
-    this.blockedSteps = 0
-    this.policyStates.clear()
     const terminationReason = this.classifyTermination(transition)
     this.lifetime.reasons[terminationReason] = (this.lifetime.reasons[terminationReason] ?? 0) + 1
     if (terminationReason === 'goal') {

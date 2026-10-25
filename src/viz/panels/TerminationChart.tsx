@@ -26,12 +26,12 @@ const PADDING = 8
 const LABEL_WIDTH = 56
 const COUNT_WIDTH = 32
 
-const REASONS: EpisodeTerminationReason[] = ['goal', 'bomb', 'other', 'truncated', 'trapped', 'policy-loop']
+const REASONS: EpisodeTerminationReason[] = ['goal', 'bomb', 'other', 'truncated']
 const BAR_COLOR: Record<EpisodeTerminationReason, string> = {
   goal: '#22c55e',
   bomb: '#ef4444',
   other: '#9ca3af',
-  truncated: '#c29143', trapped: '#a35f50', 'policy-loop': '#9277ae',
+  truncated: '#c29143',
 }
 
 export function TerminationChart({ episodeStatsHistory, lifetimeCounts, t = translations.en }: TerminationChartProps) {
@@ -48,7 +48,7 @@ export function TerminationChart({ episodeStatsHistory, lifetimeCounts, t = tran
 
   // Aggregation only — no re-classification. Each Episode's terminationReason was
   // already decided once, by finishEpisode(), when it completed.
-  const counts: Record<EpisodeTerminationReason, number> = { goal: 0, bomb: 0, other: 0, truncated: 0, trapped: 0, 'policy-loop': 0 }
+  const counts: Record<EpisodeTerminationReason, number> = { goal: 0, bomb: 0, other: 0, truncated: 0 }
   for (const ep of episodeStatsHistory) counts[ep.terminationReason] += 1
   if (lifetimeCounts) for (const reason of REASONS) counts[reason] = lifetimeCounts[reason] ?? 0
 
@@ -57,8 +57,6 @@ export function TerminationChart({ episodeStatsHistory, lifetimeCounts, t = tran
     bomb: t.stats.terminationBomb,
     other: t.stats.terminationOther,
     truncated: t.stats.terminationTruncated,
-    trapped: t === translations.ko ? '탈출 불가' : 'Trapped',
-    'policy-loop': t === translations.ko ? '정책 반복' : 'Policy loop',
   }
 
   const maxCount = Math.max(1, ...REASONS.map((r) => counts[r])) // guards a 0/0 division below

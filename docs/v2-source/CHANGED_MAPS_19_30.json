@@ -1,0 +1,86 @@
+[
+  {
+    "id": 19,
+    "name": "다중 목표 원정대",
+    "stem": "19_multi_goal_expedition",
+    "steps_old": 81,
+    "steps_v2": 119
+  },
+  {
+    "id": 20,
+    "name": "봉인된 연구기지",
+    "stem": "20_sealed_research_base",
+    "steps_old": 152,
+    "steps_v2": 121
+  },
+  {
+    "id": 21,
+    "name": "붕괴하는 군도",
+    "stem": "21_collapsing_archipelago",
+    "steps_old": 89,
+    "steps_v2": 127
+  },
+  {
+    "id": 22,
+    "name": "왜곡된 차원문",
+    "stem": "22_warp_nexus",
+    "steps_old": 50,
+    "steps_v2": 123
+  },
+  {
+    "id": 23,
+    "name": "최종 시험장",
+    "stem": "23_final_proving_grounds",
+    "steps_old": 90,
+    "steps_v2": 140
+  },
+  {
+    "id": 24,
+    "name": "봉인된 관측소",
+    "stem": "24_the_sealed_observatory",
+    "steps_old": 112,
+    "steps_v2": 121
+  },
+  {
+    "id": 25,
+    "name": "흑요석 성채",
+    "stem": "25_obsidian_citadel",
+    "steps_old": 165,
+    "steps_v2": 185
+  },
+  {
+    "id": 26,
+    "name": "심연의 요새",
+    "stem": "26_abyssal_fortress",
+    "steps_old": 189,
+    "steps_v2": 187
+  },
+  {
+    "id": 27,
+    "name": "무너진 대도시",
+    "stem": "27_fractured_metropolis",
+    "steps_old": 201,
+    "steps_v2": 241
+  },
+  {
+    "id": 28,
+    "name": "네메시스 연구단지",
+    "stem": "28_nemesis_complex",
+    "steps_old": 234,
+    "steps_v2": 269
+  },
+  {
+    "id": 29,
+    "name": "망각의 제국",
+    "stem": "29_empire_of_oblivion",
+    "steps_old": 331,
+    "steps_v2": 299
+  },
+  {
+    "id": 30,
+    "name": "끝없는 회랑",
+    "stem": "30_the_endless_labyrinth",
+    "steps_old": 312,
+    "steps_v2": 387
+  }
+]

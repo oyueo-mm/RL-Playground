@@ -17,7 +17,7 @@ const descriptions = [
   'Compare a short hazardous route with a longer safe detour.',
   'Use two portal lines to collect goals around the central plaza.',
   'Open two doors in stages while moving between laboratory wings.',
-  'Choose a collection order that preserves access to the ruins.',
+  'Use disposable bridges and a permanent return crossing to retrieve every goal in the ruins.',
   'Explore six regions and retrieve goals using portals and secured passages.',
   'Choose between four portal lines and connecting roads across the city.',
   'Control three security groups while collecting six goals.',
@@ -31,23 +31,26 @@ const descriptions = [
 ]
 const originalNames = ["Meadow Walk", "First Portal Lesson", "One Switch, One Door", "Fragile Bridge", "Arrow Alley", "Forked Village", "Marsh Detour", "Twin Portal Plaza", "Lab Corridors", "Ruin Retrieval", "Crossroads Expedition", "Portal City", "Power Control Zone", "Crumbling Canyon", "One-Way Circuit", "Multi-Goal Expedition", "Sealed Research Base", "Collapsing Archipelago", "Warp Nexus", "Final Proving Grounds"]
 const revisedDescriptions: Record<string,string> = {
+  "The Endless Labyrinth": "Pass staged security doors, a portal and a one-use bridge, then return to unlock the starting vault.",
+  "Empire of Oblivion": "Cross the empire\u2019s one-use gateway, release successive seals and return by portal for the final goal.",
+  "Nemesis Complex": "Solve four research security stages using a disposable bridge and portal before returning to the starting vault.",
+  "Fractured Metropolis": "Follow dependencies across the broken city, release four security stages, and return for the final goal.",
+  "Abyssal Fortress": "Enter the fortress through its one-use bridge and portal, release successive gates, and return to the vault.",
+  "Obsidian Citadel": "Cross the citadel bridge, solve staged security gates and return to retrieve the sealed starting goal.",
+  "The Sealed Observatory": "Cross the disposable entrance bridge, unlock observation sectors in sequence and restore access to the starting vault.",
+  "Final Proving Grounds": "Release successive security doors in the correct order, then return to the starting region for the final goal.",
+  "Warp Nexus": "Resolve portal-linked regions and security switches in order before recovering the final sealed goal.",
+  "Collapsing Archipelago": "Cross the disposable island bridge, restore the return route with successive switches, and release the starting vault last.",
+  "Sealed Research Base": "Open laboratory security doors in order, use the isolated portal wing, then return to the starting vault.",
+  "Multi-Goal Expedition": "Cross a one-use bridge, unlock successive districts, then return to the starting vault for the final goal.",
   'Garden of Choices': 'Find a safe detour through a garden with scattered bombs.',
   'Clockwork Village': 'Read outgoing arrows and control a security switch while collecting goals.',
   'Shattered Quarter': 'Connect six goals across broken districts with security doors.',
-  'The Sealed Observatory': 'Explore a sealed observatory and its access controls.',
-  'Obsidian Citadel': 'Explore a large citadel with multiple secured regions.',
-  'Abyssal Fortress': 'Plan a collection route through a large fortress.',
-  'Fractured Metropolis': 'Navigate a sprawling city and its interconnected regions.',
-  'Nemesis Complex': 'Control access while exploring a large research complex.',
-  'Empire of Oblivion': 'Plan a multi-goal expedition across a large empire.',
-  'The Endless Labyrinth': 'Explore the 48 by 40 labyrinth and collect every goal.',
   'Fragile Bridge': 'Collapsing bridges are optional risky shortcuts; preserve a safe return route.',
   'Crumbling Canyon': 'Choose between disposable bridges and a longer safe detour.',
-  'Collapsing Archipelago': 'Explore sealed island regions using alternative collapsing bridges.',
-  'Final Proving Grounds': 'Retrieve goals from regions protected by switches and security doors.',
 }
-const tiers = ['쉬움', '보통', '어려움', '매우 어려움', '극악']
-const englishTiers = ['Easy', 'Medium', 'Hard', 'Very Hard', 'Extreme']
+export const DIFFICULTIES = [{id:'very-easy',ko:'매우 쉬움',en:'Very Easy'},{id:'easy',ko:'쉬움',en:'Easy'},{id:'medium',ko:'보통',en:'Medium'},{id:'hard',ko:'어려움',en:'Hard'},{id:'very-hard',ko:'매우 어려움',en:'Very Hard'}] as const
+
 export interface EnvironmentPreset {
   id: string
   draft: GridEditorDraft
@@ -56,7 +59,7 @@ export interface EnvironmentPreset {
   previewUrl: string
   sourceFile: string
   solutionFile: string
-  metadata: { name: { ko: string; en: string }; description: { ko: string; en: string }; difficulty: { ko: string; en: string }; elements: string[]; learningPoint: { ko: string; en: string }; width: number; height: number; goalCount: number }
+  metadata: { name: { ko: string; en: string }; description: { ko: string; en: string }; difficulty: { id: string; ko: string; en: string }; elements: string[]; learningPoint: { ko: string; en: string }; width: number; height: number; goalCount: number }
 }
 export const ENVIRONMENT_PRESETS: EnvironmentPreset[] = (JSON.parse(catalogJSON) as SourceEntry[]).map(entry => {
   const parsed = parseEnvImport(maps[`./maps/${entry.mapFile.split('/').at(-1)!}`])
@@ -64,6 +67,6 @@ export const ENVIRONMENT_PRESETS: EnvironmentPreset[] = (JSON.parse(catalogJSON)
   const draft = parsed.draft
   const solutionData = JSON.parse(solutions[`./solutions/${entry.solutionFile.split('/').at(-1)!}`]) as OfficialSolution
   return { previewUrl: previews[`./previews/${entry.previewFile.split('/').at(-1)!}`], id: entry.stem, draft, solution: solutionData.actions, solutionData, sourceFile: entry.mapFile.split('/').at(-1)!, solutionFile: entry.solutionFile.split('/').at(-1)!,
-    metadata: { name: { ko: entry.ko, en: entry.en }, description: { ko: entry.description, en: revisedDescriptions[entry.en] ?? descriptions[originalNames.indexOf(entry.en)] ?? entry.en }, learningPoint: { ko: entry.description, en: revisedDescriptions[entry.en] ?? descriptions[originalNames.indexOf(entry.en)] ?? entry.en }, difficulty: { ko: entry.tier, en: englishTiers[tiers.indexOf(entry.tier)] }, width: draft.width, height: draft.height, goalCount: draft.goals.length,
+    metadata: { name: { ko: entry.ko, en: entry.en }, description: { ko: entry.description, en: revisedDescriptions[entry.en] ?? descriptions[originalNames.indexOf(entry.en)] ?? entry.en }, learningPoint: { ko: entry.description, en: revisedDescriptions[entry.en] ?? descriptions[originalNames.indexOf(entry.en)] ?? entry.en }, difficulty: DIFFICULTIES[Math.floor((entry.id - 1) / 6)], width: draft.width, height: draft.height, goalCount: draft.goals.length,
       elements: ['Goal', ...(draft.goals.length > 1 ? ['Multi-goal'] : []), ...(draft.walls.length ? ['Wall'] : []), ...(draft.bombs.length ? ['Bomb'] : []), ...(draft.portals?.length ? ['Portal'] : []), ...(draft.oneWays?.length ? ['One-way'] : []), ...(draft.fragiles?.length ? ['Fragile'] : []), ...(draft.switches?.length ? ['Switch', 'Toggle wall'] : [])] } }
 })

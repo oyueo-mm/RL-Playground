@@ -2,28 +2,37 @@ import { expect,it,vi } from 'vitest'
 import { SimulationEngine } from './SimulationEngine'
 import { createDefaultGridWorldConfig } from '../environments/gridworld/GridWorldEnv'
 import { Scheduler,type TimerSource } from './Scheduler'
+import { sliderToSpeed } from '../../viz/controls/speedSlider'
 
 function timer(){let clock=0,next=()=>{};const source:TimerSource={now:()=>clock,setTimeout:fn=>{next=fn;return 1},clearTimeout:()=>{},requestAnimationFrame:fn=>{next=fn;return 2},cancelAnimationFrame:()=>{}};return{source,fire:()=>{clock+=250;next()}}}
-it.each(['q-learning','sarsa'])('%s policy uses 250ms, stops on full-state repeats, never creates Q rows and restores training speed',algorithmId=>{
- const t=timer(),engine=new SimulationEngine({algorithmId,envConfig:{...createDefaultGridWorldConfig(),start:{x:0,y:5}},timerSource:t.source,speed:{mode:'batch',stepsPerFrame:100}})
+it.each(['q-learning','sarsa'])('%s policy permits repeats until max steps, changes speed live and preserves Q and training speed',algorithmId=>{
+ const t=timer(),engine=new SimulationEngine({algorithmId,envConfig:{...createDefaultGridWorldConfig(),start:{x:0,y:5}},resourceBudget:{maxEpisodeSteps:40},timerSource:t.source,speed:{mode:'batch',stepsPerFrame:100}})
  const before=engine.getSnapshot().agentSnapshot
  engine.run({episodes:1,greedy:true})
- expect(engine.getSpeed()).toEqual({mode:'interval',intervalMs:250})
- engine.pause();expect(engine.getSnapshot().isGreedyRun).toBe(true);engine.resume()
- for(let i=0;i<30&&engine.getSnapshot().status==='running';i++)t.fire()
- expect(engine.getSnapshot().policyLoopDetected).toBe(true)
- expect(engine.getSnapshot().stats.episodeStatsHistory.at(-1)?.terminationReason).toBe('policy-loop')
+ expect(engine.getSpeed()).toEqual(sliderToSpeed(45))
+ const steps=engine.getResourceMetrics().totalSteps
+ engine.setSpeed(sliderToSpeed(60));expect(engine.getResourceMetrics().totalSteps).toBe(steps)
+ expect(engine.getSpeed()).toEqual(sliderToSpeed(60))
+ engine.pause();expect(engine.getSnapshot().isGreedyRun).toBe(true)
+ engine.setSpeed(sliderToSpeed(30));engine.resume();expect(engine.getSpeed()).toEqual(sliderToSpeed(30))
+ for(let i=0;i<20;i++)t.fire()
+ expect(engine.getSnapshot().status).toBe('running')
+ for(let i=0;i<40&&engine.getSnapshot().status==='running';i++)t.fire()
+ expect(engine.getSnapshot().stats.episodeStatsHistory.at(-1)).toMatchObject({steps:40,terminationReason:'truncated'})
  expect(engine.getSnapshot().agentSnapshot).toEqual(before)
  expect(engine.getSpeed()).toEqual({mode:'batch',stepsPerFrame:100})
  engine.run({episodes:1,greedy:true});engine.restartEpisode();expect(engine.getSpeed()).toEqual({mode:'batch',stepsPerFrame:100})
 })
-it('only cuts off a proven immobile full state; normal blocked exploration continues and bootstraps TD',()=>{
- const config={...createDefaultGridWorldConfig(),start:{x:0,y:1},oneWays:[{x:1,y:1,direction:0}],walls:[{x:1,y:0}]}
- const engine=new SimulationEngine({envConfig:config,hyperparams:{epsilon:1,alpha:.1,gamma:.9}})
+it.each(['q-learning','sarsa'])('%s immobile states keep learning until the max step limit',algorithmId=>{
+ const config={...createDefaultGridWorldConfig(),wallPenalty:-1,start:{x:0,y:1},oneWays:[{x:1,y:1,direction:0}],walls:[{x:1,y:0}]}
+ const engine=new SimulationEngine({algorithmId,envConfig:config,resourceBudget:{maxEpisodeSteps:40},hyperparams:{epsilon:1,alpha:.1,gamma:.9}})
  const rng=vi.spyOn(Math,'random').mockReturnValue(.9)
  for(let i=0;i<17;i++)engine.step()
- expect(engine.getSnapshot().stats.episodeStatsHistory[0]).toMatchObject({steps:17,terminationReason:'trapped'})
- expect(engine.getSnapshot().lastTransition).toMatchObject({done:false,truncated:true,cutoffReason:'trapped'})
+ expect(engine.getSnapshot().stats.episodeStatsHistory).toHaveLength(0)
+ expect(engine.getSnapshot().lastTransition).toMatchObject({done:false,reward:-1})
+ expect(engine.getSnapshot().lastTdInfo).not.toBeNull()
+ for(let i=17;i<40;i++)engine.step()
+ expect(engine.getSnapshot().stats.episodeStatsHistory[0]).toMatchObject({steps:40,terminationReason:'truncated'})
  rng.mockRestore()
  const ordinary=new SimulationEngine({hyperparams:{epsilon:0,alpha:.1,gamma:.9}})
  ordinary.step();expect(ordinary.getSnapshot().stats.episodeStatsHistory).toHaveLength(0)
@@ -40,10 +49,10 @@ it('fast batches yield through a cancellable timeout and retain the 8ms executio
 it('restores the exact training speed after successful policy completion and reset',()=>{
  const t=timer(),speed={mode:'batch' as const,stepsPerFrame:137}
  const engine=new SimulationEngine({timerSource:t.source,speed,envConfig:{...createDefaultGridWorldConfig(),start:{x:0,y:2},goals:[{x:0,y:0}]}})
- const before=engine.getSnapshot().agentSnapshot;engine.run({episodes:1,greedy:true});t.fire()
+ const before=engine.getSnapshot().agentSnapshot;engine.run({episodes:1,greedy:true});engine.setSpeed(sliderToSpeed(70));t.fire()
  expect(engine.getSnapshot().stats.episodeStatsHistory.at(-1)?.terminationReason).toBe('goal')
  expect(engine.getSpeed()).toEqual(speed);expect(engine.getSnapshot().agentSnapshot).toEqual(before)
- engine.run({episodes:1,greedy:true});engine.reset();expect(engine.getSpeed()).toEqual(speed)
+ engine.run({episodes:1,greedy:true});engine.setSpeed(sliderToSpeed(20));engine.reset();expect(engine.getSpeed()).toEqual(speed)
 })
 
 it.each(['q-learning','sarsa'])('%s produces identical learning transitions and Q values under changed scheduling cadence',algorithmId=>{

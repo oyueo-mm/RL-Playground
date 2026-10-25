@@ -1,0 +1,9 @@
+{
+  "zip": "RL_Playground_V2_12Map_Replacement_Patch.zip",
+  "bytes": 90016,
+  "sha256": "5d76291804af7a97dcc53501f5cb247beca41dfdc3cc4d8b806c874364211a9f",
+  "baseline": "b053652271c705814c95d79524ed340eeb7a9e8e",
+  "branch": "feat/home-redesign",
+  "preservedMaps": "1–18 except authorized map11 terrain repair; source artifacts remain in docs/preset30-source",
+  "inventory": "v2-source-inventory.json"
+}

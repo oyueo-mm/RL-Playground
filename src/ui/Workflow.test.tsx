@@ -27,6 +27,25 @@ const cell = (key: string) => editor().getByTestId(`cell-${key}`)
 const wall = (key: string) => cell(key).getAttribute('data-cell-kind') === 'wall'
 
 describe('Preset and settings workflow', () => {
+  it.each(['home','environment','editor'] as const)('applies exactly once from %s, preserves cancellation and separates editor loading', page => {
+    render(<App />)
+    click(`nav-${page}`);click('nav-presets');click('preset-19_multi_goal_expedition')
+    const before=engine.getSnapshot(),reset=vi.spyOn(engine,'reset'),confirm=vi.spyOn(window,'confirm').mockReturnValue(false)
+    fireEvent.click(screen.getByRole('button',{name:'맵 적용하기'}))
+    expect(reset).not.toHaveBeenCalled();expect(engine.getSnapshot()).toEqual(before)
+    expect(screen.getByTestId(`nav-${page}`).getAttribute('aria-current')).toBe('page')
+    confirm.mockReturnValue(true)
+    fireEvent.click(screen.getByRole('button',{name:'맵 적용하기'}))
+    expect(reset).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('nav-environment').getAttribute('aria-current')).toBe('page')
+    expect(document.getElementById('preset-panel')).toBeNull()
+    expect(engine.getSnapshot().envRenderModel.width).toBe(20)
+    expect(screen.getByTestId('environment-applied').textContent).toContain('맵이 적용되었습니다.')
+    const applied=engine.getSnapshot();click('nav-presets');click('preset-02_first_portal_lesson')
+    fireEvent.click(screen.getByRole('button',{name:'편집기로 불러오기'}))
+    expect(engine.getSnapshot()).toEqual(applied);expect(reset).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('nav-editor').getAttribute('aria-current')).toBe('page')
+  })
   it('opens presets from home and guide, preserves engine while previewing and switches analysis panels', () => {
     render(<App />)
     const before = engine.getSnapshot()
@@ -49,10 +68,10 @@ describe('Preset and settings workflow', () => {
     render(<App />); click('nav-environment'); click('nav-presets'); click('preset-02_first_portal_lesson')
     const before = engine.getSnapshot()
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
-    fireEvent.click(screen.getByRole('button', { name: '맵 적용' }))
+    fireEvent.click(screen.getByRole('button', { name: '맵 적용하기' }))
     expect(engine.getSnapshot()).toEqual(before)
     confirm.mockReturnValue(true)
-    click('nav-presets'); click('preset-02_first_portal_lesson'); fireEvent.click(screen.getByRole('button', { name: '맵 적용' }))
+    click('preset-02_first_portal_lesson'); fireEvent.click(screen.getByRole('button', { name: '맵 적용하기' }))
     expect(engine.getSnapshot().envRenderModel.features?.portals).toHaveLength(1)
   })
   it('loads a preset into draft only with confirmation and undo preserves the prior draft', () => {

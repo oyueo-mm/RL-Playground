@@ -10,6 +10,6 @@ export default defineConfig({
     environment: 'node',
     // Bound concurrent JSDOM heaps so full UI suites do not starve one another.
     maxWorkers: 2,
-    exclude: ['e2e/**', 'benchmarks/**', 'node_modules/**'],
+    exclude: ['e2e/**', 'benchmarks/**', 'node_modules/**', '.tmp/**'],
   },
 })

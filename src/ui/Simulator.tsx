@@ -1,3 +1,4 @@
+import { RewardVisualization } from '../viz/grid/RewardVisualization'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SpeedSetting } from '../core/engine/Scheduler'
 import type { StateKey } from '../core/types/rl'
@@ -44,9 +45,11 @@ interface SimulatorProps {
   presetsOpen?: boolean
   onClosePresets?: () => void
   onApplied?: () => void
+  onEditPreset?: () => void
+  homeAppliedVersion?: number
 }
 
-export default function Simulator({ locale: sharedLocale, section = 'environment', active = true, presetsOpen = false, onClosePresets = () => {}, onApplied }: SimulatorProps) {
+export default function Simulator({ locale: sharedLocale, section = 'environment', active = true, presetsOpen = false, onClosePresets = () => {}, onApplied, onEditPreset, homeAppliedVersion = 0 }: SimulatorProps) {
   const snapshot = useSimulationEngine(engine)
   const [localLocale, setLocale] = useState<Locale>('ko')
   const locale = sharedLocale ?? localLocale
@@ -58,7 +61,10 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
   const [showPolicy, setShowPolicy] = useState(true)
   const [showValue, setShowValue] = useState(true)
   const [showPath, setShowPath] = useState(true)
-  const [speed, setSpeed] = useState<SpeedSetting>(() => engine.getSpeed())
+  const speed: SpeedSetting = engine.getSpeed()
+  const [showRewards, setShowRewards] = useState(false)
+  const [showLiveRewards, setShowLiveRewards] = useState(true)
+  const [animateRewards, setAnimateRewards] = useState(false)
   const [episodeCount, setEpisodeCount] = useState(250)
   const [analysisOpen, setAnalysisOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -94,13 +100,14 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
   const idle = snapshot.status === 'idle'
   const analysisVisible = !presetsOpen && (section === 'results' || (section === 'environment' && analysisOpen))
   return <section className={`simulator fullscreen-simulator ${section === 'results' ? 'results-view' : ''}`} aria-label={ko ? '강화학습 실험실' : 'Reinforcement learning lab'}>
-    {section !== 'editor' && snapshot.resources?.pauseReason && <Notice eventKey={`${snapshot.resources.pauseReason}:${snapshot.resources.budget.maxQStates}:${snapshot.resources.totalSteps}`} title={ko ? 'Q 상태 예산으로 학습 일시정지' : 'Training paused at Q row budget'} kind="warning" locale={locale} testId="resource-pause-reason"><button onClick={() => { setSettingsOpen(true); setSettingsTab('learning') }}>{ko ? '설정에서 예산 조절' : 'Adjust budget in settings'}</button></Notice>}
-    {section === 'environment' && applied && <Notice eventKey={String(cameraReset)} title={ko ? '환경이 적용되었습니다. 학습을 시작할 수 있습니다.' : 'Environment applied. You can start learning.'} locale={locale} kind="info" testId="environment-applied" />}
-    {section === 'environment' && snapshot.policyLoopDetected && <p className="policy-loop-notice" role="status">{ko ? '학습된 정책이 반복 경로에 진입했습니다.' : 'The learned policy entered a repeating path.'}</p>}
     <div className="environment-screen" hidden={section !== 'environment'} data-testid="learning-grid">
       <div className="workspace-stage">
+        <div className="workspace-feedback" hidden={settingsOpen}>
+    {section !== 'editor' && snapshot.resources?.pauseReason && <Notice eventKey={`${snapshot.resources.pauseReason}:${snapshot.resources.budget.maxQStates}:${snapshot.resources.totalSteps}`} title={ko ? 'Q 상태 예산으로 학습 일시정지' : 'Training paused at Q row budget'} kind="warning" locale={locale} testId="resource-pause-reason"><button onClick={() => { setSettingsOpen(true); setSettingsTab('learning') }}>{ko ? '설정에서 예산 조절' : 'Adjust budget in settings'}</button></Notice>}
+    {section === 'environment' && (applied || homeAppliedVersion > 0) && <Notice eventKey={`${cameraReset}:${homeAppliedVersion}`} title={ko ? '맵이 적용되었습니다. 학습을 시작할 수 있습니다.' : 'Map applied. You can start learning.'} locale={locale} kind="info" testId="environment-applied" />}
+        </div>
         <FloatingToolbar active={active && section === 'environment'} label={ko ? '학습 컨트롤' : 'Learning controls'}>
-          <SpeedControl disabled={snapshot.isGreedyRun} speed={snapshot.isGreedyRun ? { mode: 'interval', intervalMs: 250 } : speed} t={t} onChange={next => { engine.setSpeed(next); setSpeed(next) }} />
+          <SpeedControl speed={speed} t={t} onChange={next => { engine.setSpeed(next) }} />
           <TooltipButton tip={tips.learn} className="toolbar-primary" disabled={!idle} onClick={() => engine.run({ episodes: episodeCount })} data-testid="playback-run-episode">{t.playback.learn}</TooltipButton>
           <TooltipButton tip={snapshot.status === 'paused' ? tips.resume : tips.pause} disabled={idle} onClick={() => snapshot.status === 'paused' ? engine.resume() : engine.pause()} data-testid={snapshot.status === 'paused' ? 'playback-resume' : 'playback-pause'}>{snapshot.status === 'paused' ? t.playback.resume : t.playback.pause}</TooltipButton>
           <TooltipButton tip={tips.stop} disabled={idle} onClick={() => engine.restartEpisode()} data-testid="playback-stop">{ko ? '학습 중단' : 'Stop'}</TooltipButton>
@@ -123,19 +130,25 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
         <div role="tabpanel" id="settings-visuals" aria-labelledby="settings-visuals-tab" hidden={settingsTab !== 'visuals'} aria-label={ko ? '시각화 설정' : 'Visualization settings'}>
           <label><input type="checkbox" checked={showPolicy} onChange={e => setShowPolicy(e.target.checked)} data-testid="toggle-policy" />{t.overlay.policy}</label>
           <label><input type="checkbox" checked={showValue} onChange={e => setShowValue(e.target.checked)} data-testid="toggle-value" />{t.overlay.value}</label>
+          <label><input type="checkbox" checked={showRewards} onChange={e => setShowRewards(e.target.checked)} data-testid="toggle-rewards" />{t.rewards.map}</label>
+          <label><input type="checkbox" checked={showLiveRewards} onChange={e => setShowLiveRewards(e.target.checked)} data-testid="toggle-live-rewards" />{t.rewards.live}</label>
+          <label><input type="checkbox" checked={animateRewards} onChange={e => setAnimateRewards(e.target.checked)} data-testid="toggle-reward-animation" />{t.rewards.animate}</label>
           <button onClick={() => setShowPath(!showPath)} aria-pressed={showPath} data-testid="toggle-episode-path">{showPath ? t.episodePath.hide : t.episodePath.show}</button>
           <p>{ko ? '⋯ = Q값 동률, 아직 선호 행동 없음. 실제 탐욕 실행은 동률 중 가장 낮은 행동 인덱스를 선택합니다. 화살표 = 유일한 최댓값.' : '⋯ = tied Q-values, no unique preference. Greedy execution resolves ties by lowest action index. Arrows indicate a unique maximum.'}</p>
         </div></section>
-        <GridViewport agentPos={model.agentPos} resetKey={cameraReset} locale={locale} width={model.width} height={model.height} active={active && section === 'environment'}>
+        <RewardVisualization snapshot={snapshot} locale={locale} live={showLiveRewards} legend={showRewards} />
+        <GridViewport agentPos={model.agentPos} resetKey={`${cameraReset}:${homeAppliedVersion}`} locale={locale} width={model.width} height={model.height} active={active && section === 'environment'}>
           <GridSvg renderModel={model} cellSize={48} selectedState={selectedState} onStateSelect={handleStateSelect} className="stage-grid" showAgent={false} />
           {showValue && <ValueHeatmap renderModel={model} agentSnapshot={snapshot.agentSnapshot} currentState={snapshot.currentState} cellSize={48} className="stage-overlay" />}
           {showPolicy && <PolicyOverlay renderModel={model} agentSnapshot={snapshot.agentSnapshot} currentState={snapshot.currentState} cellSize={48} className="stage-overlay" />}
           {showPath && <TrajectoryOverlay renderModel={model} episodeStatsHistory={snapshot.stats.episodeStatsHistory} selectedEpisode={selectedEpisode} cellSize={48} className="stage-overlay" ariaLabel={`${t.episodeTrajectory.ariaLabelPrefix} ${selectedEpisode ?? ''}`} stepIndex={effectiveStep} />}
+          <RewardVisualization snapshot={snapshot} locale={locale} map={showRewards} animate={animateRewards} />
           <svg className="stage-overlay" viewBox={`0 0 ${model.width * 48} ${model.height * 48}`} aria-hidden="true"><circle cx={(Number(model.agentPos.split(',')[0]) + 0.5) * 48} cy={(Number(model.agentPos.split(',')[1]) + 0.5) * 48} r={16} fill="#dc554a" stroke="white" strokeWidth={1} data-testid="agent-marker" /></svg>
         </GridViewport>
       </div>
     </div>
     <div hidden={section !== 'editor'} className="editor-screen" id="environment-editor"><DeferredPanel active={active && section === 'editor'}><EnvEditor fullscreen active={active && section === 'editor'} presetRequest={presetRequest} panelBlocked={presetsOpen} onOpenProperties={onClosePresets} currentRenderModel={model} locale={locale} t={t} onApply={config => { engine.reset({ envConfig: config }); clearSelections(); setCameraReset(value => value+1); setApplied(true); onApplied?.() }} /></DeferredPanel></div>
+    {section === 'results' && snapshot.resources?.pauseReason && <Notice eventKey={`${snapshot.resources.pauseReason}:${snapshot.resources.budget.maxQStates}:${snapshot.resources.totalSteps}`} title={ko ? 'Q 상태 예산으로 학습 일시정지' : 'Training paused at Q row budget'} kind="warning" locale={locale} testId="resource-pause-reason"><button onClick={() => { setSettingsOpen(true); setSettingsTab('learning') }}>{ko ? '설정에서 예산 조절' : 'Adjust budget in settings'}</button></Notice>}
     <aside id="analysis-panel" className="analysis-drawer" hidden={!analysisVisible} data-testid="analysis-panel" aria-label={ko ? '통계 및 분석' : 'Statistics & analysis'}>
       {section !== 'results' && <PanelResizeHandle locale={locale}/>}
       <header><h2>{ko ? '통계 및 분석' : 'Statistics & analysis'}</h2>{section !== 'results' && <button onClick={() => { setAnalysisOpen(false); document.querySelector<HTMLButtonElement>('[data-testid=toggle-analysis]')?.focus() }} aria-label={ko ? '분석 닫기' : 'Close analysis'}>×</button>}</header>
@@ -192,9 +205,10 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
           />
       </div></DeferredPanel>
     </aside>
-    {active && presetsOpen && <MapGallery locale={locale} actionLabel={section === 'editor' ? (ko ? '편집기로 불러오기' : 'Load into editor') : (ko ? '맵 적용' : 'Apply map')} onClose={onClosePresets} onSelect={draft => {
-      if (section === 'editor') { setPresetRequest({ draft }); return }
-      if (window.confirm(t.envEditor.applyConfirm)) { engine.reset({ envConfig: draftToGridWorldConfig(draft) }); clearSelections() }
-    }} />}
+    {active && presetsOpen && <MapGallery locale={locale} onClose={onClosePresets} onSelect={draft => {
+      if (!window.confirm(t.envEditor.applyConfirm)) return
+      engine.reset({ envConfig: draftToGridWorldConfig(draft) }); clearSelections(); setCameraReset(value => value + 1); setApplied(true); onClosePresets(); onApplied?.()
+    }} onEdit={draft => { setPresetRequest({ draft }); onClosePresets(); onEditPreset?.() }} />}
+
   </section>
 }

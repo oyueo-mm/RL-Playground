@@ -2633,7 +2633,9 @@ describe('App (integration, real Engine — Phase 36: Policy/Value dedup, Greedy
   })
 
   it('Episode History shows the discoverability hint once an Episode completes, in both locales', () => {
-    engine.reset({ envConfig: createDefaultGridWorldConfig() })
+    // One deterministic terminal move: this checks the hint, independent of the
+    // cooperative Scheduler's 8ms batch budget and random exploration duration.
+    engine.reset({ envConfig: { ...createDefaultGridWorldConfig(), start:{x:0,y:1}, goals:[{x:0,y:0}] }, hyperparams:{alpha:.1,gamma:.9,epsilon:0} })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
     fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
@@ -2702,13 +2704,15 @@ describe('App (integration, real Engine — Phase 36: Policy/Value dedup, Greedy
     }
   })
 
-  it('a proven repeated full state stops policy playback automatically and leaves Q unchanged', () => {
+  it('a repeated full state continues policy playback until manual stop and leaves Q unchanged', () => {
     engine.reset({envConfig:isolatedCellConfig})
     const before=engine.getSnapshot().agentSnapshot
     render(<App />)
     fireEvent.click(screen.getByTestId('playback-run-greedy'))
+    expect(engine.getSnapshot().status).toBe('running')
+    expect(screen.queryByText('The learned policy entered a repeating path.')).toBeNull()
+    fireEvent.click(screen.getByTestId('playback-stop'))
     expect(engine.getSnapshot().status).toBe('idle')
-    expect(screen.getByText('The learned policy entered a repeating path.')).toBeTruthy()
     expect(engine.getSnapshot().agentSnapshot).toEqual(before)
   })
 

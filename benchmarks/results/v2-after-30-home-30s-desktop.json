@@ -1,0 +1,167 @@
+{
+  "project": "desktop",
+  "samples": [
+    {
+      "second": 0,
+      "cards": [
+        {
+          "id": "20_sealed_research_base",
+          "step": 1
+        },
+        {
+          "id": "22_warp_nexus",
+          "step": 1
+        },
+        {
+          "id": "03_one_switch_one_door",
+          "step": 0
+        },
+        {
+          "id": "05_arrow_alley",
+          "step": 0
+        }
+      ],
+      "heapBytes": 4852684,
+      "intervals": 1
+    },
+    {
+      "second": 5,
+      "cards": [
+        {
+          "id": "20_sealed_research_base",
+          "step": 26
+        },
+        {
+          "id": "22_warp_nexus",
+          "step": 26
+        },
+        {
+          "id": "03_one_switch_one_door",
+          "step": 9
+        },
+        {
+          "id": "05_arrow_alley",
+          "step": 10
+        }
+      ],
+      "heapBytes": 5649748,
+      "intervals": 1
+    },
+    {
+      "second": 10,
+      "cards": [
+        {
+          "id": "20_sealed_research_base",
+          "step": 55
+        },
+        {
+          "id": "22_warp_nexus",
+          "step": 55
+        },
+        {
+          "id": "04_fragile_bridge",
+          "step": 3
+        },
+        {
+          "id": "29_empire_of_oblivion",
+          "step": 5
+        }
+      ],
+      "heapBytes": 6566060,
+      "intervals": 1
+    },
+    {
+      "second": 15,
+      "cards": [
+        {
+          "id": "20_sealed_research_base",
+          "step": 84
+        },
+        {
+          "id": "22_warp_nexus",
+          "step": 85
+        },
+        {
+          "id": "04_fragile_bridge",
+          "step": 12
+        },
+        {
+          "id": "29_empire_of_oblivion",
+          "step": 42
+        }
+      ],
+      "heapBytes": 7294512,
+      "intervals": 1
+    },
+    {
+      "second": 20,
+      "cards": [
+        {
+          "id": "20_sealed_research_base",
+          "step": 113
+        },
+        {
+          "id": "22_warp_nexus",
+          "step": 113
+        },
+        {
+          "id": "09_twin_portal_plaza",
+          "step": 5
+        },
+        {
+          "id": "29_empire_of_oblivion",
+          "step": 75
+        }
+      ],
+      "heapBytes": 7425644,
+      "intervals": 1
+    },
+    {
+      "second": 25,
+      "cards": [
+        {
+          "id": "28_nemesis_complex",
+          "step": 22
+        },
+        {
+          "id": "01_meadow_walk",
+          "step": 5
+        },
+        {
+          "id": "09_twin_portal_plaza",
+          "step": 15
+        },
+        {
+          "id": "29_empire_of_oblivion",
+          "step": 110
+        }
+      ],
+      "heapBytes": 7850376,
+      "intervals": 1
+    },
+    {
+      "second": 30,
+      "cards": [
+        {
+          "id": "28_nemesis_complex",
+          "step": 53
+        },
+        {
+          "id": "16_crumbling_canyon",
+          "step": 4
+        },
+        {
+          "id": "09_twin_portal_plaza",
+          "step": 24
+        },
+        {
+          "id": "29_empire_of_oblivion",
+          "step": 146
+        }
+      ],
+      "heapBytes": 8124584,
+      "intervals": 1
+    }
+  ],
+  "uniqueMaps": 10
+}

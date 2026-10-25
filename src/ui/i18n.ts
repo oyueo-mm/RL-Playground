@@ -13,6 +13,7 @@ import { ENV_EXPORT_TYPE, ENV_EXPORT_VERSION } from '../viz/controls/envEditorIO
 export type Locale = 'en' | 'ko'
 
 export interface Dictionary {
+  rewards: {map:string;live:string;animate:string;last:string;episode:string;completed:string;step:string;wall:string;firstGoal:string}
   language: {
     selectorLabel: string
   }
@@ -269,6 +270,7 @@ export interface Dictionary {
 }
 
 const en: Dictionary = {
+  rewards: {map:'Show rewards on map',live:'Show live rewards',animate:'Animate rewards',last:'Last action',episode:'Episode total',completed:'Last completed episode',step:'Move',wall:'Blocked attempt',firstGoal:'Goal reward applies only on first collection; collected goals use move reward. Actual rewards, separate from Q-values.'},
   language: { selectorLabel: 'Language' },
   playback: {
     step: 'Step',
@@ -404,6 +406,7 @@ const en: Dictionary = {
 }
 
 const ko: Dictionary = {
+  rewards: {map:'맵에 보상 표시',live:'실시간 보상 표시',animate:'보상 애니메이션',last:'마지막 행동',episode:'에피소드 누적',completed:'마지막 완료 에피소드',step:'일반 이동',wall:'이동 실패',firstGoal:'Goal 보상은 최초 수집에만 적용됩니다. 수집 후에는 일반 이동 보상입니다. 실제 보상은 Q값과 별개입니다.'},
   language: { selectorLabel: '언어' },
   playback: {
     step: '스텝',

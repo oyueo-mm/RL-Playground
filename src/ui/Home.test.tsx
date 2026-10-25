@@ -110,7 +110,7 @@ describe('Fullscreen workspace', () => {
     fireEvent.click(screen.getByTestId('preset-03_one_switch_one_door'))
     expect(engine.getSnapshot()).toEqual(before)
     vi.spyOn(window, 'confirm').mockReturnValue(false)
-    fireEvent.click(screen.getByRole('button', { name: /^맵 적용$/ }))
+    fireEvent.click(screen.getByRole('button', { name: /^맵 적용하기$/ }))
     expect(engine.getSnapshot()).toEqual(before)
   })
 })

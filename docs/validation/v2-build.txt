@@ -1,0 +1,56 @@
+
+> rl-playground@0.0.0 build
+> tsc -b && vite build
+
+vite v8.3.5 building client environment for production...
+transforming...
+✓ 186 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                       0.66 kB │ gzip:   0.45 kB
+dist/assets/24_the_sealed_observatory-CYWPkELG.png    6.24 kB
+dist/assets/21_collapsing_archipelago-D1l66jU1.png    6.26 kB
+dist/assets/20_sealed_research_base-CeMmf41-.png      6.29 kB
+dist/assets/19_multi_goal_expedition-HmqO7c8I.png     6.34 kB
+dist/assets/22_warp_nexus-_VnJVfeL.png                6.40 kB
+dist/assets/25_obsidian_citadel-9i-57MP5.png          6.42 kB
+dist/assets/23_final_proving_grounds-CmqmmfYd.png     6.65 kB
+dist/assets/11_ruin_retrieval-DWzrLags.png            6.80 kB
+dist/assets/28_nemesis_complex-Q-hiIZU0.png           6.94 kB
+dist/assets/30_the_endless_labyrinth-CXfJwute.png     7.17 kB
+dist/assets/26_abyssal_fortress-CmZYHeNp.png          7.18 kB
+dist/assets/29_empire_of_oblivion-58v4FT5W.png        7.33 kB
+dist/assets/27_fractured_metropolis-mGX8rBrj.png      8.31 kB
+dist/assets/04_fragile_bridge-DN9_jdc4.png            9.80 kB
+dist/assets/01_meadow_walk-C2ueToFN.png              10.25 kB
+dist/assets/02_first_portal_lesson-Cp5JRQMk.png      10.63 kB
+dist/assets/07_forked_village-BV9xXNV4.png           10.68 kB
+dist/assets/05_arrow_alley-CM6jO9bp.png              11.06 kB
+dist/assets/06_garden_of_choices-AtNKkhV6.png        11.07 kB
+dist/assets/03_one_switch_one_door-CNasb-Lq.png      11.18 kB
+dist/assets/08_marsh_detour-CNzMj_Xq.png             11.68 kB
+dist/assets/10_lab_corridors-C1BxkdUy.png            11.88 kB
+dist/assets/12_clockwork_village-CxMnr60h.png        12.85 kB
+dist/assets/09_twin_portal_plaza-BgtM4_ZU.png        13.04 kB
+dist/assets/14_portal_city-CM7SP4Rn.png              13.05 kB
+dist/assets/16_crumbling_canyon-djaGnlN7.png         13.58 kB
+dist/assets/15_power_control_zone-CSGa0CGn.png       14.29 kB
+dist/assets/17_one_way_circuit-DA5r1MsM.png          14.55 kB
+dist/assets/18_shattered_quarter-uTV4iiqL.png        15.30 kB
+dist/assets/13_crossroads_expedition-EXKq5Kin.png    16.64 kB
+dist/assets/index-C9WsRcH0.css                       63.93 kB │ gzip:  14.53 kB
+dist/assets/index-C8bOjSPa.js                       628.45 kB │ gzip: 148.54 kB
+
+✓ built in 366ms
+node.exe : [plugin builtin:vite-reporter]
+위치 줄:1 문자:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([plugin builtin:vite-reporter] :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeS
+plitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.

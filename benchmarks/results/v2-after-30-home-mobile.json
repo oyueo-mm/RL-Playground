@@ -1,0 +1,17 @@
+{
+  "project": "mobile",
+  "label": "after-30",
+  "durationMs": 5000,
+  "intervals": 1,
+  "cells": 1066,
+  "meanFrameGapMs": 16.65182724248531,
+  "p95FrameGapMs": 17,
+  "beforeGcBytes": 4955864,
+  "afterFiveCyclesGcBytes": 5253884,
+  "costsIncludingNavigation": {
+    "ScriptDurationMs": 174.102,
+    "LayoutDurationMs": 172.05100000000002,
+    "RecalcStyleDurationMs": 186.71099999999998,
+    "TaskDurationMs": 1290.087
+  }
+}

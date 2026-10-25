@@ -24,6 +24,7 @@ describe('bounded full-state audit and declared gimmick bypass checks',()=>{
     expect(env.getRenderModel().goals).toHaveLength(preset.draft.goals.length)
   })
   it('records all thirty static and bounded dynamic audits without treating limits as passes',()=>{
+    const summaries: Record<string,unknown> = {}
     const results=ENVIRONMENT_PRESETS.map(p=>{
       const config=draftToGridWorldConfig(p.draft),staticAudit=auditStatic(config)
       const witnessEnv=new GridWorldEnv(config)
@@ -31,7 +32,7 @@ describe('bounded full-state audit and declared gimmick bypass checks',()=>{
       expect(witnessEnv.getRenderModel().goals).toEqual([])
       expect(staticAudit.blockedArrows).toEqual([])
       expect(staticAudit.cannotReturn).toEqual([])
-      const dynamic=auditStateGraph(config,5000)
+      const dynamic=auditStateGraph(config,p.id.startsWith('11_') ? 20000 : 5000)
       if(dynamic.status==='incomplete')expect(dynamic.losingStates).toBeNull()
       if(dynamic.losingWitness){
         const env=new GridWorldEnv(config);for(const a of dynamic.losingWitness)env.step(a)
@@ -44,10 +45,13 @@ describe('bounded full-state audit and declared gimmick bypass checks',()=>{
         return[k,{...result,meaning:result.successReachable?'bypass-found':result.status==='complete'?'required-proven':'incomplete'}]
       }))
       const summary=(JSON.parse(summaryJSON) as Record<string,unknown>)[p.id]
-      expect(summary).toEqual({status:dynamic.status,losingStates:dynamic.losingStates,gimmicks:Object.fromEntries(Object.entries(bypass).map(([k,v])=>[k,v.meaning]))})
+      if (process.env.UPDATE_V2_AUDIT) {
+        summaries[p.id] = {status:dynamic.status,losingStates:dynamic.losingStates,gimmicks:Object.fromEntries(Object.entries(bypass).map(([k,v])=>[k,v.meaning]))}
+      } else expect(summary).toEqual({status:dynamic.status,losingStates:dynamic.losingStates,gimmicks:Object.fromEntries(Object.entries(bypass).map(([k,v])=>[k,v.meaning]))})
       return{id:p.id,name:p.metadata.name,witness:{status:'success',steps:p.solution.length,remainingGoals:witnessEnv.getRenderModel().goals.length,finalState:witnessEnv.getState()},staticAudit,dynamic,bypass}
     })
-    writeFileSync('docs/preset30-audit.json',JSON.stringify({stateBudget:5000,semantics:'Full actual TS states; static doors-open checks are not dynamic proofs. Optional portals/fragiles are not automatically design failures.',results},null,2))
+    writeFileSync('docs/v2-audit.json',JSON.stringify({stateBudget:5000,stateBudgetOverrides:{'11_ruin_retrieval':20000},semantics:'Full actual TS states; static doors-open checks are not dynamic proofs. Optional portals/fragiles are not automatically design failures.',results},null,2))
+    if (process.env.UPDATE_V2_AUDIT) writeFileSync('src/data/presets/auditSummary.json',JSON.stringify(summaries,null,2)+'\n')
     expect(results).toHaveLength(30)
   },120000)
 })

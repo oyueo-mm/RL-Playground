@@ -36,7 +36,7 @@ test('random gallery moves four agents, replaces one card, previews and filters 
     await navigate(page,'presets')
     await expect(page.locator('.gallery-thumbnails > button')).toHaveCount(30)
     await page.locator('.gallery-filters summary').click()
-    for(const difficulty of ['Easy','Medium','Hard','Very Hard','Extreme']){
+    for(const difficulty of ['very-easy','easy','medium','hard','very-hard']){
       await page.getByLabel('난이도',{exact:true}).selectOption(difficulty)
       await expect(page.locator('.gallery-thumbnails > button')).toHaveCount(6)
     }

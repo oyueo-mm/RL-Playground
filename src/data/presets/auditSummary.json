@@ -61,9 +61,9 @@
   },
   "11_ruin_retrieval": {
     "status": "complete",
-    "losingStates": 624,
+    "losingStates": 0,
     "gimmicks": {
-      "fragile": "required-proven"
+      "fragile": "bypass-found"
     }
   },
   "12_clockwork_village": {
@@ -123,41 +123,39 @@
     "status": "incomplete",
     "losingStates": null,
     "gimmicks": {
-      "portal": "incomplete",
-      "fragile": "incomplete"
+      "switch": "required-proven",
+      "fragile": "required-proven"
     }
   },
   "20_sealed_research_base": {
     "status": "incomplete",
     "losingStates": null,
     "gimmicks": {
-      "switch": "incomplete",
-      "portal": "incomplete"
+      "switch": "required-proven",
+      "portal": "required-proven"
     }
   },
   "21_collapsing_archipelago": {
     "status": "incomplete",
     "losingStates": null,
     "gimmicks": {
-      "switch": "incomplete",
-      "portal": "incomplete",
-      "fragile": "incomplete"
+      "switch": "required-proven",
+      "fragile": "required-proven"
     }
   },
   "22_warp_nexus": {
     "status": "incomplete",
     "losingStates": null,
     "gimmicks": {
-      "portal": "incomplete"
+      "switch": "required-proven",
+      "portal": "required-proven"
     }
   },
   "23_final_proving_grounds": {
     "status": "incomplete",
     "losingStates": null,
     "gimmicks": {
-      "switch": "required-proven",
-      "portal": "incomplete",
-      "fragile": "incomplete"
+      "switch": "required-proven"
     }
   },
   "24_the_sealed_observatory": {
@@ -165,8 +163,7 @@
     "losingStates": null,
     "gimmicks": {
       "switch": "required-proven",
-      "portal": "incomplete",
-      "fragile": "incomplete"
+      "fragile": "required-proven"
     }
   },
   "25_obsidian_citadel": {
@@ -174,8 +171,8 @@
     "losingStates": null,
     "gimmicks": {
       "switch": "required-proven",
-      "portal": "incomplete",
-      "fragile": "incomplete"
+      "portal": "required-proven",
+      "fragile": "required-proven"
     }
   },
   "26_abyssal_fortress": {
@@ -183,7 +180,7 @@
     "losingStates": null,
     "gimmicks": {
       "switch": "required-proven",
-      "portal": "incomplete",
+      "portal": "required-proven",
       "fragile": "incomplete"
     }
   },
@@ -192,7 +189,7 @@
     "losingStates": null,
     "gimmicks": {
       "switch": "required-proven",
-      "portal": "incomplete",
+      "portal": "required-proven",
       "fragile": "incomplete"
     }
   },
@@ -200,18 +197,18 @@
     "status": "incomplete",
     "losingStates": null,
     "gimmicks": {
-      "switch": "incomplete",
+      "switch": "required-proven",
       "portal": "incomplete",
-      "fragile": "incomplete"
+      "fragile": "required-proven"
     }
   },
   "29_empire_of_oblivion": {
     "status": "incomplete",
     "losingStates": null,
     "gimmicks": {
-      "switch": "required-proven",
-      "portal": "incomplete",
-      "fragile": "incomplete"
+      "switch": "incomplete",
+      "portal": "required-proven",
+      "fragile": "required-proven"
     }
   },
   "30_the_endless_labyrinth": {
@@ -219,7 +216,8 @@
     "losingStates": null,
     "gimmicks": {
       "switch": "required-proven",
-      "portal": "incomplete"
+      "portal": "incomplete",
+      "fragile": "incomplete"
     }
   }
 }
