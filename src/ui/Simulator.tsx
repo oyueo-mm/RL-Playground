@@ -32,6 +32,7 @@ import type { GridEditorDraft } from '../viz/controls/envEditorDraft'
 import { DeferredPanel } from './DeferredPanel'
 import { ResourceInfo } from './ResourceInfo'
 import { FloatingToolbar } from './FloatingToolbar'
+import { Notice } from './Notice'
 import { MapGallery } from '../viz/controls/MapGallery'
 import { ENVIRONMENT_PRESETS } from '../viz/controls/environmentPresets'
 import { draftToGridWorldConfig } from '../viz/controls/envEditorDraft'
@@ -88,7 +89,7 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
   const labels = Object.fromEntries(ENVIRONMENT_PRESETS.map(preset => [preset.id, (t.envEditor as unknown as Record<string, string>)[`preset${preset.id[0].toUpperCase()}${preset.id.slice(1)}`] ?? preset.id]))
   const analysisVisible = !presetsOpen && (section === 'results' || (section === 'environment' && analysisOpen))
   return <section className={`simulator fullscreen-simulator ${section === 'results' ? 'results-view' : ''}`} aria-label={ko ? '강화학습 실험실' : 'Reinforcement learning lab'}>
-    {snapshot.resources?.pauseReason && <div className="resource-alert" role="alert" data-testid="resource-pause-reason">{ko ? '실제 자원 예산에 가까워 학습을 일시정지했습니다.' : 'Training paused near an actual resource budget.'} {snapshot.resources.pauseReason === 'q-states' ? (ko ? 'Q 상태 예산' : 'Q row budget') : (ko ? '저장 스텝 예산' : 'Recorded step budget')}<button onClick={() => { setSettingsOpen(true); setSettingsTab('learning') }}>{ko ? '설정에서 예산 조절' : 'Adjust budget in settings'}</button></div>}
+    {section !== 'editor' && snapshot.resources?.pauseReason && <Notice eventKey={`${snapshot.resources.pauseReason}:${snapshot.resources.budget.maxQStates}:${snapshot.resources.totalSteps}`} title={ko ? 'Q 상태 예산으로 학습 일시정지' : 'Training paused at Q row budget'} kind="warning" locale={locale} testId="resource-pause-reason"><button onClick={() => { setSettingsOpen(true); setSettingsTab('learning') }}>{ko ? '설정에서 예산 조절' : 'Adjust budget in settings'}</button></Notice>}
     <div className="environment-screen" hidden={section !== 'environment'} data-testid="learning-grid">
       <div className="workspace-stage">
         <FloatingToolbar active={active && section === 'environment'} label={ko ? '학습 컨트롤' : 'Learning controls'}>
@@ -131,7 +132,11 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
     <aside id="analysis-panel" className="analysis-drawer" hidden={!analysisVisible} data-testid="analysis-panel" aria-label={ko ? '통계 및 분석' : 'Statistics & analysis'}>
       <header><h2>{ko ? '통계 및 분석' : 'Statistics & analysis'}</h2>{section !== 'results' && <button onClick={() => { setAnalysisOpen(false); document.querySelector<HTMLButtonElement>('[data-testid=toggle-analysis]')?.focus() }} aria-label={ko ? '분석 닫기' : 'Close analysis'}>×</button>}</header>
       <DeferredPanel active={active && analysisVisible}><div className="analysis-content">
-        <EpisodeStepViewer episode={selectedEpisodeStats} step={effectiveStep} onStepChange={setViewedStep} allGoals={model.allGoals ?? []} t={t} />
+        <p className="retention-note">{ko ? '상세 경로는 보관 한도에 따라 정리됩니다. 요약 그래프는 최근 최대 10,000회이며 누적 학습량·성공률은 유지됩니다.' : 'Detailed paths expire at retention limits. Charts keep up to 10,000 recent summaries; lifetime totals and success rate remain.'}</p>
+        {snapshot.resources?.lifetime && <p className="retention-note">{ko ? '누적 탐험 / 활용' : 'Lifetime exploration / exploitation'}: {snapshot.resources.lifetime.exploration.toLocaleString()} / {snapshot.resources.lifetime.exploitation.toLocaleString()}</p>}
+        {selectedEpisode !== null && !selectedEpisodeStats && <p role="status">{ko ? '선택한 에피소드는 최근 요약 보관 범위 밖에 있습니다.' : 'The selected episode is outside the retained summary window.'}</p>}
+        {selectedEpisodeStats?.trajectoryStatus && selectedEpisodeStats.trajectoryStatus !== 'complete' && <p role="status">{ko ? '선택한 에피소드의 상세 경로가 정리되었거나 일부만 보관되어 재생할 수 없습니다. 요약은 유지됩니다.' : 'This trajectory expired or is incomplete. Replay is unavailable; the summary remains.'}</p>}
+        <EpisodeStepViewer episode={selectedEpisodeStats?.trajectoryStatus && selectedEpisodeStats.trajectoryStatus !== 'complete' ? null : selectedEpisodeStats} step={effectiveStep} onStepChange={setViewedStep} allGoals={model.allGoals ?? []} t={t} />
           <InspectorPanel
             lastTransition={snapshot.lastTransition}
             lastActionSelection={snapshot.lastActionSelection}
@@ -158,7 +163,7 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
             // Goals still remaining right now. See render.ts's doc comment.
             goals={snapshot.envRenderModel.kind === 'grid' ? (snapshot.envRenderModel.allGoals ?? []) : []}
           />
-          <TerminationChart episodeStatsHistory={snapshot.stats.episodeStatsHistory} t={t} />
+          <TerminationChart episodeStatsHistory={snapshot.stats.episodeStatsHistory} lifetimeCounts={snapshot.resources?.lifetime?.reasons} t={t} />
           <RewardChart
             rewardHistory={snapshot.stats.rewardHistory}
             episodeNumbers={episodeNumbers}

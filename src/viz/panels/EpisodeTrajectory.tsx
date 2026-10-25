@@ -51,6 +51,8 @@ export function EpisodeTrajectory({
     )
   }
 
+  if (episode.trajectoryStatus === 'evicted' || episode.trajectoryStatus === 'partial') return <p data-testid="trajectory-expired">{locale === 'ko' ? '상세 경로 보관 한도를 넘겼습니다. 요약만 볼 수 있으며 재생은 제공하지 않습니다.' : 'Detailed retention limit exceeded. Summary available; replay unavailable.'}</p>
+
   const terminationLabel: Record<EpisodeTerminationReason, string> = {
     goal: t.stats.terminationGoal,
     bomb: t.stats.terminationBomb,

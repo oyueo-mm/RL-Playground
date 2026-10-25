@@ -126,20 +126,23 @@ describe('Actual resource boundaries and truncation', () => {
     engine.restartEpisode(); expect(engine.getSnapshot().agentSnapshot).toEqual(learned)
     random.mockRestore()
   })
-  it('records time limits separately, bootstraps TD targets and preserves all completed history at pause', () => {
+  it('continues through the detailed retention limit while preserving time-limit summaries', () => {
     const c = clock()
     const engine = new SimulationEngine({ timerSource: c.timer, speed: { mode: 'batch', stepsPerFrame: 100 }, resourceBudget: { maxEpisodeSteps: 2, maxRecordedSteps: 5 } })
     engine.run({ episodes: 100 })
+    c.tick(); c.tick()
     const snapshot = engine.getSnapshot()
-    expect(snapshot.status).toBe('paused'); expect(snapshot.resources?.pauseReason).toBe('recorded-steps')
-    expect(snapshot.stats.episodeStatsHistory).toHaveLength(2)
+    expect(snapshot.status).toBe('idle'); expect(snapshot.resources?.pauseReason).toBeNull()
+    expect(snapshot.episode).toBe(100)
+    expect(snapshot.resources?.totalSteps).toBe(200)
+    expect(snapshot.resources?.recordedSteps).toBeLessThanOrEqual(5)
     expect(snapshot.stats.successCount).toBe(0)
     expect(snapshot.stats.episodeStatsHistory.every(row => row.terminationReason === 'truncated')).toBe(true)
-    const last = snapshot.stats.episodeStatsHistory[0].trajectory.at(-1)!
+    expect(snapshot.stats.episodeStatsHistory[0].trajectoryStatus).toBe('evicted')
+    const last = snapshot.stats.latestEpisodeStats!.trajectory.at(-1)!
     expect(last.done).toBe(false); expect(last.truncated).toBe(true)
     engine.restartEpisode()
     expect(engine.getSnapshot().stats.episodeStatsHistory).toEqual(snapshot.stats.episodeStatsHistory)
-    expect(engine.getResourceMetrics().recordedSteps).toBe(4)
   })
   it.each(['q-learning', 'sarsa'])('keeps %s termination distinct from a time limit on the same step', algorithmId => {
     const engine = new SimulationEngine({ algorithmId, envConfig: { ...createDefaultGridWorldConfig(), start: { x: 0, y: 1 }, goals: [{ x: 0, y: 0 }] }, hyperparams: { alpha: .5, gamma: .9, epsilon: 0 }, resourceBudget: { maxEpisodeSteps: 1 } })

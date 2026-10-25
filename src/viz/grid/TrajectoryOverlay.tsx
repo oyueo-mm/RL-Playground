@@ -63,7 +63,7 @@ export function TrajectoryOverlay({
 }: TrajectoryOverlayProps) {
   const episode = selectedEpisode == null ? null : (episodeStatsHistory.find((e) => e.episode === selectedEpisode) ?? null)
 
-  if (episode === null || episode.trajectory.length === 0) return null
+  if (episode === null || episode.trajectory.length === 0 || (episode.trajectoryStatus && episode.trajectoryStatus !== 'complete')) return null
 
   const width = renderModel.width * cellSize
   const height = renderModel.height * cellSize

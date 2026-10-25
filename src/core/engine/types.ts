@@ -58,10 +58,12 @@ export interface EpisodeStats {
    * field: `episodeVisitedStates` (used only to compute `uniqueStates` above) is a `Set`,
    * which discards both visit order and repeat counts (confirmed by reading
    * SimulationEngine.ts before this Phase — no ordered per-step array existed anywhere).
-   * Length always equals `steps`. Never truncated here — any display-length limit is a
-   * UI-only concern (src/viz/panels/EpisodeTrajectory.tsx).
+   * When trajectoryStatus is complete, length equals steps. Evicted/partial records must
+   * not be replayed as a complete episode (src/viz/panels/EpisodeTrajectory.tsx).
    */
   trajectory: Transition[]
+  trajectoryStatus?: 'complete' | 'partial' | 'evicted'
+  collectedGoals?: number
 }
 
 export interface EngineStats {

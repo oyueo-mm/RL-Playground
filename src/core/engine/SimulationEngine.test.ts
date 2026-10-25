@@ -1662,7 +1662,7 @@ describe('SimulationEngine — Phase 28: Episode scale (no 200-episode cap)', ()
     expect(snapshot.stats.episodeStatsHistory[200].episode).toBe(201)
   })
 
-  it('retains all 500 Episodes, each with its own intact trajectory (Core data structures, not just the count)', () => {
+  it('retains 500 summaries and only the most recent 100 detailed trajectories', () => {
     const { source } = createManualTimerSource()
     const engine = new SimulationEngine({ timerSource: source, envConfig: corridorConfig, hyperparams: deterministicHyperparams })
 
@@ -1673,7 +1673,8 @@ describe('SimulationEngine — Phase 28: Episode scale (no 200-episode cap)', ()
     expect(snapshot.stats.rewardHistory.length).toBe(500)
     expect(snapshot.stats.episodeStatsHistory.length).toBe(500)
     expect(snapshot.stats.episodeStatsHistory[0].episode).toBe(1)
-    expect(snapshot.stats.episodeStatsHistory[0].trajectory.length).toBe(3)
+    expect(snapshot.stats.episodeStatsHistory[0].trajectoryStatus).toBe('evicted')
+    expect(snapshot.stats.episodeStatsHistory[0].trajectory.length).toBe(0)
     expect(snapshot.stats.episodeStatsHistory[499].episode).toBe(500)
     expect(snapshot.stats.episodeStatsHistory[499].trajectory.length).toBe(3)
     // successRate uses the real cumulative successCount/episode — not a stale value

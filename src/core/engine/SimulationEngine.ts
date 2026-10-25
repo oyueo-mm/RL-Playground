@@ -20,16 +20,8 @@ import type { EngineSnapshot, EngineStatus, EpisodeStats, EpisodeTerminationReas
 const DEFAULT_ENV_ID = 'gridworld'
 const DEFAULT_ALGORITHM_ID = 'q-learning'
 const DEFAULT_SPEED: SpeedSetting = { mode: 'interval', intervalMs: 200 }
-// Phase 28 — the previous REWARD_HISTORY_LIMIT=200 cap (shift()-based eviction on both
-// rewardHistory and episodeStatsHistory, including each Episode's trajectory) has been
-// removed: the user must be able to run 201+, 500+ Episodes and see all of them in the
-// Reward Chart / Learning Progress / Episode History / Episode Trajectory. Episode count
-// itself was never capped anywhere in Core (confirmed by reading run()/schedulerTick()
-// before this Phase — only this shift()-based retention limit and a UI input max, see
-// PlaybackControls.tsx, ever bounded anything). No replacement windowing/pagination
-// strategy is introduced here per this Phase's explicit priority ("200 Episode 제한 제거를
-// 우선한다") — unbounded retention is an accepted tradeoff, noted as technical debt for a
-// very long single session in the final report, not solved by this Phase.
+// Lifetime counters are independent of retention. Detailed paths use a bounded FIFO;
+// recent summaries compact in batches, and React receives a cached history projection.
 
 /** Engine only ever instantiates one of these two concrete Agents (Phase 1 §4.2/§4.3). */
 type ConcreteAgent = TabularQAgent | TabularValueAgent
@@ -122,6 +114,22 @@ export class SimulationEngine {
   private resourcePauseReason: ResourcePauseReason = null
   private totalSteps = 0
   private recordedSteps = 0
+  private detailQueue: { episode: number; length: number }[] = []
+  private detailHead = 0
+  private lifetime = { exploration: 0, exploitation: 0, reasons: {} as Record<string, number> }
+
+  /** Cursor FIFO: no array shift and no mutation of previously emitted episodes. */
+  private trimDetails(reserve = 0): void {
+    const history = this.stats.episodeStatsHistory
+    while (this.detailHead < this.detailQueue.length && (this.recordedSteps + reserve > this.resourceBudget.maxRecordedSteps || this.detailQueue.length - this.detailHead > (this.resourceBudget.maxDetailedEpisodes ?? 100))) {
+      const old = this.detailQueue[this.detailHead++]
+      this.recordedSteps -= old.length
+      const index = old.episode - (history[0]?.episode ?? 0)
+      if (history[index]?.episode === old.episode) history[index] = { ...history[index], trajectory: [], trajectoryStatus: 'evicted' }
+      this.projectedHistory = null
+    }
+    if (this.detailHead > 1024) { this.detailQueue = this.detailQueue.slice(this.detailHead); this.detailHead = 0 }
+  }
   private metrics = { stepsPerSecond: 0, uiUpdatesPerSecond: 0, qStateGrowth: 0 }
   private rateWindow = { at: 0, steps: 0, states: 0, updates: 0 }
   private lastUIAt = -Infinity
@@ -169,8 +177,8 @@ export class SimulationEngine {
 
   getResourceMetrics(): ResourceMetrics {
     const q = this.agent.kind === 'Q' ? this.agent : null
-    const ratio = Math.max((q?.size ?? 0) / this.resourceBudget.maxQStates, this.recordedSteps / this.resourceBudget.maxRecordedSteps)
-    return { qStates: q?.size ?? 0, qVersion: q?.version ?? 0, estimatedQBytes: q?.estimatedBytes ?? 0, totalSteps: this.totalSteps, completedEpisodes: this.stats.episode, episodeSteps: this.stats.episodeLength, recordedSteps: this.recordedSteps, ...this.metrics, pauseReason: this.resourcePauseReason, level: ratio >= .85 ? 'high' : ratio >= .6 ? 'warning' : 'normal', budget: { ...this.resourceBudget } }
+    const ratio = (q?.size ?? 0) / this.resourceBudget.maxQStates
+    return { lifetime: { ...this.lifetime, reasons: { ...this.lifetime.reasons } }, qStates: q?.size ?? 0, qVersion: q?.version ?? 0, estimatedQBytes: q?.estimatedBytes ?? 0, totalSteps: this.totalSteps, completedEpisodes: this.stats.episode, episodeSteps: this.stats.episodeLength, recordedSteps: this.recordedSteps, ...this.metrics, pauseReason: this.resourcePauseReason, level: ratio >= .85 ? 'high' : ratio >= .6 ? 'warning' : 'normal', budget: { ...this.resourceBudget } }
   }
 
   setResourceBudget(overrides: Partial<ResourceBudget>): void {
@@ -178,6 +186,11 @@ export class SimulationEngine {
       if (!Number.isSafeInteger(value) || value! < (key === 'maxQStates' ? 10 : 1)) throw new Error('Resource budgets must be positive safe integers (Q states >= 10).')
     }
     this.resourceBudget = { ...this.resourceBudget, ...overrides }
+    this.trimDetails()
+    if (this.stats.episodeTrajectory.length > this.resourceBudget.maxRecordedSteps) {
+      this.recordedSteps -= this.stats.episodeTrajectory.length - this.resourceBudget.maxRecordedSteps
+      this.stats.episodeTrajectory = this.stats.episodeTrajectory.slice(0, this.resourceBudget.maxRecordedSteps)
+    }
     this.resourcePauseReason = null
     this.emitSnapshot()
   }
@@ -367,7 +380,7 @@ export class SimulationEngine {
     this.agent = createAgentFor(this.algorithm.requiredAgentKind, this.environment.getActionSpace())
     this.hyperparams = overrides?.hyperparams ?? defaultHyperparams(this.algorithm)
     this.stats = createEmptyStats()
-    this.totalSteps = 0; this.recordedSteps = 0; this.resourcePauseReason = null
+    this.totalSteps = 0; this.recordedSteps = 0; this.resourcePauseReason = null; this.detailQueue = []; this.detailHead = 0; this.lifetime = { exploration: 0, exploitation: 0, reasons: {} }
     this.metrics = { stepsPerSecond: 0, uiUpdatesPerSecond: 0, qStateGrowth: 0 }
     this.rateWindow = { at: this.timer.now(), steps: 0, states: 0, updates: 0 }
 
@@ -411,7 +424,7 @@ export class SimulationEngine {
   restartEpisode(): void {
     this.scheduler.stop() // invalidate any in-flight callback before anything else changes
     this.environment.reset()
-    this.recordedSteps -= this.stats.episodeLength
+    this.recordedSteps -= this.stats.episodeTrajectory.length
     this.resourcePauseReason = null
 
     this.status = 'idle'
@@ -438,7 +451,7 @@ export class SimulationEngine {
   private atResourceBoundary(): boolean {
     const states = this.agent.kind === 'Q' ? this.agent.size : 0
     // A step can lazily create current and next rows. Reserve both before acting.
-    this.resourcePauseReason = states + 2 > this.resourceBudget.maxQStates ? 'q-states' : this.recordedSteps >= this.resourceBudget.maxRecordedSteps ? 'recorded-steps' : null
+    this.resourcePauseReason = states + 2 > this.resourceBudget.maxQStates ? 'q-states' : null
     return this.resourcePauseReason !== null
   }
 
@@ -485,7 +498,7 @@ export class SimulationEngine {
     this.stats.episodeReward += transition.reward
     this.stats.episodeLength += 1
     this.totalSteps++
-    this.recordedSteps++
+    if (action.wasExploration) this.lifetime.exploration++; else this.lifetime.exploitation++
     const now = this.timer.now()
     if (now - this.rateWindow.at >= 1000) {
       const seconds = (now - this.rateWindow.at) / 1000
@@ -507,7 +520,11 @@ export class SimulationEngine {
     this.stats.episodeVisitedStates.add(transition.nextState)
     // Phase 26: the full ordered record — unlike episodeVisitedStates above (a Set, used
     // only for the uniqueStates count), this preserves visit order and repeat visits.
-    this.stats.episodeTrajectory.push(transition)
+    this.trimDetails(1)
+    if (this.recordedSteps < this.resourceBudget.maxRecordedSteps) {
+      this.stats.episodeTrajectory.push(transition)
+      this.recordedSteps++
+    }
 
     if (transition.done || transition.truncated) {
       this.finishEpisode(transition)
@@ -555,6 +572,7 @@ export class SimulationEngine {
 
   private finishEpisode(transition: Transition): void {
     const terminationReason = this.classifyTermination(transition)
+    this.lifetime.reasons[terminationReason] = (this.lifetime.reasons[terminationReason] ?? 0) + 1
     if (terminationReason === 'goal') {
       this.stats.successCount += 1
     }
@@ -566,6 +584,9 @@ export class SimulationEngine {
     // below are reset. `steps` reuses episodeLength (already tracked); `totalReward`
     // reuses episodeReward — neither is recomputed independently.
     const steps = this.stats.episodeLength
+    let goalMask = BigInt(transition.nextState.split(',')[2] ?? '0')
+    let collectedGoals = 0
+    while (goalMask > 0n) { collectedGoals += Number(goalMask & 1n); goalMask >>= 1n }
     const episodeStats: EpisodeStats = {
       episode: this.stats.episode,
       steps,
@@ -583,8 +604,19 @@ export class SimulationEngine {
       // mutating this one in place, so this reference stays a stable, complete,
       // independent record of the Episode that just finished.
       trajectory: this.stats.episodeTrajectory,
+      trajectoryStatus: this.stats.episodeTrajectory.length === steps ? 'complete' : 'partial',
+      collectedGoals,
     }
     this.stats.episodeStatsHistory.push(episodeStats)
+    this.detailQueue.push({ episode: episodeStats.episode, length: episodeStats.trajectory.length })
+    this.trimDetails()
+    // Keep 9,001–10,000 recent summaries, amortizing array compaction across episodes.
+    // Lifetime totals are independent of this explicitly bounded chart window.
+    if (this.stats.episodeStatsHistory.length > 10_000) {
+      this.stats.episodeStatsHistory = this.stats.episodeStatsHistory.slice(1000)
+      this.stats.rewardHistory = this.stats.rewardHistory.slice(1000)
+      this.projectedHistory = null
+    }
 
     // Agent's learned table is NOT touched here (ARCHITECTURE.md §7 — only reset()
     // clears it). Only the environment and per-episode bookkeeping restart.

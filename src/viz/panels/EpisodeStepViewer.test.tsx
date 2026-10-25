@@ -28,6 +28,11 @@ function episodeStats(overrides: Partial<EpisodeStats> = {}): EpisodeStats {
 }
 
 describe('EpisodeStepViewer', () => {
+  it('counts collected goals beyond 32-bit masks', () => {
+    const mask = ((1n << 65n) | 1n).toString()
+    render(<EpisodeStepViewer episode={episodeStats({ trajectory: [{ state: '0,0,0', action: 3, nextState: `1,0,${mask}`, reward: 10, done: false }] })} step={1} allGoals={Array.from({ length: 70 }, (_, i) => `${i},0`)} onStepChange={vi.fn()} />)
+    expect(screen.getByTestId('step-viewer-goals-collected').textContent).toContain('2 / 70')
+  })
   it('shows the empty state when no Episode is selected', () => {
     render(<EpisodeStepViewer episode={null} step={0} onStepChange={vi.fn()} />)
     expect(screen.getByTestId('step-viewer-empty')).toBeTruthy()

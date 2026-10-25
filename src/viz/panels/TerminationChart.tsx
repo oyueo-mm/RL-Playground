@@ -14,6 +14,7 @@ import { translations, type Dictionary } from '../../ui/i18n'
 
 export interface TerminationChartProps {
   episodeStatsHistory: EpisodeStats[]
+  lifetimeCounts?: Record<string, number>
   /** Phase 13 — defaults to English so every pre-existing caller/test is unaffected. */
   t?: Dictionary
 }
@@ -33,7 +34,7 @@ const BAR_COLOR: Record<EpisodeTerminationReason, string> = {
   truncated: '#c29143',
 }
 
-export function TerminationChart({ episodeStatsHistory, t = translations.en }: TerminationChartProps) {
+export function TerminationChart({ episodeStatsHistory, lifetimeCounts, t = translations.en }: TerminationChartProps) {
   if (episodeStatsHistory.length === 0) {
     return (
       <div
@@ -49,6 +50,7 @@ export function TerminationChart({ episodeStatsHistory, t = translations.en }: T
   // already decided once, by finishEpisode(), when it completed.
   const counts: Record<EpisodeTerminationReason, number> = { goal: 0, bomb: 0, other: 0, truncated: 0 }
   for (const ep of episodeStatsHistory) counts[ep.terminationReason] += 1
+  if (lifetimeCounts) for (const reason of REASONS) counts[reason] = lifetimeCounts[reason] ?? 0
 
   const label: Record<EpisodeTerminationReason, string> = {
     goal: t.stats.terminationGoal,

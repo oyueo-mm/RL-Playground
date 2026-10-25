@@ -64,6 +64,7 @@ function statePosition(state: StateKey): StateKey {
 }
 
 function collectedGoalCount(stats: EpisodeStats, goals: StateKey[]): number {
+  if (stats.collectedGoals !== undefined) return stats.collectedGoals
   const visited = new Set(stats.trajectory.map((t) => statePosition(t.nextState)))
   return goals.filter((g) => visited.has(g)).length
 }

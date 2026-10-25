@@ -37,11 +37,11 @@ const AUTO_PLAY_INTERVAL_MS = 400
 /** Bit `i` of a GridWorld goal-mask StateKey segment is set iff `allGoals[i]` was
  * collected by that point — same encoding as GridWorldEnv.ts's private goalsMask(). */
 function collectedCount(mask: string | undefined, totalGoals: number): number {
-  const value = mask === undefined ? 0 : Number(mask)
-  if (!Number.isFinite(value)) return 0
+  let value: bigint
+  try { value = BigInt(mask ?? '0') } catch { return 0 }
   let count = 0
   for (let i = 0; i < totalGoals; i++) {
-    if (value & (1 << i)) count++
+    if (value & (1n << BigInt(i))) count++
   }
   return count
 }
@@ -94,6 +94,7 @@ export function EpisodeStepViewer({ episode, step, onStepChange, allGoals = [], 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
       if (episode === null) return
+      if (document.querySelector('[data-testid="step-viewer"]')?.closest('[hidden]')) return
       if (e.key === 'ArrowLeft') {
         e.preventDefault()
         onStepChange(Math.max(0, step - 1))
