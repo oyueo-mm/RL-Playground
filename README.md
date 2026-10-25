@@ -39,14 +39,16 @@ GridWorld 환경을 편집하고 Q-Learning 또는 SARSA 알고리즘으로 에�
 
 ## ✨ 주요 기능
 
-`feat/home-redesign`의 최신 개선: 상세 기록 보관 한도와 누적 학습을 분리하고, 초안 직접 플레이·닫기 가능한 알림·개방형 복합 프리셋·홈 4개 동시 시연·가이드 출처 및 학습 로드맵을 추가했습니다. 구현 구조, 검증 수치와 스크린샷은 [통합 개선 보고서](docs/PLAYGROUND_USABILITY_UPGRADE.md)를 확인하세요. 이 작업으로 main 병합이나 Production 배포를 진행하지 않았습니다.
+`feat/home-redesign`의 최신 개선: 사용자 제공 JSON으로 공식 프리셋을 20종(난이도별 5개)으로 교체했습니다. 홈은 같은 카탈로그의 검증된 성공 경로를 실제 환경 전이로 재생하며, Shuffle Bag으로 서로 다른 4개를 선택하고 완료된 카드만 교체합니다. 전체 일시정지·맵 섞기·확대 경로 탐색·확인 후 실험 적용을 지원합니다. 원본 검증, 테스트, 성능 측정과 스크린샷은 [프리셋·홈 시연 보고서](docs/PRESET_CATALOG_AND_HOME_DEMOS.md)를 확인하세요. main 병합과 배포는 진행하지 않았으므로 공개 데모와 기능이 다를 수 있습니다.
+
+직접 플레이는 키보드와 터치 버튼을 길게 누르면 200ms 후 100ms 간격으로 반복 이동합니다. 알고리즘 가이드는 기존 영어 자료와 함께 KOCW·김성훈 공개 한국어 자료를 장별/로드맵별로 제공합니다. K-MOOC 강좌의 현재 청강 가능 여부는 미검증으로 별도 표시합니다. 기존 기록 관리와 교육 UX 개선 이력은 [이전 통합 개선 보고서](docs/PLAYGROUND_USABILITY_UPGRADE.md)에 있습니다.
 
 직접 플레이는 편집 툴바에서 시작하며 방향키/WASD, R(재시작), Esc(편집 복귀)와 터치 버튼을 지원합니다. 학습 데이터와 독립적입니다. 상세 경로는 기본 500,000 step/최근 100 에피소드, 요약은 최근 최대 10,000회이며 누적 학습량과 성공률은 별도로 유지됩니다. 만료된 상세 경로는 재생할 수 없습니다.
 
 | 분류 | 기능 |
 | :--- | :--- |
 | **환경 편집** | Grid 크기 조절, 시작점·벽·목표·폭탄 배치, 보상 및 페널티 설정 |
-| **환경 프리셋** | Simple Corridor, Maze, Bomb Field, Multi Goal, Treasure Hunt |
+| **환경 프리셋** | 공식 20종: 쉬움·보통·어려움·매우 어려움 각 5개, 검색·요소 필터·미리보기 |
 | **알고리즘** | Q-Learning(Off-policy), SARSA(On-policy) |
 | **하이퍼파라미터** | 탐험률 ε, 학습률 α, 할인율 γ 실시간 조절 |
 | **학습 제어** | 단일 Step, 연속 실행, Episode 단위 실행, 일시정지·재개·초기화, 속도 조절 |
@@ -64,7 +66,7 @@ GridWorld 환경을 편집하고 Q-Learning 또는 SARSA 알고리즘으로 에�
 - **Reward 설정:** Step Reward, Wall Penalty, Goal Reward, Bomb Penalty 각각 조절
 - **Multiple Goals:** 여러 목표를 모두 한 번씩 방문해야 에피소드 종료
 - **Bomb:** 진입하면 페널티를 받고 즉시 에피소드 종료
-- **Presets:** 기본 예제를 불러온 뒤 자유롭게 수정 가능
+- **Presets:** 검증된 20개 환경을 초안으로 불러온 뒤 자유롭게 수정 가능
 
 여러 Goal이 있는 경우 에이전트의 상태는 단순한 좌표가 아니라 **현재 위치와 이미 수집한 Goal 정보**를 함께 포함합니다. 따라서 같은 위치라도 남은 목표가 다르면 별도의 상태 및 Q-value로 학습합니다.
 
@@ -143,6 +145,8 @@ npm run dev
 | `npm run lint` | ESLint 검사 |
 | `npm run build` | TypeScript 검사 및 프로덕션 빌드 |
 | `npm run preview` | 빌드 결과 미리보기 |
+| `npm run test:e2e` | Edge 기반 데스크톱·모바일 브라우저 검증 |
+| `npm run benchmark` | 엔진·기록 보관 성능 측정 |
 
 ## 🛠️ 기술 스택
 
@@ -171,6 +175,7 @@ flowchart LR
 ```text
 src/
 ├── core/    # 환경·에이전트·알고리즘·시뮬레이션 엔진
+├── data/    # 공식 프리셋 원본 JSON·성공 경로·메타데이터
 ├── viz/     # Grid, Overlay, 차트 및 시각화 컴포넌트
 └── ui/      # 화면 구성 및 React ↔ Engine 연결
 ```
@@ -210,7 +215,7 @@ GitHub Pages에서 정적 웹 애플리케이션으로 제공됩니다. 시뮬�
 사이드바 프리셋 패널, 통합 학습·시각화 설정, 설명형 Tooltip, 편집 Undo/Redo 및
 6개 단원의 한국어·영어 알고리즘 가이드는 [UI/UX 개선 보고서](docs/UX_WORKFLOW_REDESIGN.md)를 참고하세요.
 
-최신 복잡한 환경 지원은 [복합 환경 개선 보고서](docs/COMPLEX_ENVIRONMENT_UPGRADE.md)를 참고하세요.
+복잡한 환경 지원의 이전 구현 기록은 [복합 환경 개선 보고서](docs/COMPLEX_ENVIRONMENT_UPGRADE.md)를 참고하세요.
 이론 상태 수는 적용 제한이 아닌 경고이며, 실제 Q 행/기록 스텝 예산과 시간 제한으로 학습을 관리합니다.
-25개 프리셋, 드래그·덮어쓰기·자동 연결, 실제 규칙 홈 시연과 재현 가능한 `npm run benchmark` 결과를 포함합니다.
+당시 25개 프리셋과 드래그·덮어쓰기·자동 연결 및 `npm run benchmark` 결과를 기록한 역사적 문서입니다. 현재 공식 목록은 [새 프리셋 20종 보고서](docs/PRESET_CATALOG_AND_HOME_DEMOS.md)를 기준으로 합니다.
 
