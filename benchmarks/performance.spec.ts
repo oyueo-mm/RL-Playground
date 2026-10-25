@@ -40,7 +40,7 @@ test('repeated browser engine and snapshot benchmark', async ({ page }) => {
         await new Promise(resolve => setTimeout(resolve, 1000))
         const snapshotStart = performance.now()
         const snapshot = engine.getSnapshot()
-        samples.push({ elapsedMs: performance.now() - started, episode: snapshot.episode, episodeSteps: snapshot.stepInCurrentEpisode, totalSteps: snapshot.stats.episodeStatsHistory.reduce((n, row) => n + row.steps, 0) + snapshot.stepInCurrentEpisode, qStates: snapshot.agentSnapshot.kind === 'Q' ? Object.keys(snapshot.agentSnapshot.qTable).length : 0, snapshotMs: performance.now() - snapshotStart, heapBytes: heap() })
+        samples.push({ elapsedMs: performance.now() - started, episode: snapshot.episode, episodeSteps: snapshot.stepInCurrentEpisode, totalSteps: snapshot.resources?.totalSteps ?? (snapshot.stats.episodeStatsHistory.reduce((n, row) => n + row.steps, 0) + snapshot.stepInCurrentEpisode), qStates: snapshot.agentSnapshot.kind === 'Q' ? Object.keys(snapshot.agentSnapshot.qTable).length : 0, snapshotMs: performance.now() - snapshotStart, heapBytes: heap() })
       }
       const pauseAt = performance.now(); engine.pause(); const pauseMs = performance.now() - pauseAt
       const resumeAt = performance.now(); engine.resume(); const resumeMs = performance.now() - resumeAt
@@ -82,9 +82,44 @@ test('retained Q rows and transition history cost after explicit GC', async ({ p
     }, { kind, count })
     await cdp.send('HeapProfiler.collectGarbage')
     const after = await cdp.send('Runtime.getHeapUsage')
-    retained.push({ kind, count, ...metrics, baselineBytes: before.usedSize, retainedBytes: after.usedSize, deltaBytes: after.usedSize - before.usedSize, bytesPerItem: (after.usedSize - before.usedSize) / count })
+    retained.push({ kind, count, ...metrics, baselineBytes: before.usedSize, retainedBytes: after.usedSize, deltaBytes: after.usedSize - before.usedSize, bytesPerInputItem: (after.usedSize - before.usedSize) / count })
   }
   mkdirSync('benchmarks/results', { recursive: true })
-  writeFileSync('benchmarks/results/retained-costs.json', JSON.stringify(retained, null, 2))
+  writeFileSync(`benchmarks/results/${process.env.BENCH_LABEL ?? 'latest'}-retained-costs.json`, JSON.stringify(retained, null, 2))
   console.log(JSON.stringify(retained))
+})
+
+test('all nine complex maps exceed 500000 steps with bounded retained heap', async ({ page, context }) => {
+  const cdp = await context.newCDPSession(page)
+  const samples = []
+  for (let index = 0; index < 9; index++) {
+    await page.goto('./'); await page.reload()
+    await page.evaluate(async () => {
+      for (const path of ['/RL-Playground/src/core/engine/SimulationEngine.ts', '/RL-Playground/src/viz/controls/complexPresets.ts', '/RL-Playground/src/viz/controls/envEditorDraft.ts']) await import(path)
+    })
+    await cdp.send('HeapProfiler.collectGarbage'); const before = await cdp.send('Runtime.getHeapUsage')
+    const result = await page.evaluate(async index => {
+      const enginePath = '/RL-Playground/src/core/engine/SimulationEngine.ts', presetPath = '/RL-Playground/src/viz/controls/complexPresets.ts', draftPath = '/RL-Playground/src/viz/controls/envEditorDraft.ts'
+      const { SimulationEngine } = await import(enginePath) as typeof import('../src/core/engine/SimulationEngine')
+      const { COMPLEX_PRESETS } = await import(presetPath) as typeof import('../src/viz/controls/complexPresets')
+      const { draftToGridWorldConfig } = await import(draftPath) as typeof import('../src/viz/controls/envEditorDraft')
+      const preset = COMPLEX_PRESETS[index]
+      let seed = 42
+      const random = Math.random
+      Math.random = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296 }
+      try {
+        const engine = new SimulationEngine({ envConfig: draftToGridWorldConfig(preset.draft), hyperparams: { alpha: .1, gamma: .9, epsilon: .3 } })
+        const started = performance.now()
+        for (let step = 0; step < 500100; step++) engine.step()
+        const elapsedMs = performance.now() - started
+        Object.defineProperty(globalThis, '__benchmarkRetained', { value: engine, configurable: true })
+        return { preset: preset.id, elapsedMs, ...engine.getResourceMetrics() }
+      } finally { Math.random = random }
+    }, index)
+    if (result.totalSteps !== 500100 || result.pauseReason !== null || result.recordedSteps > result.budget.maxRecordedSteps) throw new Error(`Long-run invariant failed: ${JSON.stringify(result)}`)
+    await cdp.send('HeapProfiler.collectGarbage'); const after = await cdp.send('Runtime.getHeapUsage')
+    samples.push({ ...result, beforeGcBytes: before.usedSize, afterGcBytes: after.usedSize, retainedDeltaBytes: after.usedSize - before.usedSize })
+  }
+  writeFileSync(`benchmarks/results/${process.env.BENCH_LABEL ?? 'latest'}-long-run.json`, JSON.stringify({ mode: 'Synchronous production engine steps, no UI subscriber. CPU time is not interactive UI throughput.', userAgent: await page.evaluate(() => navigator.userAgent), samples }, null, 2))
+  console.log('LONG_RUN', JSON.stringify(samples))
 })

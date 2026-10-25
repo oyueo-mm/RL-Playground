@@ -1,0 +1,269 @@
+{
+  "mode": "Controlled Scheduler clock, batch 100. elapsedMs uses real wall CPU time; stepsPerSecond uses the test clock, not browser frame performance. Pause/Resume/Stop verified after the recorded metrics.",
+  "samples": [
+    {
+      "preset": "spiralMaze",
+      "elapsedMs": 1072.2979,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 6706
+        }
+      },
+      "qStates": 1401,
+      "qVersion": 501501,
+      "estimatedQBytes": 194854,
+      "totalSteps": 500100,
+      "completedEpisodes": 6706,
+      "episodeSteps": 17,
+      "recordedSteps": 6565,
+      "stepsPerSecond": 6250,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 0,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 100000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      }
+    },
+    {
+      "preset": "portalNetwork",
+      "elapsedMs": 1245.9256999999998,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 54270
+        }
+      },
+      "qStates": 429,
+      "qVersion": 500529,
+      "estimatedQBytes": 59760,
+      "totalSteps": 500100,
+      "completedEpisodes": 54270,
+      "episodeSteps": 3,
+      "recordedSteps": 905,
+      "stepsPerSecond": 6250,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 0,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 100000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      }
+    },
+    {
+      "preset": "oneWayCity",
+      "elapsedMs": 1101.4754000000003,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 14100
+        }
+      },
+      "qStates": 102,
+      "qVersion": 500202,
+      "estimatedQBytes": 14196,
+      "totalSteps": 500100,
+      "completedEpisodes": 14100,
+      "episodeSteps": 20,
+      "recordedSteps": 3538,
+      "stepsPerSecond": 6250,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 0,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 100000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      }
+    },
+    {
+      "preset": "switchFactory",
+      "elapsedMs": 1219.0629000000008,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 19576
+        }
+      },
+      "qStates": 4197,
+      "qVersion": 504297,
+      "estimatedQBytes": 620132,
+      "totalSteps": 500100,
+      "completedEpisodes": 19576,
+      "episodeSteps": 0,
+      "recordedSteps": 2225,
+      "stepsPerSecond": 6250,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 0,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 100000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      }
+    },
+    {
+      "preset": "collapsingRuins",
+      "elapsedMs": 1369.5572999999995,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "truncated": 47,
+          "goal": 12
+        }
+      },
+      "qStates": 16907,
+      "qVersion": 517007,
+      "estimatedQBytes": 2605208,
+      "totalSteps": 500100,
+      "completedEpisodes": 59,
+      "episodeSteps": 4532,
+      "recordedSteps": 490100,
+      "stepsPerSecond": 6250,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 51,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 100000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      }
+    },
+    {
+      "preset": "multiGoalExpedition",
+      "elapsedMs": 1714.9917000000005,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "goal": 249
+        }
+      },
+      "qStates": 94451,
+      "qVersion": 594551,
+      "estimatedQBytes": 14487002,
+      "totalSteps": 500100,
+      "completedEpisodes": 249,
+      "episodeSteps": 1573,
+      "recordedSteps": 168994,
+      "stepsPerSecond": 6250,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 1380,
+      "pauseReason": null,
+      "level": "high",
+      "budget": {
+        "maxQStates": 100000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      }
+    },
+    {
+      "preset": "riskyShortcut",
+      "elapsedMs": 1027.0925000000007,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "bomb": 7701,
+          "goal": 8846
+        }
+      },
+      "qStates": 335,
+      "qVersion": 500435,
+      "estimatedQBytes": 46768,
+      "totalSteps": 500100,
+      "completedEpisodes": 16547,
+      "episodeSteps": 23,
+      "recordedSteps": 2338,
+      "stepsPerSecond": 6250,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 0,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 100000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      }
+    },
+    {
+      "preset": "giantMixedMaze",
+      "elapsedMs": 1393.5514999999996,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "truncated": 1,
+          "goal": 2135
+        }
+      },
+      "qStates": 29492,
+      "qVersion": 529592,
+      "estimatedQBytes": 4382574,
+      "totalSteps": 500100,
+      "completedEpisodes": 2136,
+      "episodeSteps": 12,
+      "recordedSteps": 4422,
+      "stepsPerSecond": 6250,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 0,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 100000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      }
+    },
+    {
+      "preset": "finalChallenge",
+      "elapsedMs": 1204.7976999999992,
+      "lifetime": {
+        "exploration": 149780,
+        "exploitation": 350320,
+        "reasons": {
+          "truncated": 50
+        }
+      },
+      "qStates": 7118,
+      "qVersion": 507218,
+      "estimatedQBytes": 1052144,
+      "totalSteps": 500100,
+      "completedEpisodes": 50,
+      "episodeSteps": 100,
+      "recordedSteps": 490100,
+      "stepsPerSecond": 6250,
+      "uiUpdatesPerSecond": 0,
+      "qStateGrowth": 0,
+      "pauseReason": null,
+      "level": "normal",
+      "budget": {
+        "maxQStates": 100000,
+        "maxRecordedSteps": 500000,
+        "maxEpisodeSteps": 10000,
+        "maxDetailedEpisodes": 100
+      }
+    }
+  ]
+}

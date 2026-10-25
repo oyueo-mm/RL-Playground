@@ -1,0 +1,56 @@
+{
+  "project": "mobile",
+  "samples": [
+    {
+      "elapsedMs": 5057,
+      "heap": 13704960,
+      "qStates": "261",
+      "steps": "30200",
+      "episodes": "3 / 200"
+    },
+    {
+      "elapsedMs": 10071,
+      "heap": 17009340,
+      "qStates": "567",
+      "steps": "60200",
+      "episodes": "6 / 200"
+    },
+    {
+      "elapsedMs": 15091,
+      "heap": 20774696,
+      "qStates": "1,309",
+      "steps": "90200",
+      "episodes": "9 / 200"
+    },
+    {
+      "elapsedMs": 20201,
+      "heap": 20294500,
+      "qStates": "2,074",
+      "steps": "120900",
+      "episodes": "12 / 900"
+    },
+    {
+      "elapsedMs": 25220,
+      "heap": 22584400,
+      "qStates": "2,233",
+      "steps": "150900",
+      "episodes": "15 / 900"
+    },
+    {
+      "elapsedMs": 30240,
+      "heap": 25453224,
+      "qStates": "2,812",
+      "steps": "180900",
+      "episodes": "18 / 900"
+    }
+  ],
+  "pauseMs": 45,
+  "resumeMs": 45,
+  "stopMs": 49,
+  "frameCount": 1815,
+  "meanFrameGapMs": 16.66611570247934,
+  "p95FrameGapMs": 17.19999998807907,
+  "beforeBytes": 4456940,
+  "afterStopGcBytes": 17302724,
+  "after10CyclesGcBytes": 18282536
+}
