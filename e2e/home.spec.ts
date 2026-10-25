@@ -1,42 +1,5 @@
-import { expect, test, type Page } from '@playwright/test'
-
-async function navigate(page: Page, item: string) {
-  const menu = page.locator('#mobile-menu')
-  if (await menu.isVisible()) await menu.click()
-  await page.getByTestId(`nav-${item}`).click()
-}
-
-const config = (width: number, height: number) => ({ version: 1, type: 'gridworld', width, height, start: { x: 0, y: 0 }, goals: [{ x: width - 1, y: height - 1 }], walls: [], bombs: [], stepReward: -0.1, wallPenalty: -1, goalReward: 10, bombPenalty: -10 })
-async function loadMap(page: Page, data: object) {
-  await navigate(page, 'editor')
-  const editor = page.getByTestId('env-editor')
-  await editor.getByRole('button', { name: /속성 \/ 파일/ }).click()
-  await editor.getByTestId('env-editor-import-input').setInputFiles({ name: 'map.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data)) })
-  await editor.getByTestId('env-editor-apply').click()
-  await expectFits(page, 'env-editor')
-  await editor.getByRole('button', { name: '속성 닫기' }).click()
-  await expectFits(page, 'env-editor')
-}
-async function expectFits(page: Page, scope = 'learning-grid') {
-  const grid = page.getByTestId(scope).getByTestId('grid-stack')
-  await expect(grid).toBeVisible()
-  await expect.poll(async () => {
-    const box = await grid.boundingBox()
-    const viewport = page.viewportSize()!
-    const area = await page.getByTestId(scope).getByTestId('grid-viewport').boundingBox()
-    const toolbar = await page.getByTestId(scope).locator('.floating-toolbar').boundingBox()
-    const svg = page.getByTestId(scope).getByTestId('grid-svg')
-    const columns = Number(await svg.getAttribute('width')) / 48
-    const rows = Number(await svg.getAttribute('height')) / 48
-    if (!box || !area) return false
-    const cellSize = Math.min((area.width - 8) / columns, (area.height - 8) / rows)
-    return box.width > 0 && box.x >= -1 && box.y >= -1 && box.x + box.width <= viewport.width + 1 && box.y + box.height <= viewport.height + 1
-      && Math.abs(box.width - columns * cellSize) < 1 && Math.abs(box.height - rows * cellSize) < 1
-      && Math.abs(box.x - area.x - (area.width - box.width) / 2) < 1 && Math.abs(box.y - area.y - (area.height - box.height) / 2) < 1
-      && (!toolbar || box.y >= toolbar.y + toolbar.height - 1)
-  }).toBe(true)
-  expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1 && document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
-}
+import { expect, test } from '@playwright/test'
+import { navigate, config, loadMap, expectFits } from './helpers'
 
 test('preset workflow, tooltips, editor history and guide fit all requested viewports', async ({ page }, info) => {
   page.on('dialog', dialog => dialog.accept())
@@ -50,7 +13,7 @@ test('preset workflow, tooltips, editor history and guide fit all requested view
     await expect(page.getByTestId('open-map-gallery')).toHaveCount(0)
     await navigate(page, 'presets')
     await expect(page.locator('#preset-panel')).toBeVisible()
-    await expect(page.locator('.gallery-thumbnails > button')).toHaveCount(16)
+    await expect(page.locator('.gallery-thumbnails > button')).toHaveCount(25)
     await page.getByTestId('preset-mixedChallenge').click()
     await expectFits(page)
     if (width > 760) {
@@ -122,7 +85,7 @@ test('preset workflow, tooltips, editor history and guide fit all requested view
     await page.getByRole('checkbox', { name: /종료 전이/ }).uncheck()
     await page.getByTestId('sarsa-result').scrollIntoViewIfNeeded()
     await page.screenshot({ animations: 'disabled', path: info.outputPath(`workflow-calculator-${width}x${height}.png`) })
-    await page.locator('.guide-content').evaluate(el => el.scrollTo(0, 0))
+    await page.locator('.guide-page').evaluate(el => el.scrollTo(0, 0))
     expect(await page.locator('#sidebar-navigation').evaluate(el => el.scrollHeight <= el.clientHeight + 1)).toBe(true)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1 && document.documentElement.scrollHeight <= innerHeight + 1)).toBe(true)
     await page.screenshot({ animations: 'disabled', path: info.outputPath(`workflow-guide-${width}x${height}.png`) })
@@ -245,15 +208,15 @@ test('floating controls, state preservation, stop, real rewards and independent 
   expect(errors).toEqual([])
 })
 
-test('16 visual presets preview without applying, and selected draft can be applied', async ({ page }) => {
+test('25 visual presets preview without applying, and selected draft can be applied', async ({ page }) => {
   page.on('dialog', dialog => dialog.accept())
   await page.goto('./')
   await navigate(page, 'editor')
   const editor = page.getByTestId('env-editor')
   await navigate(page, 'presets')
   const thumbnails = page.locator('.gallery-thumbnails > button')
-  await expect(thumbnails).toHaveCount(16)
-  for (let index = 0; index < 16; index++) {
+  await expect(thumbnails).toHaveCount(25)
+  for (let index = 0; index < 25; index++) {
     await thumbnails.nth(index).click()
     await expect(thumbnails.nth(index)).toHaveAttribute('aria-pressed', 'true')
     await expect(page.locator('.gallery-preview svg')).toBeVisible()

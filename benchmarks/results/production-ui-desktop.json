@@ -1,0 +1,56 @@
+{
+  "project": "desktop",
+  "samples": [
+    {
+      "elapsedMs": 5066,
+      "heap": 10445808,
+      "qStates": "51",
+      "steps": "30200",
+      "episodes": "3 / 200"
+    },
+    {
+      "elapsedMs": 10084,
+      "heap": 15627112,
+      "qStates": "55",
+      "steps": "60200",
+      "episodes": "6 / 200"
+    },
+    {
+      "elapsedMs": 15094,
+      "heap": 17472380,
+      "qStates": "60",
+      "steps": "90200",
+      "episodes": "9 / 200"
+    },
+    {
+      "elapsedMs": 20171,
+      "heap": 17842488,
+      "qStates": "77",
+      "steps": "120800",
+      "episodes": "13 / 629"
+    },
+    {
+      "elapsedMs": 25208,
+      "heap": 23088428,
+      "qStates": "78",
+      "steps": "150800",
+      "episodes": "16 / 629"
+    },
+    {
+      "elapsedMs": 30239,
+      "heap": 23718056,
+      "qStates": "78",
+      "steps": "180800",
+      "episodes": "22 / 372"
+    }
+  ],
+  "pauseMs": 32,
+  "resumeMs": 32,
+  "stopMs": 60,
+  "frameCount": 1815,
+  "meanFrameGapMs": 16.65983471074873,
+  "p95FrameGapMs": 17.100000008940697,
+  "beforeBytes": 4404592,
+  "afterStopGcBytes": 16826896,
+  "after10CyclesGcBytes": 17724648
+}
