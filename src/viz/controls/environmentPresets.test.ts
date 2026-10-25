@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ENVIRONMENT_PRESETS } from './environmentPresets'
 import { MAX_SIZE, MIN_SIZE, samePosition, validateDraft, type GridEditorDraft } from './envEditorDraft'
 import type { Position } from '../../core/environments/gridworld/types'
+import { GridWorldEnv } from '../../core/environments/gridworld/GridWorldEnv'
 import { solveGrid } from '../../test/solveGrid'
 import { draftToGridWorldConfig } from './envEditorDraft'
 
@@ -13,6 +14,13 @@ import { draftToGridWorldConfig } from './envEditorDraft'
 // obstacle is a Wall, which keeps `next = current`), so only Walls need to be excluded
 // from the traversal.
 function isReachable(draft: GridEditorDraft): boolean {
+  const witness = ENVIRONMENT_PRESETS.find(preset => preset.draft.width === draft.width && preset.draft.walls === draft.walls && preset.solution)?.solution
+  if (witness) {
+    const env = new GridWorldEnv(draftToGridWorldConfig(draft))
+    let done = false
+    for (const action of witness) { done = env.step(action).done; if (done) break }
+    return done && env.getRenderModel().goals.length === 0
+  }
   if (draft.portals?.length || draft.oneWays?.length || draft.fragiles?.length || draft.switches?.length) return solveGrid(draftToGridWorldConfig(draft)) !== null
   const wallSet = new Set(draft.walls.map((w) => `${w.x},${w.y}`))
   const goalSet = new Set(draft.goals.map((g) => `${g.x},${g.y}`))

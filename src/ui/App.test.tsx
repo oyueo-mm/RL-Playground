@@ -1,10 +1,18 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render as rtlRender, screen, within } from '@testing-library/react'
+import { act, cleanup, fireEvent, render as baseRender, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createDefaultGridWorldConfig } from '../core/environments/gridworld/GridWorldEnv'
 // Existing simulator regression suite; shell/navigation is covered in Home.test.tsx.
 import App from './Simulator'
 import { engine } from './engine'
+
+// Analysis assertions inspect a visible panel. Hidden panels now defer rendering.
+function rtlRender(ui: Parameters<typeof baseRender>[0]) {
+  const result = baseRender(ui)
+  const analysis = screen.getByTestId('toggle-analysis')
+  if (analysis.getAttribute('aria-expanded') !== 'true') fireEvent.click(analysis)
+  return result
+}
 
 afterEach(cleanup)
 
@@ -423,6 +431,7 @@ describe('App (integration, real Engine — Phase 7 §15)', () => {
     openEditor()
     fireEvent.click(editorGrid().getByTestId('cell-3,3'))
     fireEvent.click(screen.getByTestId('env-editor-apply'))
+    openEditor() // return to the live analysis after applying
 
     const snapshot = engine.getSnapshot()
     expect(snapshot.episode).toBe(0)
@@ -499,6 +508,7 @@ describe('App (integration, real Engine — Phase 7 §15)', () => {
     fireEvent.click(screen.getByTestId('env-editor-mode-goal'))
     fireEvent.click(editorGrid().getByTestId('cell-2,2')) // move Goal in-bounds for the 3x3 grid
     fireEvent.click(screen.getByTestId('env-editor-apply'))
+    openEditor() // inspect the updated, visible analysis panel
 
     expect(screen.getByTestId('qvalue-bars-empty')).toBeTruthy()
     expect(screen.queryByTestId('qvalue-bars')).toBeNull()
@@ -1757,6 +1767,7 @@ describe('App (integration, real Engine — Phase 24: Episode Detail / Reward Ch
 
     openEditor()
     fireEvent.click(screen.getByTestId('env-editor-apply'))
+    openEditor() // inspect the updated, visible analysis panel
 
     expect(screen.getByTestId('episode-detail-empty')).toBeTruthy()
   })
@@ -1933,6 +1944,7 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
     fireEvent.click(within(screen.getByTestId('env-editor-grid')).getByTestId('cell-1,1'))
     fireEvent.click(screen.getByTestId('env-editor-apply'))
+    openEditor() // inspect the updated, visible analysis panel
 
     fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
@@ -2195,6 +2207,7 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     fireEvent.click(screen.getByTestId('env-editor-mode-bomb'))
     fireEvent.click(within(screen.getByTestId('env-editor-grid')).getByTestId('cell-1,1'))
     fireEvent.click(screen.getByTestId('env-editor-apply'))
+    openEditor() // inspect the updated, visible analysis panel
 
     expect(screen.getByTestId('episode-trajectory-empty')).toBeTruthy()
   })

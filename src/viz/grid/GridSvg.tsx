@@ -6,6 +6,7 @@
 import type { EnvRenderModel } from '../../core/types/render'
 import type { StateKey } from '../../core/types/rl'
 import { FeatureOverlay } from './FeatureOverlay'
+import { memo, type SVGProps } from 'react'
 
 type GridRenderModel = Extract<EnvRenderModel, { kind: 'grid' }>
 
@@ -23,6 +24,9 @@ export interface GridSvgProps {
    */
   className?: string
   showAgent?: boolean
+  ariaLabel?: string
+  movable?: boolean
+  interaction?: Pick<SVGProps<SVGSVGElement>, 'onPointerDown' | 'onPointerMove' | 'onPointerUp' | 'onPointerCancel'>
 }
 
 /**
@@ -37,7 +41,7 @@ function parsePosition(stateKey: string): { x: number; y: number } {
 
 type CellKind = 'empty' | 'wall' | 'start' | 'goal' | 'bomb'
 
-export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onStateSelect, className, showAgent = true }: GridSvgProps) {
+function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onStateSelect, className, showAgent = true, ariaLabel = 'GridWorld', movable, interaction }: GridSvgProps) {
   const { width, height, walls, bombs, start, goals, agentPos } = renderModel
   const wallSet = new Set(walls)
   const bombSet = new Set(bombs)
@@ -78,12 +82,13 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
 
   return (
     <svg
+      {...interaction}
       width={svgWidth}
       height={svgHeight}
       viewBox={`0 0 ${svgWidth} ${svgHeight}`}
       className={className}
       role={onStateSelect ? 'group' : 'img'}
-      aria-label="GridWorld"
+      aria-label={ariaLabel}
       data-testid="grid-svg"
     >
       {cells.map((cell) => {
@@ -111,6 +116,7 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
               } : undefined}
               data-testid={`cell-${cell.key}`}
               data-cell-kind={cell.kind}
+              data-movable={movable && (cell.kind !== 'empty' || descriptions.has(cell.key)) ? 'true' : undefined}
             />
             {/*
               Phase 20: a simple bomb glyph (body + fuse + spark) built from the same
@@ -173,3 +179,9 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
     </svg>
   )
 }
+
+export const GridSvg = memo(GridSvgView, (a, b) => {
+  if (a.showAgent !== false || b.showAgent !== false) return false
+  const x = a.renderModel, y = b.renderModel
+  return a.selectedState === b.selectedState && a.onStateSelect === b.onStateSelect && a.cellSize === b.cellSize && a.className === b.className && x.width === y.width && x.height === y.height && x.start === y.start && x.walls === y.walls && x.bombs === y.bombs && x.goals === y.goals && x.features === y.features && x.collapsedFragiles === y.collapsedFragiles && x.openGroups === y.openGroups
+})

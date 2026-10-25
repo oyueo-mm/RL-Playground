@@ -24,6 +24,9 @@ import { GridViewport } from '../../ui/GridViewport'
 import { FloatingToolbar } from '../../ui/FloatingToolbar'
 import { TooltipButton } from '../../ui/TooltipButton'
 import { toolbarTips } from '../../ui/toolbarTips'
+import { EditorIcon } from '../../ui/EditorIcon'
+import { useElementDrag } from '../../ui/hooks/useElementDrag'
+import { elementAt, nextPortalId, nextGroupId, placeElement, type EditError } from './editorOperations'
 import { useDraftHistory } from '../../ui/hooks/useDraftHistory'
 import { parseStateKey } from '../grid/stateKey'
 import { translations, translateValidationError, type Dictionary, type Locale } from '../../ui/i18n'
@@ -99,8 +102,16 @@ export function EnvEditor({
   const [selectedCell, setSelectedCell] = useState<StateKey | null>(null)
   const [portalId, setPortalId] = useState('P1')
   const [groupId, setGroupId] = useState('G1')
+  const [autoPortal, setAutoPortal] = useState(true)
+  const [autoGroup, setAutoGroup] = useState(true)
+  const [keepGroup, setKeepGroup] = useState(false)
+  const effectivePortalId = mode === 'select' || !autoPortal ? portalId : nextPortalId(draft, portalId)
+  const effectiveGroupId = mode === 'select' || !autoGroup || keepGroup ? groupId : nextGroupId(draft, groupId)
   const [direction, setDirection] = useState<Direction>(3)
   const [editMessage, setEditMessage] = useState('')
+  const [touchMove, setTouchMove] = useState(false)
+  const touchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
+  const drag = useElementDrag(draft, fullscreen && active && mode === 'select', (next, to) => { setDraft(next); setSelectedCell(positionId(to)) }, showEditError, touchMove || !touchDevice)
   const handledPreset = useRef<typeof presetRequest>(null)
   useEffect(() => {
     if (!presetRequest || handledPreset.current === presetRequest) return
@@ -212,7 +223,18 @@ export function EnvEditor({
     if (preset) setDraft(preset.draft)
   }
 
+  function showEditError(error: EditError) {
+    setEditMessage((locale === 'ko' ? {
+      start: '시작점은 삭제/덮어쓸 수 없습니다. 다른 셀로 옮겨 주세요.',
+      'last-goal': '마지막 목표는 보호됩니다. 먼저 다른 목표를 배치하세요.',
+      'portal-complete': '이 포털 쌍은 완성되었습니다. 자동 연결이나 새 ID를 선택하세요.',
+      'portal-merge': '같은 포털의 두 끝점은 서로 다른 셀이어야 합니다.',
+      bounds: '격자 안에 놓아 주세요.',
+    } : { start: 'Start is protected. Move it to another cell.', 'last-goal': 'The last goal is protected. Place another goal first.', 'portal-complete': 'This pair is complete. Use automatic pairing or another ID.', 'portal-merge': 'Portal endpoints must occupy distinct cells.', bounds: 'Drop inside the grid.' })[error])
+  }
+
   function handleCellClick(stateKey: StateKey) {
+    if (drag.consumeClick()) return
     const pos = parseStateKey(stateKey)
     setSelectedCell(stateKey)
     setEditMessage('')
@@ -226,6 +248,12 @@ export function EnvEditor({
       onOpenProperties?.(); setPropertiesOpen(true); return
     }
     if (mode === 'erase') { deleteCell(stateKey); return }
+    if (fullscreen) {
+      const result = placeElement(draft, pos, { kind: mode, portalId: effectivePortalId, groupId: effectiveGroupId, direction })
+      if (result.error) showEditError(result.error)
+      else if (result.draft !== draft) setDraft(result.draft)
+      return
+    }
     if (mode === 'oneWay') {
       const tile = draft.oneWays?.find(tile => samePosition(tile, pos))
       if (tile) {
@@ -411,25 +439,38 @@ export function EnvEditor({
   if (fullscreen) return <div className="fullscreen-editor" data-testid="env-editor">
     <h2 className="sr-only">{t.envEditor.heading}</h2>
     <FloatingToolbar className="editor-toolbar" active={active} label={locale === 'ko' ? '맵 편집 도구' : 'Map editing tools'}>
-      <div className="tool-buttons" role="group" aria-label={locale === 'ko' ? '배치 요소' : 'Placement tools'}>{(['select', 'wall', 'start', 'goal', 'bomb', 'portal', 'oneWay', 'fragile', 'switch', 'toggleWall', 'erase'] as const).map(tool => <TooltipButton key={tool} tip={tips[tool]} aria-label={modeLabel[tool]} aria-pressed={mode === tool} onClick={() => setMode(tool)} data-testid={`env-editor-mode-${tool}`}><span aria-hidden="true">{({ select: '↖', wall: '▦', start: 'S', goal: '⚑', bomb: '×', portal: '◎', oneWay: '→', fragile: 'ϟ', switch: '⏻', toggleWall: '▥', erase: '⌫' })[tool]}</span></TooltipButton>)}</div>
+      <div className="tool-buttons" role="group" aria-label={locale === 'ko' ? '배치 요소' : 'Placement tools'}>{(['select', 'wall', 'start', 'goal', 'bomb', 'portal', 'oneWay', 'fragile', 'switch', 'toggleWall', 'erase'] as const).map(tool => <TooltipButton key={tool} tip={tips[tool]} aria-label={modeLabel[tool]} aria-pressed={mode === tool} onClick={() => setMode(tool)} data-testid={`env-editor-mode-${tool}`}><EditorIcon tool={tool} /></TooltipButton>)}</div>
+      {(mode === 'portal' || mode === 'switch' || mode === 'toggleWall') && <span className="link-indicator" data-testid="current-link-id">{mode === 'portal' ? `${effectivePortalId} · ${draft.portals?.find(pair => pair.id === effectivePortalId)?.ends.length ?? 0}/2` : effectiveGroupId}</span>}
       <span className="toolbar-separator" />
-      <TooltipButton tip={tips.undo} aria-label={locale === 'ko' ? '실행 취소' : 'Undo'} disabled={!canUndo} onClick={undo} data-testid="editor-undo">↶</TooltipButton>
-      <TooltipButton tip={tips.redo} aria-label={locale === 'ko' ? '다시 실행' : 'Redo'} disabled={!canRedo} onClick={redo} data-testid="editor-redo">↷</TooltipButton>
+      {touchDevice && mode === 'select' && <TooltipButton tip={locale === 'ko' ? '켜면 손가락으로 요소를 이동합니다. 끄면 확대된 격자를 스크롤할 수 있습니다.' : 'Enable to move elements by touch. Disable to scroll the zoomed grid.'} aria-pressed={touchMove} onClick={() => setTouchMove(value => !value)} data-testid="touch-move-mode">{locale === 'ko' ? '터치 이동' : 'Touch move'}</TooltipButton>}
+      <TooltipButton tip={tips.undo} aria-label={locale === 'ko' ? '실행 취소' : 'Undo'} disabled={!canUndo} onClick={undo} data-testid="editor-undo"><EditorIcon tool="undo" /></TooltipButton>
+      <TooltipButton tip={tips.redo} aria-label={locale === 'ko' ? '다시 실행' : 'Redo'} disabled={!canRedo} onClick={redo} data-testid="editor-redo"><EditorIcon tool="redo" /></TooltipButton>
       <TooltipButton tip={tips.properties} onClick={() => { onOpenProperties?.(); setPropertiesOpen(!propertiesOpen || panelBlocked) }} aria-expanded={propertiesOpen && !panelBlocked} aria-controls="editor-properties">{locale === 'ko' ? '속성 / 파일' : 'Properties / files'}</TooltipButton>
       <TooltipButton tip={tips.apply} className="toolbar-primary" onClick={handleApply} disabled={!isValid} data-testid="env-editor-apply">{t.envEditor.apply}</TooltipButton>
     </FloatingToolbar>
-    <div className="editor-body" data-testid="env-editor-grid">
-      <GridViewport width={draft.width} height={draft.height} active={active}><GridSvg renderModel={draftToRenderModel(draft)} selectedState={selectedCell} cellSize={48} onStateSelect={handleCellClick} className="stage-grid" /></GridViewport>
+    <div className={`editor-body ${mode === 'select' ? 'editor-move-mode' : ''} ${mode === 'select' && touchMove ? 'touch-element-mode' : ''}`} data-testid="env-editor-grid">
+      <GridViewport width={draft.width} height={draft.height} active={active}><GridSvg interaction={drag.interaction} movable={mode === 'select' && (!touchDevice || touchMove)} renderModel={draftToRenderModel(draft)} selectedState={selectedCell} cellSize={48} onStateSelect={handleCellClick} className="stage-grid" />
+      {drag.preview && <svg className="stage-overlay drag-preview" viewBox={`0 0 ${draft.width * 48} ${draft.height * 48}`} data-testid="drag-preview" data-valid={drag.preview.valid}>
+        <rect x={drag.preview.from.x * 48} y={drag.preview.from.y * 48} width={48} height={48} fill="#ffffffaa" stroke="#819282" strokeDasharray="3 3" />
+        <rect x={drag.preview.to.x * 48} y={drag.preview.to.y * 48} width={48} height={48} fill={drag.preview.valid ? '#b7d6ad99' : '#f2b5ae99'} stroke={drag.preview.valid ? '#30633e' : '#b34134'} strokeWidth={2} />
+        <svg x={drag.preview.to.x * 48 + 10} y={drag.preview.to.y * 48 + 10} width={28} height={28} viewBox="0 0 24 24"><EditorIcon tool={elementAt(draft, drag.preview.from)?.kind ?? 'select'} /></svg>
+      </svg>}
+      </GridViewport>
       <aside className="properties-panel" id="editor-properties" hidden={!propertiesOpen || panelBlocked} aria-label={locale === 'ko' ? '맵 속성' : 'Map properties'}>
         <header><h2>{locale === 'ko' ? '맵 속성' : 'Map properties'}</h2><button onClick={() => setPropertiesOpen(false)} aria-label={locale === 'ko' ? '속성 닫기' : 'Close properties'}>×</button></header>
         <div className="property-fields" onBlurCapture={boundary}>
           <p>{locale === 'ko' ? '현재 도구' : 'Current tool'}: <strong>{modeLabel[mode]}</strong>{selectedCell ? ` · (${selectedCell})` : ''}</p>
-          <label>{locale === 'ko' ? '포털 쌍 ID' : 'Portal pair ID'}<input value={portalId} maxLength={24} data-testid="portal-id" onChange={event => {
-            const id = event.target.value; setPortalId(id)
+          <label><input type="checkbox" checked={autoPortal} data-testid="auto-portal" onChange={event => setAutoPortal(event.target.checked)} />{locale === 'ko' ? '포털 자동 연결' : 'Automatic portal pairing'}</label>
+          <datalist id="existing-portals">{draft.portals?.map(pair => <option key={pair.id} value={pair.id}>{pair.ends.length}/2</option>)}</datalist>
+          <label><input type="checkbox" checked={autoGroup} data-testid="auto-group" onChange={event => setAutoGroup(event.target.checked)} />{locale === 'ko' ? '그룹 자동 생성' : 'Automatic wall groups'}</label>
+          <label><input type="checkbox" checked={keepGroup} data-testid="keep-group" onChange={event => setKeepGroup(event.target.checked)} />{locale === 'ko' ? '현재 그룹에 계속 추가' : 'Keep adding to current group'}</label>
+          <datalist id="existing-groups">{[...new Set([...(draft.switches ?? []), ...(draft.toggleWalls ?? [])].map(tile => tile.groupId))].map(id => <option key={id} value={id}>{draft.switches?.filter(tile => tile.groupId === id).length ?? 0} S / {draft.toggleWalls?.filter(tile => tile.groupId === id).length ?? 0} W</option>)}</datalist>
+          <label>{locale === 'ko' ? '포털 쌍 ID' : 'Portal pair ID'}<input value={effectivePortalId} list="existing-portals" maxLength={24} data-testid="portal-id" onChange={event => {
+            const id = event.target.value; setAutoPortal(false); setPortalId(id)
             if (mode === 'select' && selectedCell) recordInput(prev => ({ ...prev, portals: prev.portals?.map(pair => pair.ends.some(end => positionId(end) === selectedCell) ? { ...pair, id } : pair) }), 'portal-id')
           }} /></label>
-          <label>{locale === 'ko' ? '벽 그룹 ID' : 'Wall group ID'}<input value={groupId} maxLength={24} data-testid="group-id" onChange={event => {
-            const id = event.target.value; setGroupId(id)
+          <label>{locale === 'ko' ? '벽 그룹 ID' : 'Wall group ID'}<input value={effectiveGroupId} list="existing-groups" maxLength={24} data-testid="group-id" onChange={event => {
+            const id = event.target.value; setAutoGroup(false); setGroupId(id)
             if (mode === 'select' && selectedCell) recordInput(prev => ({ ...prev, switches: prev.switches?.map(tile => positionId(tile) === selectedCell ? { ...tile, groupId: id } : tile), toggleWalls: prev.toggleWalls?.map(tile => positionId(tile) === selectedCell ? { ...tile, groupId: id } : tile) }), 'group-id')
           }} /></label>
           <label>{locale === 'ko' ? '허용 방향' : 'Allowed direction'}<select value={direction} data-testid="one-way-direction" onChange={event => {

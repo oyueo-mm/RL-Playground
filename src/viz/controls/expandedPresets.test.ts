@@ -8,9 +8,9 @@ import { parseEnvImport, serializeEnvExport } from './envEditorIO'
 describe('Expanded presets', () => {
   it('preserves the original eleven IDs and adds exactly the five requested presets', () => {
     expect(ENVIRONMENT_PRESETS.slice(0, 11).map(preset => preset.id)).toEqual(['basic', 'corridor', 'maze', 'bombField', 'multiGoal', 'treasureHunt', 'obstacleCourse', 'complexMaze', 'deadEndMaze', 'multipleRoute', 'riskyPath'])
-    expect(ENVIRONMENT_PRESETS.slice(11).map(preset => preset.id)).toEqual(['portalMaze', 'oneWayLabyrinth', 'fragileBridge', 'switchPuzzle', 'mixedChallenge'])
+    expect(ENVIRONMENT_PRESETS.slice(11, 16).map(preset => preset.id)).toEqual(['portalMaze', 'oneWayLabyrinth', 'fragileBridge', 'switchPuzzle', 'mixedChallenge'])
   })
-  it.each(ENVIRONMENT_PRESETS.slice(11))('$id is valid, described, serializable and solvable with complete dynamic-state BFS', preset => {
+  it.each(ENVIRONMENT_PRESETS.slice(11, 16))('$id is valid, described, serializable and solvable with complete dynamic-state BFS', preset => {
     expect(validateDraft(preset.draft)).toEqual([])
     expect(preset.metadata?.elements.length).toBeGreaterThan(0)
     expect(preset.metadata?.description.ko).toBeTruthy()

@@ -22,7 +22,7 @@ describe('Preset and settings workflow', () => {
     const before = engine.getSnapshot()
     click('nav-presets')
     expect(document.getElementById('preset-panel')).toBeTruthy()
-    expect(screen.getAllByTestId(/^preset-/)).toHaveLength(16)
+    expect(screen.getAllByTestId(/^preset-(?!search)/)).toHaveLength(25)
     click('preset-maze')
     expect(engine.getSnapshot()).toEqual(before)
     click('toggle-analysis')

@@ -1,0 +1,36 @@
+import type { EnvironmentPreset } from './environmentPresets'
+import type { GridEditorDraft } from './envEditorDraft'
+import type { Position } from '../../core/environments/gridworld/types'
+
+const right = (n: number) => Array<number>(n).fill(3)
+const down = (n: number) => Array<number>(n).fill(1)
+const left = (n: number) => Array<number>(n).fill(2)
+const up = (n: number) => Array<number>(n).fill(0)
+const row = (y: number, a: number, b: number) => Array.from({ length: Math.abs(b - a) + 1 }, (_, i) => ({ x: a + i * Math.sign(b - a), y }))
+const column = (x: number, a: number, b: number) => Array.from({ length: Math.abs(b - a) + 1 }, (_, i) => ({ x, y: a + i * Math.sign(b - a) }))
+const key = (p: Position) => `${p.x},${p.y}`
+function wallsOutside(width: number, height: number, path: Position[]) {
+  const open = new Set(path.map(key))
+  return Array.from({ length: width * height }, (_, i) => ({ x: i % width, y: Math.floor(i / width) })).filter(p => !open.has(key(p)))
+}
+function actions(path: Position[]): number[] { return path.slice(1).map((p, i) => p.x > path[i].x ? 3 : p.x < path[i].x ? 2 : p.y > path[i].y ? 1 : 0) }
+function preset(id: string, ko: string, en: string, descriptionKo: string, descriptionEn: string, elements: string[], width: number, height: number, overrides: Partial<GridEditorDraft>, solution: number[]): EnvironmentPreset {
+  return { id, solution, metadata: { name: { ko, en }, description: { ko: descriptionKo, en: descriptionEn }, difficulty: { ko: '고급', en: 'Hard' }, elements }, draft: { width, height, start: { x: 0, y: 0 }, goals: [{ x: width - 1, y: height - 1 }], walls: [], bombs: [], stepReward: -.1, wallPenalty: -1, goalReward: 10, bombPenalty: -12, ...overrides } }
+}
+const spiral = [...row(0, 0, 11), ...column(11, 1, 11), ...row(11, 10, 0), ...column(0, 10, 2), ...row(2, 1, 9), ...column(9, 3, 9), ...row(9, 8, 2), ...column(2, 8, 4), ...row(4, 3, 7), ...column(7, 5, 7), ...row(7, 6, 4), ...column(4, 6, 6), { x: 5, y: 6 }]
+const ruins = [...row(0, 0, 14), ...column(14, 1, 14), ...row(14, 13, 0), ...column(0, 13, 7), ...row(7, 1, 7)]
+const mixed = [...row(1, 0, 3), ...column(10, 4, 18), ...row(8, 11, 17), ...row(18, 11, 19)]
+const finalPath = [...row(1, 0, 8), ...row(7, 2, 17), ...column(17, 13, 18), ...row(18, 16, 1)]
+
+/** Every solution below is replayed through real GridWorldEnv transitions in tests. */
+export const COMPLEX_PRESETS: EnvironmentPreset[] = [
+  preset('spiralMaze', 'Spiral Maze · 나선 미로', 'Spiral Maze', '안쪽으로 감기는 긴 길에서 지연 보상을 전파합니다.', 'Propagate delayed rewards along a winding inward spiral.', ['Wall'], 12, 12, { goals: [spiral.at(-1)!], walls: wallsOutside(12, 12, spiral) }, actions(spiral)),
+  preset('portalNetwork', 'Portal Network · 포털 연결망', 'Portal Network', '세 쌍의 포털로 분리된 구역과 먼 목표를 연결합니다.', 'Chain three portal pairs across separated regions and long distances.', ['Portal', 'Wall'], 15, 15, { start: { x: 0, y: 2 }, goals: [{ x: 14, y: 12 }], walls: [4, 9].flatMap(x => column(x, 0, 14)), portals: [{ id: 'P1', ends: [{ x: 2, y: 2 }, { x: 6, y: 10 }] }, { id: 'P2', ends: [{ x: 7, y: 10 }, { x: 11, y: 3 }] }, { id: 'P3', ends: [{ x: 12, y: 3 }, { x: 13, y: 12 }] }] }, right(5)),
+  preset('oneWayCity', 'One-way City · 일방통행 도시', 'One-way City', '블록 사이 도로에서 진입과 출발 방향을 구분합니다.', 'Distinguish free entry from constrained departure on city streets.', ['One-way', 'Wall'], 16, 16, { goals: [{ x: 15, y: 12 }], walls: Array.from({ length: 256 }, (_, i) => ({ x: i % 16, y: Math.floor(i / 16) })).filter(p => p.x % 4 !== 0 && p.y % 4 !== 0), oneWays: [...column(0, 1, 11).map(p => ({ ...p, direction: 1 as const })), ...row(12, 1, 14).map(p => ({ ...p, direction: 3 as const })), ...row(4, 1, 15).map(p => ({ ...p, direction: 2 as const }))] }, [...down(12), ...right(15)]),
+  preset('switchFactory', 'Switch Factory · 스위치 공장', 'Switch Factory', '세 개의 문을 순서대로 열며 독립 그룹 상태를 학습합니다.', 'Open three gates in order and learn independent group states.', ['Switch', 'Toggle wall', 'Wall'], 14, 14, { start: { x: 0, y: 6 }, goals: [{ x: 13, y: 6 }], walls: [3, 7, 11].flatMap(x => column(x, 0, 13).filter(p => p.y !== 6)), switches: [1, 5, 9].map((x, i) => ({ x, y: 6, groupId: `G${i + 1}` })), toggleWalls: [3, 7, 11].map((x, i) => ({ x, y: 6, groupId: `G${i + 1}` })) }, right(13)),
+  preset('collapsingRuins', 'Collapsing Ruins · 무너지는 유적', 'Collapsing Ruins', '30개 바닥의 붕괴 이력을 구분하며 되돌릴 수 없는 길을 건넙니다.', 'Track thirty collapsing floors along an irreversible route.', ['Fragile', 'Wall'], 15, 15, { goals: [ruins.at(-1)!], walls: wallsOutside(15, 15, ruins), fragiles: ruins.slice(2, 32) }, actions(ruins)),
+  preset('multiGoalExpedition', 'Multi-goal Expedition · 목표 원정', 'Multi-goal Expedition', '네 목표의 수집 순서와 포털 지름길을 계획합니다.', 'Plan an order for four goals and optional portal shortcuts.', ['Multi-goal', 'Portal', 'Fragile'], 20, 20, { goals: [{ x: 19, y: 0 }, { x: 19, y: 19 }, { x: 0, y: 19 }, { x: 10, y: 9 }], walls: [5, 10, 15].flatMap(y => row(y, 1, 18).filter(p => ![2, 9, 17].includes(p.x))), portals: [{ id: 'P1', ends: [{ x: 2, y: 2 }, { x: 17, y: 17 }] }, { id: 'P2', ends: [{ x: 2, y: 17 }, { x: 17, y: 2 }] }], fragiles: row(0, 2, 17) }, [...right(19), ...down(19), ...left(19), ...up(10), ...right(10)]),
+  preset('riskyShortcut', 'Risky Shortcut · 위험한 지름길', 'Risky Shortcut', '폭탄 옆 짧은 길과 북쪽의 긴 안전 경로를 비교합니다.', 'Compare a short lane beside bombs with a long northern detour.', ['Bomb', 'Wall'], 20, 16, { start: { x: 0, y: 7 }, goals: [{ x: 19, y: 7 }], walls: [...row(8, 2, 17), ...row(6, 2, 17).filter(p => p.x < 5 || p.x > 14)], bombs: row(6, 5, 14) }, [...up(4), ...right(19), ...down(4)]),
+  preset('giantMixedMaze', 'Giant Mixed Maze · 복합 대미로', 'Giant Mixed Maze', '옆방 목표를 먼저 수집하고 스위치·붕괴 다리로 진행합니다.', 'Collect a side-room goal before committing to a switch-controlled collapsing bridge.', ['Portal', 'Multi-goal', 'Fragile', 'One-way', 'Switch', 'Toggle wall'], 20, 20, { start: { x: 0, y: 1 }, goals: [{ x: 17, y: 8 }, { x: 19, y: 18 }], walls: wallsOutside(20, 20, mixed), portals: [{ id: 'P1', ends: [{ x: 3, y: 1 }, { x: 10, y: 4 }] }], switches: [{ x: 10, y: 9, groupId: 'G1' }], toggleWalls: [{ x: 10, y: 10, groupId: 'G1' }], fragiles: column(10, 11, 15), oneWays: [{ x: 10, y: 16, direction: 1 }] }, [...right(3), ...down(4), ...right(7), ...left(7), ...down(10), ...right(9)]),
+  preset('finalChallenge', 'Final Challenge · 마지막 퍼즐', 'Final Challenge', '세 목표, 두 포털 쌍, 세 문과 20개 붕괴 바닥을 순서대로 해결합니다. 250회 학습만으로 수렴을 보장하지 않습니다.', 'Sequence three goals, two portal pairs, three gates and twenty collapsing floors. 250 episodes do not guarantee convergence.', ['Multi-goal', 'Portal', 'Fragile', 'One-way', 'Switch', 'Toggle wall'], 20, 20, { start: { x: 0, y: 1 }, goals: [{ x: 6, y: 1 }, { x: 10, y: 7 }, { x: 1, y: 18 }], walls: wallsOutside(20, 20, finalPath), portals: [{ id: 'P1', ends: [{ x: 8, y: 1 }, { x: 2, y: 7 }] }, { id: 'P2', ends: [{ x: 17, y: 7 }, { x: 17, y: 13 }] }], switches: [{ x: 2, y: 1, groupId: 'G1' }, { x: 5, y: 7, groupId: 'G2' }, { x: 17, y: 14, groupId: 'G3' }], toggleWalls: [{ x: 4, y: 1, groupId: 'G1' }, { x: 8, y: 7, groupId: 'G2' }, { x: 17, y: 16, groupId: 'G3' }], fragiles: [...row(7, 11, 16), ...row(18, 3, 16)], oneWays: [{ x: 3, y: 1, direction: 3 }, { x: 6, y: 7, direction: 3 }, { x: 17, y: 17, direction: 1 }, { x: 17, y: 18, direction: 2 }] }, [...right(8), ...right(15), ...down(5), ...left(16)]),
+]

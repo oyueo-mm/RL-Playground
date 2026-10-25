@@ -5,10 +5,13 @@
 // every field can be freely edited afterward, same as a hand-built Draft.
 
 import type { GridEditorDraft } from './envEditorDraft'
+import { COMPLEX_PRESETS } from './complexPresets'
 
 export interface EnvironmentPreset {
   id: string
   draft: GridEditorDraft
+  /** Optional constructive solution, verified by actual transitions rather than unbounded search. */
+  solution?: number[]
   metadata?: {
     name: { ko: string; en: string }
     description: { ko: string; en: string }
@@ -270,4 +273,5 @@ ENVIRONMENT_PRESETS.push(
     metadata: { name: { ko: 'Mixed Challenge · 복합 도전', en: 'Mixed Challenge' }, description: { ko: '포털, 스위치, 붕괴, 방향 제약을 하나의 경로에서 해결합니다.', en: 'Combine teleportation, switches, collapse and direction constraints.' }, difficulty: { ko: '고급', en: 'Hard' }, elements: ['Portal', 'One-way', 'Fragile', 'Switch', 'Toggle wall'] },
     draft: draft({ width: 9, height: 7, start: { x: 0, y: 3 }, goals: [{ x: 8, y: 4 }], walls: mixedWalls.filter(tile => tile.x !== 4 || tile.y !== 2), bombs: [{ x: 4, y: 2 }], portals: [{ id: 'P1', ends: [{ x: 2, y: 3 }, { x: 4, y: 3 }] }], switches: [{ x: 5, y: 3, groupId: 'G1' }], fragiles: [{ x: 6, y: 3 }], oneWays: [{ x: 7, y: 3, direction: 3 }], toggleWalls: [{ x: 8, y: 3, groupId: 'G1' }] }),
   },
+  ...COMPLEX_PRESETS,
 )

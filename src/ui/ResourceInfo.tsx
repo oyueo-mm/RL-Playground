@@ -1,0 +1,13 @@
+import type { ResourceMetrics, ResourceBudget } from '../core/engine/resources'
+import type { Locale } from './i18n'
+
+export function ResourceInfo({ value, locale, onBudget }: { value: ResourceMetrics; locale: Locale; onBudget: (budget: Partial<ResourceBudget>) => void }) {
+  const ko = locale === 'ko'
+  return <details className="resource-info" data-testid="resource-info"><summary>{ko ? '고급 · 실제 사용량 및 자원 예산' : 'Advanced · actual usage and resource budgets'}</summary>
+    <dl><dt>{ko ? '완료 에피소드 / 현재 스텝' : 'Completed episodes / current steps'}</dt><dd data-testid="resource-episodes">{value.completedEpisodes} / {value.episodeSteps}</dd><dt>{ko ? '실제 생성 Q 상태' : 'Actual Q rows'}</dt><dd data-testid="q-state-count">{value.qStates.toLocaleString()}</dd><dt>{ko ? '최근 Q 상태 증가량' : 'Recent Q row growth'}</dt><dd>{value.qStateGrowth}</dd><dt>{ko ? '전체 실행 스텝 / 저장 스텝' : 'Executed / recorded steps'}</dt><dd data-testid="resource-total-steps" data-total-steps={value.totalSteps}>{value.totalSteps.toLocaleString()} / {value.recordedSteps.toLocaleString()}</dd><dt>{ko ? '스텝/초 · UI 갱신/초' : 'Steps/s · UI updates/s'}</dt><dd>{value.stepsPerSecond.toFixed(0)} · {value.uiUpdatesPerSecond.toFixed(1)}</dd><dt>{ko ? 'Q 자료구조 메모리 추정' : 'Estimated Q structure memory'}</dt><dd>{(value.estimatedQBytes / 1048576).toFixed(2)} MiB</dd></dl>
+    <p>{ko ? '이론 상태 조합과 다른 실제 생성 행의 계측값입니다. 메모리는 키·숫자·객체 비용의 추정이며 브라우저 전체 메모리가 아닙니다. 갱신 빈도는 최근 실행 구간 표본입니다.' : 'Counts actual rows, not theoretical combinations. Memory estimates key, number and object costs, not total browser memory. Update rates sample recent running intervals.'}</p>
+    {(['maxQStates', 'maxRecordedSteps', 'maxEpisodeSteps'] as const).map(key => <label key={key}>{({ maxQStates: ko ? 'Q 상태 예산' : 'Q row budget', maxRecordedSteps: ko ? '저장 스텝 예산' : 'Recorded step budget', maxEpisodeSteps: ko ? '에피소드 최대 스텝' : 'Max steps per episode' })[key]}<input type="number" min={key === 'maxQStates' ? 10 : 1} step={1} value={value.budget[key]} data-testid={`budget-${key}`} onChange={event => { const n = Number(event.target.value); if (Number.isSafeInteger(n) && n >= (key === 'maxQStates' ? 10 : 1)) onBudget({ [key]: n }) }} /></label>)}
+    <p>{ko ? '예산에 가까워지면 학습을 일시정지합니다. 값을 늘려 재개하거나 현재 에피소드를 중단할 수 있습니다. 에피소드 스텝 제한은 성공/Bomb과 별도이며 TD의 미래 가치 항은 유지합니다.' : 'Approaching a budget pauses training. Increase it to resume, or stop the current episode. Episode time limits differ from goal/bomb termination and retain TD bootstrapping.'}</p>
+    {value.level !== 'normal' && <p role="status">{ko ? '실제 사용량이 예산에 가까워지고 있습니다.' : 'Actual usage is approaching its budget.'} {value.level === 'high' ? (ko ? 'UI 갱신을 초당 약 4회로 낮춥니다.' : 'UI updates are reduced to about 4 Hz.') : ''}</p>}
+  </details>
+}

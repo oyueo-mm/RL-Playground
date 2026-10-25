@@ -414,3 +414,28 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
   .transition-diagram span { font-size: 10px; padding: 6px 3px; }
   .calculation-results { grid-template-columns: 1fr; }
 }
+
+/* Complex environments: compact diagnostics, consistent SVG tools, and one reading flow. */
+.resource-alert { position: absolute; left: 14px; right: 14px; bottom: 48px; z-index: 24; padding: 10px; border: 1px solid #d5b76d; background: #fff9e8; border-radius: 6px; font-size: 12px; }
+.resource-alert button { margin-left: 10px; color: #326e4f; text-decoration: underline; }
+.resource-info summary { cursor: pointer; font-weight: 600; }
+.resource-info dl { display: grid; grid-template-columns: 1fr auto; gap: 7px; margin: 14px 0; font-size: 11px; }
+.resource-info dd { font-variant-numeric: tabular-nums; }
+.resource-info label { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin: 12px 0; }
+.resource-info input { max-width: 100px; }
+.complexity-warning { padding: 9px; border-left: 2px solid #d5ae65; background: #fff8e7; }
+.tool-buttons .tooltip-anchor button { min-width: 34px; min-height: 34px; display: grid; place-items: center; }
+.tooltip-anchor button > svg { display: block; }
+.editor-move-mode [data-movable=true] { touch-action: none; cursor: grab !important; }
+.touch-element-mode .grid-viewport, .touch-element-mode .stage-grid { touch-action: none; }
+.drag-preview { overflow: visible; z-index: 4; }
+.link-indicator { font-size: 10px; padding: 3px 5px; color: #3f7250; background: #edf4e8; border-radius: 4px; white-space: nowrap; }
+.property-fields input[type=checkbox] { width: auto; }
+.gallery-filters { padding-bottom: 10px; flex-shrink: 0; font-size: 11px; max-height: 36%; overflow-y: auto; }
+.gallery-filters > label { display: flex; align-items: center; gap: 8px; }
+.gallery-filters input { width: 100%; min-width: 0; background: white; border: 1px solid #d3dfcb; padding: 5px; border-radius: 4px; }
+.gallery-filters details { margin-top: 7px; }
+.gallery-filters summary { cursor: pointer; }
+.gallery-filters details label { display: flex; justify-content: space-between; margin: 7px 0; gap: 8px; }
+.gallery-filters select { width: 150px; max-width: 65%; border: 1px solid #d4dfcd; padding: 3px; }
+.gallery-filters details button { padding: 5px 0; color: #326e4f; text-decoration: underline; }

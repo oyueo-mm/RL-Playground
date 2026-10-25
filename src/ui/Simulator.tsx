@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SpeedSetting } from '../core/engine/Scheduler'
 import type { StateKey } from '../core/types/rl'
 import { GridSvg } from '../viz/grid/GridSvg'
@@ -29,6 +29,8 @@ import { GridViewport } from './GridViewport'
 import { TooltipButton } from './TooltipButton'
 import { toolbarTips } from './toolbarTips'
 import type { GridEditorDraft } from '../viz/controls/envEditorDraft'
+import { DeferredPanel } from './DeferredPanel'
+import { ResourceInfo } from './ResourceInfo'
 import { FloatingToolbar } from './FloatingToolbar'
 import { MapGallery } from '../viz/controls/MapGallery'
 import { ENVIRONMENT_PRESETS } from '../viz/controls/environmentPresets'
@@ -76,15 +78,17 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
     window.addEventListener('keydown', close)
     return () => window.removeEventListener('keydown', close)
   }, [active, onClosePresets])
+  const episodeNumbers = useMemo(() => snapshot.stats.episodeStatsHistory.map(row => row.episode), [snapshot.stats.episodeStatsHistory])
   const selectedEpisodeStats = snapshot.stats.episodeStatsHistory.find(row => row.episode === selectedEpisode) ?? null
   const effectiveStep = viewedStep ?? selectedEpisodeStats?.trajectory.length ?? 0
   const model = snapshot.envRenderModel
-  const handleStateSelect = (state: StateKey) => { if (!model.walls.includes(state)) setSelectedState(state) }
+  const handleStateSelect = useCallback((state: StateKey) => { if (!model.walls.includes(state)) setSelectedState(state) }, [model.walls])
   const clearSelections = () => { setSelectedState(null); setSelectedEpisode(null); setViewedStep(null) }
   const idle = snapshot.status === 'idle'
   const labels = Object.fromEntries(ENVIRONMENT_PRESETS.map(preset => [preset.id, (t.envEditor as unknown as Record<string, string>)[`preset${preset.id[0].toUpperCase()}${preset.id.slice(1)}`] ?? preset.id]))
   const analysisVisible = !presetsOpen && (section === 'results' || (section === 'environment' && analysisOpen))
   return <section className={`simulator fullscreen-simulator ${section === 'results' ? 'results-view' : ''}`} aria-label={ko ? '강화학습 실험실' : 'Reinforcement learning lab'}>
+    {snapshot.resources?.pauseReason && <div className="resource-alert" role="alert" data-testid="resource-pause-reason">{ko ? '실제 자원 예산에 가까워 학습을 일시정지했습니다.' : 'Training paused near an actual resource budget.'} {snapshot.resources.pauseReason === 'q-states' ? (ko ? 'Q 상태 예산' : 'Q row budget') : (ko ? '저장 스텝 예산' : 'Recorded step budget')}<button onClick={() => { setSettingsOpen(true); setSettingsTab('learning') }}>{ko ? '설정에서 예산 조절' : 'Adjust budget in settings'}</button></div>}
     <div className="environment-screen" hidden={section !== 'environment'} data-testid="learning-grid">
       <div className="workspace-stage">
         <FloatingToolbar active={active && section === 'environment'} label={ko ? '학습 컨트롤' : 'Learning controls'}>
@@ -100,6 +104,7 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
         <section id="learning-settings" className="toolbar-popover" hidden={!settingsOpen} aria-label={ko ? '학습 설정' : 'Learning settings'}>
           <div role="tablist" aria-label={ko ? '설정' : 'Settings'}>{(['learning', 'visuals'] as const).map(tab => <button key={tab} role="tab" id={`settings-${tab}-tab`} aria-selected={settingsTab === tab} aria-controls={`settings-${tab}`} onClick={() => setSettingsTab(tab)}>{tab === 'learning' ? (ko ? '학습 설정' : 'Learning settings') : (ko ? '시각화 설정' : 'Visualization settings')}</button>)}</div>
           <div role="tabpanel" id="settings-learning" aria-labelledby="settings-learning-tab" hidden={settingsTab !== 'learning'}>
+          {snapshot.resources && <ResourceInfo value={snapshot.resources} locale={locale} onBudget={budget => engine.setResourceBudget(budget)} />}
           <label>{t.playback.episodeCount}<input type="number" min={1} value={episodeCount} disabled={!idle} data-testid="episode-count-input" onChange={event => { const count = Number(event.target.value); if (Number.isSafeInteger(count) && count > 0) setEpisodeCount(count) }} /></label>
           <AlgorithmSelector algorithmId={snapshot.algorithmId} disabled={!idle} t={t} onChange={algorithmId => { engine.reset({ algorithmId }); clearSelections() }} />
           <EpsilonControl epsilon={snapshot.hyperparams.epsilon} onChange={epsilon => engine.setHyperparams({ epsilon })} t={t} locale={locale} />
@@ -122,10 +127,10 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
         </GridViewport>
       </div>
     </div>
-    <div hidden={section !== 'editor'} className="editor-screen" id="environment-editor"><EnvEditor fullscreen active={active && section === 'editor'} presetRequest={presetRequest} panelBlocked={presetsOpen} onOpenProperties={onClosePresets} currentRenderModel={model} locale={locale} t={t} onApply={config => { engine.reset({ envConfig: config }); clearSelections() }} /></div>
+    <div hidden={section !== 'editor'} className="editor-screen" id="environment-editor"><DeferredPanel active={active && section === 'editor'}><EnvEditor fullscreen active={active && section === 'editor'} presetRequest={presetRequest} panelBlocked={presetsOpen} onOpenProperties={onClosePresets} currentRenderModel={model} locale={locale} t={t} onApply={config => { engine.reset({ envConfig: config }); clearSelections() }} /></DeferredPanel></div>
     <aside id="analysis-panel" className="analysis-drawer" hidden={!analysisVisible} data-testid="analysis-panel" aria-label={ko ? '통계 및 분석' : 'Statistics & analysis'}>
       <header><h2>{ko ? '통계 및 분석' : 'Statistics & analysis'}</h2>{section !== 'results' && <button onClick={() => { setAnalysisOpen(false); document.querySelector<HTMLButtonElement>('[data-testid=toggle-analysis]')?.focus() }} aria-label={ko ? '분석 닫기' : 'Close analysis'}>×</button>}</header>
-      <div className="analysis-content">
+      <DeferredPanel active={active && analysisVisible}><div className="analysis-content">
         <EpisodeStepViewer episode={selectedEpisodeStats} step={effectiveStep} onStepChange={setViewedStep} allGoals={model.allGoals ?? []} t={t} />
           <InspectorPanel
             lastTransition={snapshot.lastTransition}
@@ -156,7 +161,7 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
           <TerminationChart episodeStatsHistory={snapshot.stats.episodeStatsHistory} t={t} />
           <RewardChart
             rewardHistory={snapshot.stats.rewardHistory}
-            episodeNumbers={snapshot.stats.episodeStatsHistory.map((row) => row.episode)}
+            episodeNumbers={episodeNumbers}
             selectedEpisode={selectedEpisode}
             t={t}
           />
@@ -172,7 +177,7 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
             t={t}
             locale={locale}
           />
-      </div>
+      </div></DeferredPanel>
     </aside>
     {active && presetsOpen && <MapGallery locale={locale} labels={labels} actionLabel={section === 'editor' ? (ko ? '편집기로 불러오기' : 'Load into editor') : (ko ? '맵 적용' : 'Apply map')} onClose={onClosePresets} onSelect={draft => {
       if (section === 'editor') { setPresetRequest({ draft }); return }

@@ -20,5 +20,6 @@ export function solveGrid(config: GridWorldConfig, maxStates = 30_000): { action
       queue.push(actions)
     }
   }
+  if (seen.size > maxStates) throw new Error(`Search budget exhausted at ${seen.size} states; solvability is unknown.`)
   return null
 }
