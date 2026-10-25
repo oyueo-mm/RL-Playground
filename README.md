@@ -203,3 +203,6 @@ GitHub Pages에서 정적 웹 애플리케이션으로 제공됩니다. 시뮬�
 포털·단방향·부서지는 바닥·스위치/토글 벽, 신규 프리셋 5종과 최신 검증·스크린샷은
 [환경 시스템 확장 보고서](docs/ENVIRONMENT_EXPANSION.md)에 정리되어 있습니다.
 
+사이드바 프리셋 패널, 통합 학습·시각화 설정, 설명형 Tooltip, 편집 Undo/Redo 및
+6개 단원의 한국어·영어 알고리즘 가이드는 [UI/UX 개선 보고서](docs/UX_WORKFLOW_REDESIGN.md)를 참고하세요.
+
