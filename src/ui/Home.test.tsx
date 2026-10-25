@@ -106,7 +106,7 @@ describe('Fullscreen workspace', () => {
     render(<App />)
     fireEvent.click(screen.getByTestId('nav-environment'))
     const before = engine.getSnapshot()
-    fireEvent.click(live().getByTestId('open-map-gallery'))
+    fireEvent.click(screen.getByTestId('nav-presets'))
     fireEvent.click(screen.getByTestId('preset-maze'))
     expect(engine.getSnapshot()).toEqual(before)
     vi.spyOn(window, 'confirm').mockReturnValue(false)

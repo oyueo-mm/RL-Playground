@@ -22,10 +22,7 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .sidebar nav button[aria-current] { background: #e0ece0; color: #236c48; font-weight: 650; }
 .nav-icon { width: 22px; text-align: center; font-size: 23px; line-height: 1; }
 .nav-dot { width: 5px; height: 5px; border-radius: 50%; background: #44825b; margin-left: auto; }
-.sidebar-bottom { margin-top: auto; padding: 28px 13px 0; color: #697b6b; }
 .tiny-orbit { font-size: 34px; color: #8da77e; }
-.sidebar-bottom p { font-size: 12px; line-height: 1.9; max-width: 155px; margin: 10px 0 28px; }
-.sidebar-bottom small { font-size: 8px; letter-spacing: 1px; }
 .workspace { margin-left: var(--sidebar-width); min-width: 0; transition: margin-left .2s; }
 .topbar { height: 73px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 0 44px; border-bottom: 1px solid #e8ece6; background: #fdfefd; }
 .breadcrumb { display: flex; align-items: center; gap: 15px; font-size: 11px; color: #8a968e; }
@@ -319,7 +316,6 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 /* Fixed language access, exactly one visible selector per screen. */
 .sidebar { height: 100dvh; }
 .sidebar nav { min-height: 0; overflow-y: auto; }
-.sidebar-bottom { margin-top: 24px; }
 .sidebar-language { margin-top: auto; padding-top: 24px; flex-shrink: 0; }
 .mobile-language { display: none; }
 /* SVG rect focus uses a flat stroke, not the browser's rounded SVG outline. */
@@ -335,15 +331,86 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
   .mobile-open .sidebar-language { display: block; }
   .mobile-open .mobile-language { display: none; }
 }
-.special-tools { position: relative; font-size: 12px; color: #506b49; }
-.special-tools summary { cursor: pointer; padding: 7px; list-style: none; white-space: nowrap; }
-.special-tools[open] summary { background: #e6efdd; border-radius: 4px; }
-.special-tool-menu { position: absolute; top: 100%; left: 0; width: 170px; display: flex; flex-direction: column; padding: 7px; gap: 4px; background: white; border: 1px solid #c7d7be; border-radius: 6px; box-shadow: 0 5px 20px #23401a12; }
-.special-tool-menu button { padding: 8px 10px; text-align: left; font-size: 12px; }
-.special-tool-menu button[aria-pressed=true] { background: #e7efdf; }
 .property-fields strong { color: #395b35; }
 .property-fields select { border: 1px solid #cbd8c2; padding: 4px; border-radius: 3px; }
 .editor-validation { max-height: 92px; overflow-y: auto; }
 .preset-metadata { font-size: 11px; color: #617b56; margin-top: 12px; }
 .preset-metadata > div { display: flex; flex-wrap: wrap; gap: 5px; }
 .preset-metadata small { padding: 4px 6px; background: #edf3e7; border-radius: 3px; }
+
+/* One navigation rail, independent workspace panels and compact tool explanations. */
+.sidebar { padding-top: 18px; }
+.sidebar nav { margin-top: 22px; gap: 6px; flex-shrink: 1; }
+.sidebar nav button[aria-expanded=true] { background: #e0ece0; color: #236c48; box-shadow: inset 3px 0 #56845c; }
+.tooltip-anchor { display: inline-flex; align-items: center; border-radius: 5px; }
+.tooltip-anchor > button { min-height: 32px; padding: 6px 9px; border: 1px solid transparent; border-radius: 5px; white-space: nowrap; font-size: 12px; color: #566f4e; }
+.tooltip-anchor:focus-visible { outline: 2px solid #176d86; outline-offset: 2px; }
+.control-tooltip { position: fixed; z-index: 100; max-width: min(300px, calc(100vw - 16px)); padding: 10px 12px; background: #273e33; color: #fff; border: 1px solid #597061; border-radius: 6px; font-size: 12px; line-height: 1.6; pointer-events: none; box-shadow: 0 5px 18px #20342b18; }
+.tool-buttons { flex-wrap: wrap; max-width: 100%; justify-content: center; gap: 1px; }
+.tool-buttons .tooltip-anchor button { width: 32px; padding: 5px; font-size: 16px; }
+.toolbar-separator { height: 23px; border-left: 1px solid #dbe4d6; margin: 0 3px; }
+.toolbar-popover { top: var(--toolbar-space, 78px); max-height: calc(100% - var(--toolbar-space, 78px) - 14px); }
+.toolbar-popover [role=tabpanel] { display: flex; flex-direction: column; gap: 18px; }
+.toolbar-popover [role=tablist] { display: flex; border-bottom: 1px solid #dbe5d6; gap: 8px; }
+[role=tablist] button { padding: 8px; border-bottom: 2px solid transparent; }
+[role=tablist] button[aria-selected=true] { border-color: #326e4f; color: #326e4f; font-weight: 650; }
+.preset-drawer.map-gallery { position: static; inset: auto; flex: 0 0 350px; width: 350px; max-width: none; height: 100%; min-height: 0; padding: 14px; border-radius: 0; border: 0; border-left: 1px solid #d5e0cd; box-shadow: none; overflow: hidden; }
+.preset-drawer .gallery-body { display: flex; flex-direction: column-reverse; gap: 12px; overflow: hidden; }
+.preset-drawer .gallery-preview { overflow-y: auto; flex-shrink: 0; max-height: 53%; overscroll-behavior: contain; }
+.preset-drawer .gallery-preview > svg { max-height: 160px; }
+.preset-drawer .gallery-preview h3 { font-size: 16px; margin-bottom: 8px; }
+.preset-drawer .gallery-preview p { margin: 8px 0; color: #61745d; }
+.preset-drawer .gallery-preview .primary-button { width: 100%; padding: 10px; }
+.preset-drawer .gallery-thumbnails { overflow-y: auto; flex: 1; min-height: 0; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.preset-drawer .gallery-thumbnails svg { height: 72px; object-fit: contain; }
+.guide-page { display: grid; grid-template-columns: 205px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); height: calc(100dvh - 152px); min-height: 360px; max-width: 1150px; margin: auto; gap: 24px; }
+.guide-heading { grid-column: 1 / -1; border-bottom: 1px solid #dce5d7; padding-bottom: 20px; }
+.guide-heading > span { font-size: 10px; letter-spacing: 2px; color: #6e846c; }
+.guide-heading h2 { font-size: 30px; margin: 8px 0; }
+.guide-heading p { color: #7a8c77; font-size: 13px; }
+.chapter-navigation { display: flex; flex-direction: column; gap: 7px; align-self: start; }
+.chapter-navigation button { display: flex; text-align: left; align-items: baseline; gap: 12px; padding: 12px; font-size: 13px; border-radius: 6px; color: #6b7e65; }
+.chapter-navigation button[aria-current] { background: #e7efe0; color: #326e4f; font-weight: 650; }
+.chapter-navigation small { font-size: 10px; color: #82917c; }
+.guide-content { overflow-y: auto; overscroll-behavior: contain; min-width: 0; padding: 0 16px 30px 0; }
+.guide-content h2 { font-size: 25px; margin: 12px 0 18px; }
+.guide-content h3 { font-size: 17px; margin: 25px 0 12px; }
+.guide-content p { color: #53654e; font-size: 14px; line-height: 1.95; margin: 16px 0; overflow-wrap: anywhere; }
+.guide-content .lesson-intro { font-size: 17px; color: #2d4d39; }
+.guide-content pre, .math-formula { padding: 18px; background: #edf2e8; border: 1px solid #dce5d6; border-radius: 6px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; line-height: 1.9; }
+.guide-table { overflow-x: auto; margin: 20px 0; }
+.guide-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.guide-table caption { text-align: left; color: #6c8064; margin-bottom: 10px; }
+.guide-table th, .guide-table td { padding: 12px 8px; border-bottom: 1px solid #dce4d7; text-align: left; }
+.greedy-value { color: #236540; font-weight: bold; background: #e7f0e1; }
+.transition-diagram { display: flex; align-items: center; gap: 8px; margin: 22px 0; }
+.transition-diagram span { background: #e9f0e2; border: 1px solid #ceddc5; border-radius: 5px; padding: 10px; text-align: center; font-size: 12px; flex: 1; }
+.update-calculator, .exploration-example { background: #f6f8f2; padding: 18px; border: 1px solid #dae4d2; border-radius: 8px; margin: 20px 0; }
+.calculator-inputs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 20px 0; }
+.calculator-inputs label { display: flex; flex-direction: column; gap: 6px; min-width: 0; font-size: 12px; }
+.calculator-inputs input { width: 100%; min-width: 0; background: #fff; border: 1px solid #ccdac3; padding: 6px; border-radius: 4px; }
+.calculation-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.calculation-results article { min-width: 0; padding: 12px; background: #fff; border: 1px solid #dbe5d4; border-radius: 5px; }
+.calculation-results p { font-size: 12px; }
+.calculation-results output { font-size: 26px; color: #326e4f; }
+.probability-bar { height: 16px; background: #cbd7e1; border-radius: 3px; overflow: hidden; }
+.probability-bar span { display: block; height: 100%; background: #568963; }
+.guide-sources { border-top: 1px solid #dce5d7; margin-top: 28px; font-size: 11px; }
+.guide-sources a { text-decoration: underline; color: #326e4f; }
+@media (max-width: 760px) {
+  .tooltip-anchor > button { min-height: 30px; padding: 4px 6px; font-size: 10px; }
+  .tool-buttons { flex-wrap: wrap; justify-content: center; }
+  .tool-buttons .tooltip-anchor button { width: 29px; font-size: 15px; }
+  .preset-drawer.map-gallery { position: absolute; top: 45px; right: 6px; bottom: 6px; height: auto; width: min(350px, calc(100% - 12px)); max-width: none; z-index: 21; border: 1px solid #d5e0cd; border-radius: 8px; box-shadow: -6px 0 25px #203a2420; }
+  .guide-page { grid-template-columns: 1fr; grid-template-rows: auto auto minmax(0, 1fr); gap: 12px; height: calc(100dvh - 120px); }
+  .guide-heading { padding-bottom: 10px; }
+  .guide-heading h2 { font-size: 23px; }
+  .chapter-navigation { flex-direction: row; overflow-x: auto; max-width: 100%; }
+  .chapter-navigation button { flex-shrink: 0; padding: 8px; font-size: 11px; }
+  .guide-content { padding-right: 4px; }
+  .guide-content h2 { font-size: 21px; }
+  .guide-content p { font-size: 13px; }
+  .transition-diagram { gap: 3px; }
+  .transition-diagram span { font-size: 10px; padding: 6px 3px; }
+  .calculation-results { grid-template-columns: 1fr; }
+}

@@ -8,6 +8,8 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   test: {
     environment: 'node',
+    // Bound concurrent JSDOM heaps so full UI suites do not starve one another.
+    maxWorkers: 2,
     exclude: ['e2e/**', 'node_modules/**'],
   },
 })

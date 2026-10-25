@@ -22,7 +22,9 @@ import type { StateKey } from '../../core/types/rl'
 import { GridSvg } from '../grid/GridSvg'
 import { GridViewport } from '../../ui/GridViewport'
 import { FloatingToolbar } from '../../ui/FloatingToolbar'
-import { MapGallery } from './MapGallery'
+import { TooltipButton } from '../../ui/TooltipButton'
+import { toolbarTips } from '../../ui/toolbarTips'
+import { useDraftHistory } from '../../ui/hooks/useDraftHistory'
 import { parseStateKey } from '../grid/stateKey'
 import { translations, translateValidationError, type Dictionary, type Locale } from '../../ui/i18n'
 import { ENVIRONMENT_PRESETS } from './environmentPresets'
@@ -54,6 +56,9 @@ export interface EnvEditorProps {
   locale?: Locale
   fullscreen?: boolean
   active?: boolean
+  presetRequest?: { draft: GridEditorDraft } | null
+  panelBlocked?: boolean
+  onOpenProperties?: () => void
 }
 
 function isAnyGoal(pos: { x: number; y: number }, goals: GridEditorDraft['goals']): boolean {
@@ -68,28 +73,70 @@ export function EnvEditor({
   locale = 'en',
   fullscreen = false,
   active = true,
+  presetRequest,
+  panelBlocked = false,
+  onOpenProperties,
 }: EnvEditorProps) {
-  const [draft, setDraftState] = useState<GridEditorDraft>(() => draftFromRenderModel(currentRenderModel))
+  const history = useDraftHistory<GridEditorDraft>(() => draftFromRenderModel(currentRenderModel))
+  const { draft, set: commit, undo: undoHistory, redo: redoHistory, canUndo, canRedo, reseed, boundary } = history
+  const tips = toolbarTips[locale]
   const dirty = useRef(false)
-  const setDraft: Dispatch<SetStateAction<GridEditorDraft>> = action => { dirty.current = true; setDraftState(action) }
+  const undo = () => { if (canUndo) { dirty.current = true; undoHistory() } }
+  const redo = () => { if (canRedo) { dirty.current = true; redoHistory() } }
+  const setDraft: Dispatch<SetStateAction<GridEditorDraft>> = action => { dirty.current = true; commit(action) }
+  const recordInput = (action: SetStateAction<GridEditorDraft>, key: string) => { dirty.current = true; commit(action, key) }
   const seedKey = JSON.stringify([currentRenderModel.width, currentRenderModel.height, currentRenderModel.start, currentRenderModel.allGoals ?? currentRenderModel.goals, currentRenderModel.staticWalls ?? currentRenderModel.walls, currentRenderModel.bombs, currentRenderModel.stepReward, currentRenderModel.wallPenalty, currentRenderModel.goalReward, currentRenderModel.bombPenalty, currentRenderModel.features])
   const previousSeed = useRef(seedKey)
   useEffect(() => {
-    if (previousSeed.current !== seedKey && !dirty.current) setDraftState(draftFromRenderModel(currentRenderModel))
+    const incoming = draftFromRenderModel(currentRenderModel)
+    // Applying our own draft acknowledges it; it must not erase its undo history.
+    if (previousSeed.current !== seedKey && !dirty.current && serializeEnvExport(incoming) !== serializeEnvExport(draft)) reseed(incoming)
     previousSeed.current = seedKey
-  }, [seedKey, currentRenderModel])
+  }, [seedKey, currentRenderModel, reseed, draft])
   const [mode, setMode] = useState<EditMode>('wall')
   const [presetId, setPresetId] = useState<string>('custom')
   const [propertiesOpen, setPropertiesOpen] = useState(false)
-  const [galleryOpen, setGalleryOpen] = useState(false)
   const [selectedCell, setSelectedCell] = useState<StateKey | null>(null)
   const [portalId, setPortalId] = useState('P1')
   const [groupId, setGroupId] = useState('G1')
   const [direction, setDirection] = useState<Direction>(3)
   const [editMessage, setEditMessage] = useState('')
+  const handledPreset = useRef<typeof presetRequest>(null)
+  useEffect(() => {
+    if (!presetRequest || handledPreset.current === presetRequest) return
+    handledPreset.current = presetRequest
+    if (dirty.current && !confirmApply(locale === 'ko' ? '현재 편집 초안을 프리셋으로 교체할까요? Undo로 되돌릴 수 있습니다. 학습 환경은 변경되지 않습니다.' : 'Replace the current draft? Undo can restore it. The learning environment will not change.')) return
+    dirty.current = true
+    commit(structuredClone(presetRequest.draft))
+    setSelectedCell(null); setPresetId('custom')
+  }, [presetRequest, confirmApply, locale, commit])
+  useEffect(() => {
+    setEditMessage('')
+    if (!selectedCell) return
+    const way = draft.oneWays?.find(tile => positionId(tile) === selectedCell)
+    const pair = draft.portals?.find(pair => pair.ends.some(end => positionId(end) === selectedCell))
+    const tile = [...(draft.switches ?? []), ...(draft.toggleWalls ?? [])].find(tile => positionId(tile) === selectedCell)
+    if (way) setDirection(way.direction)
+    if (pair) setPortalId(pair.id)
+    if (tile) setGroupId(tile.groupId)
+  }, [draft, selectedCell])
   useEffect(() => {
     if (!active) return
-    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setPropertiesOpen(false); setGalleryOpen(false) } }
+    const handle = (event: KeyboardEvent) => {
+      const target = event.target instanceof Element ? event.target : null
+      if (target?.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])')) return
+      if ((event.ctrlKey || event.metaKey) && !event.altKey) {
+        if (event.key.toLowerCase() === 'z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); return }
+        if (event.key.toLowerCase() === 'y' && event.ctrlKey) { event.preventDefault(); redo(); return }
+      }
+      if (mode === 'select' && selectedCell && (event.key === 'Backspace' || event.key === 'Delete')) { event.preventDefault(); deleteCell(selectedCell) }
+    }
+    window.addEventListener('keydown', handle)
+    return () => window.removeEventListener('keydown', handle)
+  })
+  useEffect(() => {
+    if (!active) return
+    const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setPropertiesOpen(false) } }
     window.addEventListener('keydown', close)
     return () => window.removeEventListener('keydown', close)
   }, [active])
@@ -103,42 +150,50 @@ export function EnvEditor({
   const errors = validateDraft(draft)
   const isValid = errors.length === 0
 
+  function deleteCell(key: StateKey) {
+    const pos = parseStateKey(key)
+    if (samePosition(pos, draft.start)) { setEditMessage(locale === 'ko' ? '시작점은 삭제할 수 없습니다. 다른 셀로 옮겨 주세요.' : 'Start cannot be deleted. Move it to another cell.'); return }
+    if (isAnyGoal(pos, draft.goals) && draft.goals.length === 1) { setEditMessage(locale === 'ko' ? '최소 하나의 목표가 필요합니다. 마지막 목표는 삭제할 수 없습니다.' : 'At least one goal is required. The last goal cannot be deleted.'); return }
+    setEditMessage('')
+    setDraft(prev => ({ ...prev, ...removeFeaturesAt(prev, pos), walls: prev.walls.filter(p => !samePosition(p, pos)), bombs: prev.bombs.filter(p => !samePosition(p, pos)), goals: prev.goals.filter(p => !samePosition(p, pos)) }))
+  }
+
   function updateWidth(value: number) {
-    setDraft((prev) => ({
+    recordInput((prev) => ({
       ...prev,
       width: value,
       walls: prev.walls.filter((w) => w.x < value),
       bombs: prev.bombs.filter((b) => b.x < value),
       goals: prev.goals.filter((g) => g.x < value),
       ...cropFeatures(prev, value, prev.height),
-    }))
+    }), 'updateWidth')
   }
 
   function updateHeight(value: number) {
-    setDraft((prev) => ({
+    recordInput((prev) => ({
       ...prev,
       height: value,
       walls: prev.walls.filter((w) => w.y < value),
       bombs: prev.bombs.filter((b) => b.y < value),
       goals: prev.goals.filter((g) => g.y < value),
       ...cropFeatures(prev, prev.width, value),
-    }))
+    }), 'updateHeight')
   }
 
   function updateBombPenalty(value: number) {
-    setDraft((prev) => ({ ...prev, bombPenalty: value }))
+    recordInput((prev) => ({ ...prev, bombPenalty: value }), 'updateBombPenalty')
   }
 
   function updateStepReward(value: number) {
-    setDraft((prev) => ({ ...prev, stepReward: value }))
+    recordInput((prev) => ({ ...prev, stepReward: value }), 'updateStepReward')
   }
 
   function updateWallPenalty(value: number) {
-    setDraft((prev) => ({ ...prev, wallPenalty: value }))
+    recordInput((prev) => ({ ...prev, wallPenalty: value }), 'updateWallPenalty')
   }
 
   function updateGoalReward(value: number) {
-    setDraft((prev) => ({ ...prev, goalReward: value }))
+    recordInput((prev) => ({ ...prev, goalReward: value }), 'updateGoalReward')
   }
 
   // Phase 32 §9/§10 — "Reset Environment": restores the Editor's Draft to the project's
@@ -168,11 +223,17 @@ export function EnvEditor({
       if (group) setGroupId(group.groupId)
       const way = draft.oneWays?.find(tile => samePosition(tile, pos))
       if (way) setDirection(way.direction)
-      setPropertiesOpen(true); return
+      onOpenProperties?.(); setPropertiesOpen(true); return
     }
-    if (mode === 'erase') {
-      setDraft(prev => ({ ...prev, ...removeFeaturesAt(prev, pos), walls: prev.walls.filter(p => !samePosition(p, pos)), bombs: prev.bombs.filter(p => !samePosition(p, pos)), goals: prev.goals.filter(p => !samePosition(p, pos)) }))
-      return
+    if (mode === 'erase') { deleteCell(stateKey); return }
+    if (mode === 'oneWay') {
+      const tile = draft.oneWays?.find(tile => samePosition(tile, pos))
+      if (tile) {
+        const next = ({ 0: 3, 3: 1, 1: 2, 2: 0 } as const)[tile.direction]
+        setDirection(next)
+        setDraft(prev => ({ ...prev, oneWays: prev.oneWays?.map(way => samePosition(way, pos) ? { ...way, direction: next } : way) }))
+        return
+      }
     }
     const occupiedSpecial = featurePositions(draft).some(tile => samePosition(tile, pos))
     if (['portal', 'oneWay', 'fragile', 'switch', 'toggleWall'].includes(mode)) {
@@ -350,25 +411,26 @@ export function EnvEditor({
   if (fullscreen) return <div className="fullscreen-editor" data-testid="env-editor">
     <h2 className="sr-only">{t.envEditor.heading}</h2>
     <FloatingToolbar className="editor-toolbar" active={active} label={locale === 'ko' ? '맵 편집 도구' : 'Map editing tools'}>
-      <div className="tool-buttons" role="group" aria-label={locale === 'ko' ? '배치 요소' : 'Placement tool'}>{(['select', 'wall', 'start', 'goal', 'bomb', 'erase'] as const).map(tool => <button key={tool} title={modeLabel[tool]} aria-label={modeLabel[tool]} aria-pressed={mode === tool} onClick={() => setMode(tool)} data-testid={`env-editor-mode-${tool}`}><span aria-hidden="true">{({ select: '↖', wall: '▦', start: 'S', goal: '⚑', bomb: '×', erase: '⌫' })[tool]}</span></button>)}</div>
-      <details className="special-tools"><summary data-testid="special-tools-toggle">{locale === 'ko' ? '특수 요소' : 'Elements'} {['portal', 'oneWay', 'fragile', 'switch', 'toggleWall'].includes(mode) ? `· ${modeLabel[mode]}` : ''}</summary><div className="special-tool-menu">{(['portal', 'oneWay', 'fragile', 'switch', 'toggleWall'] as EditMode[]).map(tool => <button key={tool} aria-pressed={mode === tool} data-testid={`env-editor-mode-${tool}`} onClick={event => { setMode(tool); setPropertiesOpen(true); event.currentTarget.closest('details')?.removeAttribute('open') }}>{modeLabel[tool]}</button>)}</div></details>
-      <button onClick={() => setGalleryOpen(!galleryOpen)} data-testid="open-map-gallery">{locale === 'ko' ? '맵 프리셋' : 'Map presets'}</button>
-      <button onClick={() => setPropertiesOpen(!propertiesOpen)} aria-expanded={propertiesOpen} aria-controls="editor-properties">{locale === 'ko' ? '속성 / 파일' : 'Properties / files'}</button>
-      <button className="toolbar-primary" onClick={handleApply} disabled={!isValid} data-testid="env-editor-apply">{t.envEditor.apply}</button>
+      <div className="tool-buttons" role="group" aria-label={locale === 'ko' ? '배치 요소' : 'Placement tools'}>{(['select', 'wall', 'start', 'goal', 'bomb', 'portal', 'oneWay', 'fragile', 'switch', 'toggleWall', 'erase'] as const).map(tool => <TooltipButton key={tool} tip={tips[tool]} aria-label={modeLabel[tool]} aria-pressed={mode === tool} onClick={() => setMode(tool)} data-testid={`env-editor-mode-${tool}`}><span aria-hidden="true">{({ select: '↖', wall: '▦', start: 'S', goal: '⚑', bomb: '×', portal: '◎', oneWay: '→', fragile: 'ϟ', switch: '⏻', toggleWall: '▥', erase: '⌫' })[tool]}</span></TooltipButton>)}</div>
+      <span className="toolbar-separator" />
+      <TooltipButton tip={tips.undo} aria-label={locale === 'ko' ? '실행 취소' : 'Undo'} disabled={!canUndo} onClick={undo} data-testid="editor-undo">↶</TooltipButton>
+      <TooltipButton tip={tips.redo} aria-label={locale === 'ko' ? '다시 실행' : 'Redo'} disabled={!canRedo} onClick={redo} data-testid="editor-redo">↷</TooltipButton>
+      <TooltipButton tip={tips.properties} onClick={() => { onOpenProperties?.(); setPropertiesOpen(!propertiesOpen || panelBlocked) }} aria-expanded={propertiesOpen && !panelBlocked} aria-controls="editor-properties">{locale === 'ko' ? '속성 / 파일' : 'Properties / files'}</TooltipButton>
+      <TooltipButton tip={tips.apply} className="toolbar-primary" onClick={handleApply} disabled={!isValid} data-testid="env-editor-apply">{t.envEditor.apply}</TooltipButton>
     </FloatingToolbar>
     <div className="editor-body" data-testid="env-editor-grid">
       <GridViewport width={draft.width} height={draft.height} active={active}><GridSvg renderModel={draftToRenderModel(draft)} selectedState={selectedCell} cellSize={48} onStateSelect={handleCellClick} className="stage-grid" /></GridViewport>
-      <aside className="properties-panel" id="editor-properties" hidden={!propertiesOpen} aria-label={locale === 'ko' ? '맵 속성' : 'Map properties'}>
+      <aside className="properties-panel" id="editor-properties" hidden={!propertiesOpen || panelBlocked} aria-label={locale === 'ko' ? '맵 속성' : 'Map properties'}>
         <header><h2>{locale === 'ko' ? '맵 속성' : 'Map properties'}</h2><button onClick={() => setPropertiesOpen(false)} aria-label={locale === 'ko' ? '속성 닫기' : 'Close properties'}>×</button></header>
-        <div className="property-fields">
+        <div className="property-fields" onBlurCapture={boundary}>
           <p>{locale === 'ko' ? '현재 도구' : 'Current tool'}: <strong>{modeLabel[mode]}</strong>{selectedCell ? ` · (${selectedCell})` : ''}</p>
           <label>{locale === 'ko' ? '포털 쌍 ID' : 'Portal pair ID'}<input value={portalId} maxLength={24} data-testid="portal-id" onChange={event => {
             const id = event.target.value; setPortalId(id)
-            if (mode === 'select' && selectedCell) setDraft(prev => ({ ...prev, portals: prev.portals?.map(pair => pair.ends.some(end => positionId(end) === selectedCell) ? { ...pair, id } : pair) }))
+            if (mode === 'select' && selectedCell) recordInput(prev => ({ ...prev, portals: prev.portals?.map(pair => pair.ends.some(end => positionId(end) === selectedCell) ? { ...pair, id } : pair) }), 'portal-id')
           }} /></label>
           <label>{locale === 'ko' ? '벽 그룹 ID' : 'Wall group ID'}<input value={groupId} maxLength={24} data-testid="group-id" onChange={event => {
             const id = event.target.value; setGroupId(id)
-            if (mode === 'select' && selectedCell) setDraft(prev => ({ ...prev, switches: prev.switches?.map(tile => positionId(tile) === selectedCell ? { ...tile, groupId: id } : tile), toggleWalls: prev.toggleWalls?.map(tile => positionId(tile) === selectedCell ? { ...tile, groupId: id } : tile) }))
+            if (mode === 'select' && selectedCell) recordInput(prev => ({ ...prev, switches: prev.switches?.map(tile => positionId(tile) === selectedCell ? { ...tile, groupId: id } : tile), toggleWalls: prev.toggleWalls?.map(tile => positionId(tile) === selectedCell ? { ...tile, groupId: id } : tile) }), 'group-id')
           }} /></label>
           <label>{locale === 'ko' ? '허용 방향' : 'Allowed direction'}<select value={direction} data-testid="one-way-direction" onChange={event => {
             const next = Number(event.target.value) as Direction; setDirection(next)
@@ -378,15 +440,15 @@ export function EnvEditor({
           <p data-testid="state-space-estimate">{locale === 'ko' ? '추정 상태 수 상한' : 'Estimated state upper bound'}: {stateSpaceEstimate(draft) > Number.MAX_SAFE_INTEGER ? stateSpaceEstimate(draft).toExponential(2) : stateSpaceEstimate(draft).toLocaleString()} · {locale === 'ko' ? '동적 맵 제한' : 'Dynamic-map limit'} {STATE_SPACE_BUDGET.toLocaleString()}</p>
           <label>{t.envEditor.width}<input type="number" min={3} max={20} value={draft.width} onChange={e => updateWidth(Number(e.target.value))} data-testid="env-editor-width-input" /></label>
           <label>{t.envEditor.height}<input type="number" min={3} max={20} value={draft.height} onChange={e => updateHeight(Number(e.target.value))} data-testid="env-editor-height-input" /></label>
-          {(['stepReward', 'wallPenalty', 'goalReward', 'bombPenalty'] as const).map(key => <label key={key}>{({ stepReward: t.envEditor.stepReward, wallPenalty: t.envEditor.wallPenalty, goalReward: t.envEditor.goalReward, bombPenalty: t.envEditor.bombPenalty })[key]}<input type="number" step="0.1" value={draft[key]} data-testid={`env-editor-${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}-input`} onChange={e => setDraft(previous => ({ ...previous, [key]: Number(e.target.value) }))} /></label>)}
+          {(['stepReward', 'wallPenalty', 'goalReward', 'bombPenalty'] as const).map(key => <label key={key}>{({ stepReward: t.envEditor.stepReward, wallPenalty: t.envEditor.wallPenalty, goalReward: t.envEditor.goalReward, bombPenalty: t.envEditor.bombPenalty })[key]}<input type="number" step="0.1" value={draft[key]} data-testid={`env-editor-${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}-input`} onChange={e => recordInput(previous => ({ ...previous, [key]: Number(e.target.value) }), key)} /></label>)}
           <button onClick={handleImportClick} data-testid="env-editor-import">{t.envEditor.importButton}</button><button onClick={handleExport} disabled={!isValid} data-testid="env-editor-export">{t.envEditor.exportButton}</button>
+          <button onClick={handleResetEnvironment} data-testid="env-editor-reset">{t.envEditor.resetEnvironment}</button>
           <input hidden ref={importFileInputRef} type="file" accept=".json,application/json" onChange={handleImportFileChange} data-testid="env-editor-import-input" />
           <p>{locale === 'ko' ? '가져오기는 초안만 변경합니다. 적용은 현재 학습을 초기화합니다.' : 'Import changes only the draft. Applying resets the current experiment.'}</p>
         </div>
       </aside>
     </div>
     {(errors.length > 0 || importError || editMessage) && <div className="editor-validation" role="status" data-testid="env-editor-errors">{editMessage || (importError ? translateValidationError(importError, locale) : errors.map(error => translateValidationError(error, locale)).join(' '))}</div>}
-    {galleryOpen && <MapGallery locale={locale} labels={presetLabel} onClose={() => setGalleryOpen(false)} onSelect={next => { setDraft(next); setPresetId('custom'); setSelectedCell(null) }} />}
   </div>
 
   return (

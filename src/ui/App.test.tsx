@@ -192,7 +192,7 @@ describe('App (integration, real Engine — Phase 5 §15.5)', () => {
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
 
     render(<App />)
-    // Phase 46: episodeCount now defaults to 100 — set it to 1 explicitly so this test's
+    // Phase 46: episodeCount now defaults to 250 — set it to 1 explicitly so this test's
     // "exactly one episode" premise still holds.
     fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
@@ -285,7 +285,7 @@ describe('App (integration, real Engine — Phase 6 §9.3)', () => {
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
 
     render(<App />)
-    // Phase 46: episodeCount now defaults to 100 — set it to 1 explicitly so this test's
+    // Phase 46: episodeCount now defaults to 250 — set it to 1 explicitly so this test's
     // "one Run Episode click completes exactly one episode" premise still holds.
     fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
@@ -651,9 +651,9 @@ describe('App (integration, real Engine — Phase 15: Episode count)', () => {
     bombPenalty: -10,
   }
 
-  it('A. defaults to 100 (Phase 46)', () => {
+  it('A. defaults to 250 (Phase 46)', () => {
     render(<App />)
-    expect(countInput().value).toBe('100')
+    expect(countInput().value).toBe('250')
   })
 
   it('B. can be changed to 5; invalid values (0, negative, decimal) are rejected', () => {
@@ -758,8 +758,8 @@ describe('App (integration, real Engine — Phase 15: Episode count)', () => {
 
     fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
     expect(screen.getByText('에피소드 수')).toBeTruthy()
-    // The count value itself is untouched by a language change (Phase 46: default is 100).
-    expect(countInput().value).toBe('100')
+    // The count value itself is untouched by a language change (Phase 46: default is 250).
+    expect(countInput().value).toBe('250')
   })
 })
 
@@ -1149,7 +1149,7 @@ describe('App (integration, real Engine — Phase 21: Episode Statistics)', () =
     engine.setSpeed({ mode: 'interval', intervalMs: 500 })
     render(<App />)
 
-    // Phase 46: episodeCount now defaults to 100 — set it to 1 explicitly so completing
+    // Phase 46: episodeCount now defaults to 250 — set it to 1 explicitly so completing
     // the single Episode below actually returns to idle instead of continuing on.
     fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode')) // step 1 synchronously
@@ -1454,7 +1454,7 @@ describe('App (integration, real Engine — Phase 23: Algorithm selection)', () 
     })
     engine.setSpeed({ mode: 'batch', stepsPerFrame: 500 })
     render(<App />)
-    // Phase 46: episodeCount now defaults to 100 — set it to 1 explicitly.
+    // Phase 46: episodeCount now defaults to 250 — set it to 1 explicitly.
     fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode')) // Q-Learning: run 1 episode
     expect(engine.getSnapshot().episode).toBe(1)
@@ -1883,7 +1883,7 @@ describe('App (integration, real Engine — Phase 25: Learning Progress)', () =>
     engine.setSpeed({ mode: 'interval', intervalMs: 500 })
     render(<App />)
 
-    // Phase 46: episodeCount now defaults to 100 — set it to 1 explicitly.
+    // Phase 46: episodeCount now defaults to 250 — set it to 1 explicitly.
     fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('playback-pause'))
@@ -2139,7 +2139,7 @@ describe('App (integration, real Engine — Phase 26: Episode Trajectory)', () =
     engine.reset({ envConfig: corridorConfig, hyperparams: { alpha: 0, gamma: 0.9, epsilon: 0 } })
     engine.setSpeed({ mode: 'interval', intervalMs: 500 })
     render(<App />)
-    // Phase 46: episodeCount now defaults to 100 — set it to 1 explicitly.
+    // Phase 46: episodeCount now defaults to 250 — set it to 1 explicitly.
     fireEvent.change(screen.getByTestId('episode-count-input'), { target: { value: '1' } })
     fireEvent.click(screen.getByTestId('playback-run-episode'))
     fireEvent.click(screen.getByTestId('playback-pause'))
