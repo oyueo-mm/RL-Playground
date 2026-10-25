@@ -1,0 +1,497 @@
+[
+  {
+    "id": "kocw-1534717-1",
+    "title": "강화학습 과목 소개",
+    "provider": "건양대학교 · 정원식 / KOCW · 2025-1",
+    "url": "https://www.kocw.net/home/cview.do?lid=38b1cbf631fcacec",
+    "language": "ko",
+    "format": "video",
+    "level": "beginner",
+    "access": "free",
+    "chapterIds": [
+      0
+    ],
+    "stageIds": [
+      0,
+      1
+    ],
+    "checked": "2026-10-25",
+    "note": "공식 차시 목록 및 게스트 재생 표본 확인. 차시별 제공 상태는 달라질 수 있습니다.",
+    "noteEn": "Official lecture list and guest playback samples verified. Availability can vary by lecture."
+  },
+  {
+    "id": "kocw-1534717-3",
+    "title": "Markov Decision Process (MDP)에 대한 이해 I",
+    "provider": "건양대학교 · 정원식 / KOCW · 2025-1",
+    "url": "https://www.kocw.net/home/cview.do?lid=e7376211d731a05a",
+    "language": "ko",
+    "format": "video",
+    "level": "beginner",
+    "access": "free",
+    "chapterIds": [
+      0,
+      5
+    ],
+    "stageIds": [
+      0,
+      1
+    ],
+    "checked": "2026-10-25",
+    "note": "공식 차시 목록 및 게스트 재생 표본 확인. 차시별 제공 상태는 달라질 수 있습니다.",
+    "noteEn": "Official lecture list and guest playback samples verified. Availability can vary by lecture."
+  },
+  {
+    "id": "kocw-1534717-9",
+    "title": "Bellman Equation(벨만 방정식) (1)",
+    "provider": "건양대학교 · 정원식 / KOCW · 2025-1",
+    "url": "https://www.kocw.net/home/cview.do?lid=f0c751883e04df5d",
+    "language": "ko",
+    "format": "video",
+    "level": "beginner",
+    "access": "free",
+    "chapterIds": [
+      1
+    ],
+    "stageIds": [
+      1
+    ],
+    "checked": "2026-10-25",
+    "note": "공식 차시 목록 및 게스트 재생 표본 확인. 차시별 제공 상태는 달라질 수 있습니다.",
+    "noteEn": "Official lecture list and guest playback samples verified. Availability can vary by lecture."
+  },
+  {
+    "id": "kocw-1534717-19",
+    "title": "Temporal Difference (TD)",
+    "provider": "건양대학교 · 정원식 / KOCW · 2025-1",
+    "url": "https://www.kocw.net/home/cview.do?lid=78110543f2f88317",
+    "language": "ko",
+    "format": "video",
+    "level": "beginner",
+    "access": "free",
+    "chapterIds": [
+      2,
+      3,
+      4
+    ],
+    "stageIds": [
+      2
+    ],
+    "checked": "2026-10-25",
+    "note": "공식 차시 목록 및 게스트 재생 표본 확인. 차시별 제공 상태는 달라질 수 있습니다.",
+    "noteEn": "Official lecture list and guest playback samples verified. Availability can vary by lecture."
+  },
+  {
+    "id": "kocw-1536047-11",
+    "title": "Q-Learning",
+    "provider": "영남대학교 · 최규상 / KOCW · 2025-2",
+    "url": "https://www.kocw.net/home/cview.do?lid=c130b77c3de0a514",
+    "language": "ko",
+    "format": "video",
+    "level": "beginner",
+    "access": "free",
+    "chapterIds": [
+      2,
+      4
+    ],
+    "stageIds": [
+      2,
+      3
+    ],
+    "checked": "2026-10-25",
+    "note": "공식 차시 목록 및 게스트 재생 표본 확인. 차시별 제공 상태는 달라질 수 있습니다.",
+    "noteEn": "Official lecture list and guest playback samples verified. Availability can vary by lecture."
+  },
+  {
+    "id": "kocw-1536047-10",
+    "title": "SARSA(살사)",
+    "provider": "영남대학교 · 최규상 / KOCW · 2025-2",
+    "url": "https://www.kocw.net/home/cview.do?lid=3a577ef03953e2a6",
+    "language": "ko",
+    "format": "video",
+    "level": "beginner",
+    "access": "free",
+    "chapterIds": [
+      3,
+      4
+    ],
+    "stageIds": [
+      2,
+      3
+    ],
+    "checked": "2026-10-25",
+    "note": "공식 차시 목록 및 게스트 재생 표본 확인. 차시별 제공 상태는 달라질 수 있습니다.",
+    "noteEn": "Official lecture list and guest playback samples verified. Availability can vary by lecture."
+  },
+  {
+    "id": "kocw-1536047-19",
+    "title": "DQN",
+    "provider": "영남대학교 · 최규상 / KOCW · 2025-2",
+    "url": "https://www.kocw.net/home/cview.do?lid=c5caff8d6be25b60",
+    "language": "ko",
+    "format": "video",
+    "level": "advanced",
+    "access": "free",
+    "chapterIds": [],
+    "stageIds": [
+      4
+    ],
+    "checked": "2026-10-25",
+    "note": "공식 차시 목록 및 게스트 재생 표본 확인. 차시별 제공 상태는 달라질 수 있습니다.",
+    "noteEn": "Official lecture list and guest playback samples verified. Availability can vary by lecture."
+  },
+  {
+    "id": "kocw-1536047-17",
+    "title": "Policy Gradient",
+    "provider": "영남대학교 · 최규상 / KOCW · 2025-2",
+    "url": "https://www.kocw.net/home/cview.do?lid=d44f1d51d83e292a",
+    "language": "ko",
+    "format": "video",
+    "level": "advanced",
+    "access": "free",
+    "chapterIds": [],
+    "stageIds": [
+      4
+    ],
+    "checked": "2026-10-25",
+    "note": "공식 차시 목록 및 게스트 재생 표본 확인. 차시별 제공 상태는 달라질 수 있습니다.",
+    "noteEn": "Official lecture list and guest playback samples verified. Availability can vary by lecture."
+  },
+  {
+    "id": "kocw-1536047-20",
+    "title": "Actor-Critic",
+    "provider": "영남대학교 · 최규상 / KOCW · 2025-2",
+    "url": "https://www.kocw.net/home/cview.do?lid=1e692486a0f49964",
+    "language": "ko",
+    "format": "video",
+    "level": "advanced",
+    "access": "free",
+    "chapterIds": [],
+    "stageIds": [
+      4
+    ],
+    "checked": "2026-10-25",
+    "note": "공식 차시 목록 및 게스트 재생 표본 확인. 차시별 제공 상태는 달라질 수 있습니다.",
+    "noteEn": "Official lecture list and guest playback samples verified. Availability can vary by lecture."
+  },
+  {
+    "id": "hunkim-intro",
+    "title": "시즌 RL · 수업의 개요",
+    "provider": "김성훈 · 모두를 위한 머신러닝/딥러닝",
+    "url": "https://hunkim.github.io/ml/",
+    "language": "ko",
+    "format": "course",
+    "level": "beginner",
+    "access": "free",
+    "chapterIds": [
+      0
+    ],
+    "stageIds": [
+      1
+    ],
+    "checked": "2026-10-25",
+    "note": "교수 공개 강의 목록과 슬라이드 링크 확인. 실습은 TensorFlow 1.x 기반의 역사적 자료입니다.",
+    "noteEn": "Public lecture and slide links verified. The practical code uses historical TensorFlow 1.x."
+  },
+  {
+    "id": "hunkim-table",
+    "title": "시즌 RL · Dummy Q-learning (table)",
+    "provider": "김성훈 · 모두를 위한 머신러닝/딥러닝",
+    "url": "https://hunkim.github.io/ml/",
+    "language": "ko",
+    "format": "course",
+    "level": "beginner",
+    "access": "free",
+    "chapterIds": [
+      1,
+      2,
+      4
+    ],
+    "stageIds": [
+      2,
+      3
+    ],
+    "checked": "2026-10-25",
+    "note": "교수 공개 강의 목록과 슬라이드 링크 확인. 실습은 TensorFlow 1.x 기반의 역사적 자료입니다.",
+    "noteEn": "Public lecture and slide links verified. The practical code uses historical TensorFlow 1.x."
+  },
+  {
+    "id": "hunkim-explore",
+    "title": "시즌 RL · Q-learning exploit&exploration and discounted reward",
+    "provider": "김성훈 · 모두를 위한 머신러닝/딥러닝",
+    "url": "https://hunkim.github.io/ml/",
+    "language": "ko",
+    "format": "course",
+    "level": "beginner",
+    "access": "free",
+    "chapterIds": [
+      5
+    ],
+    "stageIds": [
+      3
+    ],
+    "checked": "2026-10-25",
+    "note": "교수 공개 강의 목록과 슬라이드 링크 확인. 실습은 TensorFlow 1.x 기반의 역사적 자료입니다.",
+    "noteEn": "Public lecture and slide links verified. The practical code uses historical TensorFlow 1.x."
+  },
+  {
+    "id": "hunkim-dqn",
+    "title": "시즌 RL · DQN",
+    "provider": "김성훈 · 모두를 위한 머신러닝/딥러닝",
+    "url": "https://hunkim.github.io/ml/",
+    "language": "ko",
+    "format": "course",
+    "level": "advanced",
+    "access": "free",
+    "chapterIds": [],
+    "stageIds": [
+      4
+    ],
+    "checked": "2026-10-25",
+    "note": "교수 공개 강의 목록과 슬라이드 링크 확인. 실습은 TensorFlow 1.x 기반의 역사적 자료입니다.",
+    "noteEn": "Public lecture and slide links verified. The practical code uses historical TensorFlow 1.x."
+  },
+  {
+    "id": "hunkim-math",
+    "title": "시즌 1 · 10분안에 미분 정리하기",
+    "provider": "김성훈 · 모두를 위한 머신러닝/딥러닝",
+    "url": "https://hunkim.github.io/ml/",
+    "language": "ko",
+    "format": "course",
+    "level": "beginner",
+    "access": "free",
+    "chapterIds": [],
+    "stageIds": [
+      0
+    ],
+    "checked": "2026-10-25",
+    "note": "교수 공개 강의 목록과 슬라이드 링크 확인. 실습은 TensorFlow 1.x 기반의 역사적 자료입니다.",
+    "noteEn": "Public lecture and slide links verified. The practical code uses historical TensorFlow 1.x."
+  },
+  {
+    "id": "kmooc-8010",
+    "title": "누구나 할 수 있는 강화학습",
+    "provider": "한양대학교 ERICA · 박태준 / K-MOOC",
+    "url": "https://www.kmooc.kr/view/course/detail/8010",
+    "language": "ko",
+    "format": "course",
+    "level": "beginner",
+    "access": "availability-unverified",
+    "chapterIds": [
+      0
+    ],
+    "stageIds": [
+      1
+    ],
+    "checked": "2026-10-25",
+    "note": "강좌 소개·청강 신청 표시만 확인. 운영 기간은 2023-11-06~12-17이며 현재 무료 청강 가능 여부는 미검증입니다.",
+    "noteEn": "Course information and an audit application are visible. The 2023 course is listed; current free enrollment is unverified."
+  },
+  {
+    "id": "silver-0",
+    "title": "Introduction to Reinforcement Learning",
+    "provider": "David Silver · UCL (2015)",
+    "url": "https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/intro_rl.pdf",
+    "language": "en",
+    "format": "document",
+    "level": "intermediate",
+    "access": "free",
+    "chapterIds": [
+      0
+    ],
+    "stageIds": [
+      1
+    ],
+    "checked": "2026-10-25",
+    "note": ""
+  },
+  {
+    "id": "silver-1",
+    "title": "Markov Decision Processes",
+    "provider": "David Silver · UCL (2015)",
+    "url": "https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/lecture-2-mdp.pdf",
+    "language": "en",
+    "format": "document",
+    "level": "intermediate",
+    "access": "free",
+    "chapterIds": [
+      1
+    ],
+    "stageIds": [
+      1
+    ],
+    "checked": "2026-10-25",
+    "note": ""
+  },
+  {
+    "id": "silver-2",
+    "title": "Model-Free Control · Q-learning",
+    "provider": "David Silver · UCL (2015)",
+    "url": "https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/lecture-5-model-free-control-.pdf",
+    "language": "en",
+    "format": "document",
+    "level": "intermediate",
+    "access": "free",
+    "chapterIds": [
+      2
+    ],
+    "stageIds": [
+      2
+    ],
+    "checked": "2026-10-25",
+    "note": ""
+  },
+  {
+    "id": "silver-3",
+    "title": "Model-Free Control · SARSA",
+    "provider": "David Silver · UCL (2015)",
+    "url": "https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/lecture-5-model-free-control-.pdf",
+    "language": "en",
+    "format": "document",
+    "level": "intermediate",
+    "access": "free",
+    "chapterIds": [
+      3
+    ],
+    "stageIds": [
+      2
+    ],
+    "checked": "2026-10-25",
+    "note": ""
+  },
+  {
+    "id": "silver-4",
+    "title": "Model-Free Control · comparison",
+    "provider": "David Silver · UCL (2015)",
+    "url": "https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/lecture-5-model-free-control-.pdf",
+    "language": "en",
+    "format": "document",
+    "level": "intermediate",
+    "access": "free",
+    "chapterIds": [
+      4
+    ],
+    "stageIds": [
+      2
+    ],
+    "checked": "2026-10-25",
+    "note": ""
+  },
+  {
+    "id": "silver-5",
+    "title": "Exploration and Exploitation",
+    "provider": "David Silver · UCL (2015)",
+    "url": "https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/lecture-9-exploration-and-exploitation.pdf",
+    "language": "en",
+    "format": "document",
+    "level": "intermediate",
+    "access": "free",
+    "chapterIds": [
+      5
+    ],
+    "stageIds": [
+      3
+    ],
+    "checked": "2026-10-25",
+    "note": ""
+  },
+  {
+    "id": "sutton-barto",
+    "title": "Reinforcement Learning: An Introduction, 2nd ed. (2018)",
+    "provider": "Richard S. Sutton & Andrew G. Barto · MIT Press",
+    "url": "https://mitpress.mit.edu/9780262039246/reinforcement-learning/",
+    "language": "en",
+    "format": "document",
+    "level": "intermediate",
+    "access": "reference",
+    "chapterIds": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "stageIds": [
+      1,
+      2
+    ],
+    "checked": "2026-10-25",
+    "note": "출판사 서지 페이지. 무료 원문 접근을 의미하지 않습니다.",
+    "noteEn": "Publisher bibliography. This link does not claim free full-text access."
+  },
+  {
+    "id": "watkins-dayan",
+    "title": "Q-learning (1992)",
+    "provider": "C.J.C.H. Watkins & P. Dayan · Royal Holloway",
+    "url": "https://pure.royalholloway.ac.uk/en/publications/q-learning/",
+    "language": "en",
+    "format": "paper",
+    "level": "advanced",
+    "access": "reference",
+    "chapterIds": [
+      2,
+      4
+    ],
+    "stageIds": [
+      5
+    ],
+    "checked": "2026-10-25",
+    "note": "원 논문 서지와 출판사 링크입니다.",
+    "noteEn": "Original paper bibliographic record and publisher link."
+  },
+  {
+    "id": "silver-dp",
+    "title": "Planning by Dynamic Programming",
+    "provider": "David Silver · UCL (2015)",
+    "url": "https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/lecture-3-planning-by-dynamic-programming-.pdf",
+    "language": "en",
+    "format": "document",
+    "level": "intermediate",
+    "access": "free",
+    "chapterIds": [
+      1
+    ],
+    "stageIds": [
+      2
+    ],
+    "checked": "2026-10-25",
+    "note": ""
+  },
+  {
+    "id": "spinup-types",
+    "title": "Kinds of RL Algorithms",
+    "provider": "OpenAI Spinning Up",
+    "url": "https://spinningup.openai.com/en/latest/spinningup/rl_intro2.html",
+    "language": "en",
+    "format": "document",
+    "level": "advanced",
+    "access": "free",
+    "chapterIds": [
+      4
+    ],
+    "stageIds": [
+      4
+    ],
+    "checked": "2026-10-25",
+    "note": ""
+  },
+  {
+    "id": "kocw-taxonomy",
+    "title": "Taxonomy of Reinforcement Learning",
+    "provider": "영남대학교 · 최규상 / KOCW · 2025-2",
+    "url": "https://www.kocw.net/home/cview.do?lid=e73c341f80fd2523",
+    "language": "ko",
+    "format": "video",
+    "level": "advanced",
+    "access": "free",
+    "chapterIds": [
+      4
+    ],
+    "stageIds": [
+      5
+    ],
+    "checked": "2026-10-25",
+    "note": "공식 강의 목록 확인. 알고리즘 분류를 복습하고 재현할 연구 주제를 선택합니다.",
+    "noteEn": "Official lecture listing verified. Review the algorithm taxonomy before selecting a research topic."
+  }
+]

@@ -1,0 +1,260 @@
+[
+  {
+    "course": "1534717",
+    "title": "강화학습 과목 소개",
+    "url": "https://www.kocw.net/home/cview.do?lid=38b1cbf631fcacec",
+    "playId": "1"
+  },
+  {
+    "course": "1534717",
+    "title": "Markov Decision Process (MDP)에 대한 이해 I",
+    "url": "https://www.kocw.net/home/cview.do?lid=e7376211d731a05a",
+    "playId": "3"
+  },
+  {
+    "course": "1534717",
+    "title": "Markov Decision Process (MDP)에 대한 이해 II (1)",
+    "url": "https://www.kocw.net/home/cview.do?lid=653ffb5326d51821",
+    "playId": "5"
+  },
+  {
+    "course": "1534717",
+    "title": "Markov Decision Process (MDP)에 대한 이해 II (2)",
+    "url": "https://www.kocw.net/home/cview.do?lid=604855eac38bf1bf",
+    "playId": "7"
+  },
+  {
+    "course": "1534717",
+    "title": "Markov Decision Process (MDP)에 대한 이해 II (3)",
+    "url": "https://www.kocw.net/home/cview.do?lid=c5963795853d5144",
+    "playId": "8"
+  },
+  {
+    "course": "1534717",
+    "title": "Bellman Equation(벨만 방정식) (1)",
+    "url": "https://www.kocw.net/home/cview.do?lid=f0c751883e04df5d",
+    "playId": "9"
+  },
+  {
+    "course": "1534717",
+    "title": "Bellman Equation(벨만 방정식) (2)",
+    "url": "https://www.kocw.net/home/cview.do?lid=4b647c0a75d742fc",
+    "playId": "11"
+  },
+  {
+    "course": "1534717",
+    "title": "Bellman Equation(벨만 방정식) (3)",
+    "url": "https://www.kocw.net/home/cview.do?lid=8fac7fbcfb79d25e",
+    "playId": "12"
+  },
+  {
+    "course": "1534717",
+    "title": "Dynamic Programming (1)",
+    "url": "https://www.kocw.net/home/cview.do?lid=c5bf66875981a6da",
+    "playId": "13"
+  },
+  {
+    "course": "1534717",
+    "title": "Dynamic Programming (2)",
+    "url": "https://www.kocw.net/home/cview.do?lid=78faf13710ea8629",
+    "playId": "15"
+  },
+  {
+    "course": "1534717",
+    "title": "Dynamic Programming (3)",
+    "url": "https://www.kocw.net/home/cview.do?lid=e2aebee50f025678",
+    "playId": "16"
+  },
+  {
+    "course": "1534717",
+    "title": "Monte Carlo Approach",
+    "url": "https://www.kocw.net/home/cview.do?lid=cad177df30e4b3ab",
+    "playId": "17"
+  },
+  {
+    "course": "1534717",
+    "title": "Temporal Difference (TD)",
+    "url": "https://www.kocw.net/home/cview.do?lid=78110543f2f88317",
+    "playId": "19"
+  },
+  {
+    "course": "1534717",
+    "title": "Monte Carlo &amp; Temporal Difference (1)",
+    "url": "https://www.kocw.net/home/cview.do?lid=247b170bc724c65a",
+    "playId": "21"
+  },
+  {
+    "course": "1534717",
+    "title": "Monte Carlo &amp; Temporal Difference (2)",
+    "url": "https://www.kocw.net/home/cview.do?lid=624953736bca6e6c",
+    "playId": "23"
+  },
+  {
+    "course": "1534717",
+    "title": "From prediction task to control I",
+    "url": "https://www.kocw.net/home/cview.do?lid=80b68f476c31fb41",
+    "playId": "24"
+  },
+  {
+    "course": "1534717",
+    "title": "From prediction task to control II",
+    "url": "https://www.kocw.net/home/cview.do?lid=5b9aa2aadf22ea9a",
+    "playId": "26"
+  },
+  {
+    "course": "1536047",
+    "title": "강화학습 정의",
+    "url": "https://www.kocw.net/home/cview.do?lid=a6d0915735b75cdb",
+    "playId": "1"
+  },
+  {
+    "course": "1536047",
+    "title": "개발 환경 구축(Anaconda 설치)",
+    "url": "https://www.kocw.net/home/cview.do?lid=f7bcc01cabc29931",
+    "playId": "2"
+  },
+  {
+    "course": "1536047",
+    "title": "Markov Decision Process(MDP)",
+    "url": "https://www.kocw.net/home/cview.do?lid=7345a7bbb8229233",
+    "playId": "3"
+  },
+  {
+    "course": "1536047",
+    "title": "Bellman Equation",
+    "url": "https://www.kocw.net/home/cview.do?lid=7ee6981b45aec109",
+    "playId": "4"
+  },
+  {
+    "course": "1536047",
+    "title": "Policy Iteration",
+    "url": "https://www.kocw.net/home/cview.do?lid=480443b9b8ae9217",
+    "playId": "5"
+  },
+  {
+    "course": "1536047",
+    "title": "Policy Iteration",
+    "url": "https://www.kocw.net/home/cview.do?lid=5fdb5c820caff447",
+    "playId": "6"
+  },
+  {
+    "course": "1536047",
+    "title": "Value Interation",
+    "url": "https://www.kocw.net/home/cview.do?lid=a244fa23061a4662",
+    "playId": "7"
+  },
+  {
+    "course": "1536047",
+    "title": "몬테카를로 예측",
+    "url": "https://www.kocw.net/home/cview.do?lid=485a809a12de45b0",
+    "playId": "8"
+  },
+  {
+    "course": "1536047",
+    "title": "시간차 예측(Temporal-difference Prediction)",
+    "url": "https://www.kocw.net/home/cview.do?lid=cd3d9612c99323e1",
+    "playId": "9"
+  },
+  {
+    "course": "1536047",
+    "title": "SARSA(살사)",
+    "url": "https://www.kocw.net/home/cview.do?lid=3a577ef03953e2a6",
+    "playId": "10"
+  },
+  {
+    "course": "1536047",
+    "title": "Q-Learning",
+    "url": "https://www.kocw.net/home/cview.do?lid=c130b77c3de0a514",
+    "playId": "11"
+  },
+  {
+    "course": "1536047",
+    "title": "머신러닝",
+    "url": "https://www.kocw.net/home/cview.do?lid=2fa4ed2864681318",
+    "playId": "12"
+  },
+  {
+    "course": "1536047",
+    "title": "딥러닝",
+    "url": "https://www.kocw.net/home/cview.do?lid=049d2301d5446480",
+    "playId": "13"
+  },
+  {
+    "course": "1536047",
+    "title": "딥러닝",
+    "url": "https://www.kocw.net/home/cview.do?lid=652209bd3f8ef238",
+    "playId": "14"
+  },
+  {
+    "course": "1536047",
+    "title": "Deep SARSA",
+    "url": "https://www.kocw.net/home/cview.do?lid=6dc8e9215ac0ee42",
+    "playId": "15"
+  },
+  {
+    "course": "1536047",
+    "title": "Deep SARSA",
+    "url": "https://www.kocw.net/home/cview.do?lid=54fc0d87d38f5fc9",
+    "playId": "16"
+  },
+  {
+    "course": "1536047",
+    "title": "Policy Gradient",
+    "url": "https://www.kocw.net/home/cview.do?lid=d44f1d51d83e292a",
+    "playId": "17"
+  },
+  {
+    "course": "1536047",
+    "title": "Policy Gradient",
+    "url": "https://www.kocw.net/home/cview.do?lid=471b03a3999f5729",
+    "playId": "18"
+  },
+  {
+    "course": "1536047",
+    "title": "DQN",
+    "url": "https://www.kocw.net/home/cview.do?lid=c5caff8d6be25b60",
+    "playId": "19"
+  },
+  {
+    "course": "1536047",
+    "title": "Actor-Critic",
+    "url": "https://www.kocw.net/home/cview.do?lid=1e692486a0f49964",
+    "playId": "20"
+  },
+  {
+    "course": "1536047",
+    "title": "Continuous Actor-Critic",
+    "url": "https://www.kocw.net/home/cview.do?lid=478f99d1a460cfa8",
+    "playId": "21"
+  },
+  {
+    "course": "1536047",
+    "title": "CNN",
+    "url": "https://www.kocw.net/home/cview.do?lid=aff7e4fe29eb5b74",
+    "playId": "22"
+  },
+  {
+    "course": "1536047",
+    "title": "CNN",
+    "url": "https://www.kocw.net/home/cview.do?lid=77bc2f54f5778d82",
+    "playId": "23"
+  },
+  {
+    "course": "1536047",
+    "title": "Atari Game",
+    "url": "https://www.kocw.net/home/cview.do?lid=fa2f174159763820",
+    "playId": "24"
+  },
+  {
+    "course": "1536047",
+    "title": "Atari Game",
+    "url": "https://www.kocw.net/home/cview.do?lid=d36fbca7ced02345",
+    "playId": "25"
+  },
+  {
+    "course": "1536047",
+    "title": "Taxonomy of Reinforcement Learning",
+    "url": "https://www.kocw.net/home/cview.do?lid=e73c341f80fd2523",
+    "playId": "26"
+  }
+]

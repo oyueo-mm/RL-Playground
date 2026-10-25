@@ -1,0 +1,274 @@
+{
+  "checked": "2026-10-25",
+  "scope": "Guest playback samples only; not every lecture or full course completion.",
+  "samples": [
+    {
+      "course": "1534717",
+      "lesson": "1",
+      "title": "강화학습 과목 소개",
+      "playbackVerified": true,
+      "media": [
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        }
+      ],
+      "video": [
+        {
+          "readyState": 4,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "course": "1534717",
+      "lesson": "3",
+      "title": "Markov Decision Process (MDP)에 대한 이해 I",
+      "playbackVerified": true,
+      "media": [
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        }
+      ],
+      "video": [
+        {
+          "readyState": 4,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "course": "1536047",
+      "lesson": "10",
+      "title": "SARSA(살사)",
+      "playbackVerified": true,
+      "media": [
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        }
+      ],
+      "video": [
+        {
+          "readyState": 4,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "course": "1536047",
+      "lesson": "11",
+      "title": "Q-Learning",
+      "playbackVerified": true,
+      "media": [
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        }
+      ],
+      "video": [
+        {
+          "readyState": 4,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "course": "1536047",
+      "lesson": "19",
+      "title": "DQN",
+      "playbackVerified": true,
+      "media": [
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        }
+      ],
+      "video": [
+        {
+          "readyState": 4,
+          "paused": false
+        }
+      ]
+    },
+    {
+      "course": "1536047",
+      "lesson": "20",
+      "title": "Actor-Critic",
+      "playbackVerified": true,
+      "media": [
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        },
+        {
+          "host": "kocw-n.xst.kinxcdn.com",
+          "status": 200
+        }
+      ],
+      "video": [
+        {
+          "readyState": 4,
+          "paused": false
+        }
+      ]
+    }
+  ]
+}

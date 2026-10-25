@@ -1,33 +1,9 @@
 import type { Locale } from '../i18n'
+import { ResourceLinks } from './ResourceLinks'
 
 const silver = 'https://www.davidsilver.uk/teaching/'
 const book = 'https://mitpress.mit.edu/9780262039246/reinforcement-learning/'
-const topics = [
-  ['Ch. 1, 3 · Agent, MDP, return', 'Lecture 1 · Introduction to Reinforcement Learning'],
-  ['Ch. 3–4 · Value functions, Bellman equations', 'Lecture 2 · Markov Decision Processes'],
-  ['Ch. 6.5 · Q-learning', 'Lecture 5 · Model-Free Control'],
-  ['Ch. 6.4 · SARSA', 'Lecture 5 · Model-Free Control'],
-  ['Ch. 6.4–6.6 · On/off-policy TD control', 'Lecture 5 · Model-Free Control'],
-  ['Ch. 2 · Exploration, ε-greedy', 'Lecture 9 · Exploration and Exploitation'],
-]
-const lectureLinks = [
-  'https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/intro_rl.pdf',
-  'https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/lecture-2-mdp.pdf',
-  silver,
-  'https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/lecture-5-model-free-control-.pdf',
-  'https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/lecture-5-model-free-control-.pdf',
-  'https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/lecture-9-exploration-and-exploitation.pdf',
-]
-export function StudyResources({ chapter, locale }: { chapter: number; locale: Locale }) {
-  const ko = locale === 'ko'
-  return <aside className="study-resources"><h3>{ko ? '참고 문헌 및 더 알아보기' : 'References and further study'}</h3>
-    <ul><li><a href={book} target="_blank" rel="noopener noreferrer">Sutton & Barto (2018), Reinforcement Learning: An Introduction, 2nd ed.</a><p>{ko ? '설명 근거 · 입문 교재' : 'Conceptual reference · introductory textbook'} · {topics[chapter][0]}</p></li>
-    {chapter !== 2 && <li><a href={lectureLinks[chapter]} target="_blank" rel="noopener noreferrer">David Silver, UCL Reinforcement Learning Course (2015)</a><p>{ko ? '추가 학습 · 공식 강의' : 'Further study · official lectures'} · {topics[chapter][1]}</p></li>}
-    {chapter === 1 && <li><a href="https://davidstarsilver.wordpress.com/wp-content/uploads/2025/04/lecture-3-planning-by-dynamic-programming-.pdf" target="_blank" rel="noopener noreferrer">David Silver · Lecture 3, Planning by Dynamic Programming</a><p>{ko ? '심화 · 정책 평가와 개선' : 'Advanced · policy evaluation and improvement'}</p></li>}
-    {chapter === 2 && <li><a href="https://pure.royalholloway.ac.uk/en/publications/q-learning/" target="_blank" rel="noopener noreferrer">Watkins & Dayan (1992), Q-learning</a><p>{ko ? '심화 · 수렴 정리 원 논문 서지 및 출판사 링크' : 'Advanced · original convergence paper, bibliographic record and publisher link'}</p></li>}</ul>
-    {chapter === 4 && <p><a href="https://spinningup.openai.com/en/latest/spinningup/rl_intro2.html" target="_blank" rel="noopener noreferrer">OpenAI Spinning Up · Kinds of RL Algorithms</a> · {ko ? '심화 · 가치 학습과 정책 최적화의 분류' : 'Advanced · value learning and policy optimization taxonomy'}</p>}
-  </aside>
-}
+export function StudyResources({ chapter, locale }: { chapter: number; locale: Locale }) { return <ResourceLinks key={locale} chapter={chapter} locale={locale} /> }
 
 export function LearningRoadmap({ locale, onStart }: { locale: Locale; onStart: () => void }) {
   const ko = locale === 'ko'
@@ -47,7 +23,7 @@ export function LearningRoadmap({ locale, onStart }: { locale: Locale; onStart: 
     ['Towards research', 'Reproduction, environment design, comparison, failure analysis', 'Reproduce one paper’s settings, seeds and evaluation procedure.', 'Run an ablation changing one element and report failures.'],
   ]
   return <section id="learning-roadmap" className="learning-roadmap" tabIndex={-1}><h2>{ko ? '다음 단계 · 학습 로드맵' : 'Next steps · Learning roadmap'}</h2><p>{ko ? '2–4단계의 GridWorld·TD 제어 실습은 이 앱에서, 수학·DP·MC·Deep RL 구현과 논문 재현은 외부 학습 환경에서 진행하세요.' : 'Use this app for GridWorld and TD control experiments in stages 2–4. Use external tools for mathematics, DP/MC, deep RL and paper reproduction.'}</p>
-    <ol>{stages.map(([title, description, ...tasks]) => <li key={title}><h3>{title}</h3><p>{description}</p><ul>{tasks.map(task => <li key={task}>{task}</li>)}</ul></li>)}</ol>
+    <ol>{stages.map(([title, description, ...tasks], index) => <li key={title}><h3>{title}</h3><p>{description}</p><ul>{tasks.map(task => <li key={task}>{task}</li>)}</ul><ResourceLinks key={locale} locale={locale} stage={index} /></li>)}</ol>
     <p><a href={book} target="_blank" rel="noopener noreferrer">Sutton & Barto (2018), 2nd ed.</a> · {ko ? '입문 교재 · 2–6장' : 'Introductory textbook · Chapters 2–6'}</p>
     <p><a href={silver} target="_blank" rel="noopener noreferrer">David Silver · UCL Reinforcement Learning Course</a> · {ko ? '공개 강의 · 이론에서 제어까지' : 'Open lectures · theory to control'}</p>
     <p><a href="https://gymnasium.farama.org/introduction/train_agent/" target="_blank" rel="noopener noreferrer">Farama Foundation · Gymnasium, Training an Agent</a> · {ko ? '공식 외부 실습 · Blackjack Q-learning' : 'Official external practice · Blackjack Q-learning'}</p>
