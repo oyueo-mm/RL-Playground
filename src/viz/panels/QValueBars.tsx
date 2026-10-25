@@ -51,7 +51,7 @@ function resolveQVector(agentSnapshot: AgentSnapshot, selectedState: StateKey, c
   if (agentSnapshot.kind !== 'Q') {
     return new Array(GRIDWORLD_ACTION_LABELS.length).fill(0)
   }
-  const mask = currentState.split(',')[2]
+  const mask = currentState.split(',').length > 2 ? currentState.split(',').slice(2).join(',') : undefined
   const key = mask === undefined ? selectedState : `${selectedState},${mask}`
   return agentSnapshot.qTable[key] ?? new Array(GRIDWORLD_ACTION_LABELS.length).fill(0)
 }

@@ -18,7 +18,8 @@ import type { AgentSnapshot, EnvRenderModel } from '../../core/types/render'
 import type { StateKey } from '../../core/types/rl'
 import { GRIDWORLD_ACTION_ARROWS, GRIDWORLD_ACTION_LABELS } from './actionLabels'
 import { argmaxLowestIndex } from './policy'
-import { parseStateKey, stateMask } from './stateKey'
+import { parseStateKey } from './stateKey'
+import { visibleQEntries } from './visibleQEntries'
 
 type GridRenderModel = Extract<EnvRenderModel, { kind: 'grid' }>
 
@@ -43,11 +44,7 @@ export function PolicyOverlay({ renderModel, agentSnapshot, currentState, cellSi
 
   // Only ActionValueAgent (Q-Learning) has a policy to display. A ValueAgent (Future —
   // TD(0)) has no per-action values to argmax over, so nothing is drawn (never a guess).
-  const currentMask = currentState ? stateMask(currentState) : undefined
-  const entries =
-    agentSnapshot.kind === 'Q'
-      ? Object.entries(agentSnapshot.qTable).filter(([state]) => stateMask(state) === currentMask)
-      : []
+  const entries = visibleQEntries(renderModel, agentSnapshot, currentState)
 
   return (
     <svg

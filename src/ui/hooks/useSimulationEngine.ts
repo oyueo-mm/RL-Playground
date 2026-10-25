@@ -26,7 +26,8 @@ export interface SubscribableEngine {
  * recommended pattern for wrapping a "builds a new object each call" store.
  */
 export function useSimulationEngine(engine: SubscribableEngine): EngineSnapshot {
-  const cachedSnapshot = useRef<EngineSnapshot>(engine.getSnapshot())
+  const cachedSnapshot = useRef<EngineSnapshot | null>(null)
+  if (cachedSnapshot.current === null) cachedSnapshot.current = engine.getSnapshot()
 
   const subscribe = useCallback(
     (onStoreChange: () => void) =>
@@ -37,7 +38,7 @@ export function useSimulationEngine(engine: SubscribableEngine): EngineSnapshot 
     [engine],
   )
 
-  const getSnapshot = useCallback(() => cachedSnapshot.current, [])
+  const getSnapshot = useCallback(() => cachedSnapshot.current!, [])
 
   return useSyncExternalStore(subscribe, getSnapshot)
 }

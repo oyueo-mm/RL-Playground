@@ -652,6 +652,20 @@ const VALIDATION_ERROR_TRANSLATIONS: Record<string, string> = {
 
 export function translateValidationError(message: string, locale: Locale): string {
   if (locale === 'en') return message
+  const featureMessages: Record<string, string> = {
+    'Each portal pair must have exactly two endpoints.': '포털 쌍마다 서로 다른 두 지점을 배치해야 합니다.',
+    'Portal pair IDs must be unique.': '포털 쌍 ID가 중복되었습니다.',
+    'Invalid portal ID or endpoints.': '포털 ID 또는 연결 좌표가 올바르지 않습니다.',
+    'One-way direction must be 0, 1, 2 or 3.': '단방향 타일의 허용 방향이 올바르지 않습니다.',
+    'Invalid switch/wall group ID.': '스위치·벽 그룹 ID는 영문·숫자·_·-로 1~24자여야 합니다.',
+    'Each toggle group needs at least one switch and one wall.': '각 그룹에 스위치와 토글 벽이 최소 하나씩 필요합니다.',
+    'Special element coordinates are outside the map.': '특수 요소가 맵 범위를 벗어났습니다. 연결과 좌표를 수정하세요.',
+    'New environment elements require schema version 2.': '새 환경 요소는 JSON 버전 2가 필요합니다.',
+  }
+  if (featureMessages[message]) return featureMessages[message]
+  if (message.startsWith('Overlapping map elements at ')) return `같은 셀에 여러 요소가 겹칩니다: ${message.slice(28)}`
+  if (message.startsWith('Estimated state space exceeds')) return '추정 상태 수가 262,144개를 초과합니다. Goal·부서지는 타일·벽 그룹 수를 줄이세요. (셀 수 × 2^(Goal + Fragile + 그룹))'
+  if (message.startsWith('Reward tiles are no longer supported')) return '보상 타일은 더 이상 지원하지 않습니다. 기존 파일의 rewardTiles 데이터를 직접 제거한 후 다시 가져오세요.'
   return VALIDATION_ERROR_TRANSLATIONS[message] ?? message
 }
 

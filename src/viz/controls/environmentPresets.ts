@@ -9,6 +9,12 @@ import type { GridEditorDraft } from './envEditorDraft'
 export interface EnvironmentPreset {
   id: string
   draft: GridEditorDraft
+  metadata?: {
+    name: { ko: string; en: string }
+    description: { ko: string; en: string }
+    difficulty: { ko: string; en: string }
+    elements: string[]
+  }
 }
 
 function draft(overrides: Partial<GridEditorDraft>): GridEditorDraft {
@@ -235,3 +241,33 @@ export const ENVIRONMENT_PRESETS: EnvironmentPreset[] = [
     }),
   },
 ]
+
+const corridorWalls = (width: number) => [1, 3].flatMap(y => Array.from({ length: width }, (_, x) => ({ x, y })))
+const mixedWalls = [...new Map([...[2, 4].flatMap(y => Array.from({ length: 8 }, (_, x) => ({ x, y }))), ...Array.from({ length: 7 }, (_, y) => ({ x: 3, y }))].map(tile => [`${tile.x},${tile.y}`, tile])).values()]
+ENVIRONMENT_PRESETS.push(
+  {
+    id: 'portalMaze',
+    metadata: { name: { ko: 'Portal Maze · 포털 미로', en: 'Portal Maze' }, description: { ko: '가로막힌 구역 사이를 포털로 이동합니다.', en: 'Use paired portals to cross an otherwise impassable barrier.' }, difficulty: { ko: '초급', en: 'Easy' }, elements: ['Portal'] },
+    draft: draft({ width: 7, height: 7, start: { x: 0, y: 3 }, goals: [{ x: 6, y: 3 }], walls: Array.from({ length: 7 }, (_, y) => ({ x: 3, y })), portals: [{ id: 'P1', ends: [{ x: 2, y: 3 }, { x: 4, y: 3 }] }] }),
+  },
+  {
+    id: 'oneWayLabyrinth',
+    metadata: { name: { ko: 'One-way Labyrinth · 단방향 통로', en: 'One-way Labyrinth' }, description: { ko: '진입은 자유롭지만 지정한 방향으로만 나갈 수 있습니다.', en: 'Enter freely, then follow the permitted exit direction.' }, difficulty: { ko: '초급', en: 'Easy' }, elements: ['One-way'] },
+    draft: draft({ width: 7, height: 5, start: { x: 0, y: 2 }, goals: [{ x: 6, y: 2 }], walls: corridorWalls(7), oneWays: Array.from({ length: 5 }, (_, index) => ({ x: index + 1, y: 2, direction: 3 as const })) }),
+  },
+  {
+    id: 'fragileBridge',
+    metadata: { name: { ko: 'Fragile Bridge · 무너지는 다리', en: 'Fragile Bridge' }, description: { ko: '떠난 바닥은 무너집니다. 되돌아가지 않고 건너세요.', en: 'Each departed tile collapses. Commit to crossing the bridge.' }, difficulty: { ko: '중급', en: 'Medium' }, elements: ['Fragile'] },
+    draft: draft({ width: 7, height: 5, start: { x: 0, y: 2 }, goals: [{ x: 6, y: 2 }], walls: corridorWalls(7).filter(tile => tile.y !== 1 || tile.x === 6), bombs: Array.from({ length: 6 }, (_, x) => ({ x, y: 1 })), fragiles: Array.from({ length: 5 }, (_, index) => ({ x: index + 1, y: 2 })) }),
+  },
+  {
+    id: 'switchPuzzle',
+    metadata: { name: { ko: 'Switch Puzzle · 스위치 퍼즐', en: 'Switch Puzzle' }, description: { ko: '스위치로 문을 열어 통과하고 뒤에서 다시 닫습니다.', en: 'Open the gate, cross it, then close it behind you.' }, difficulty: { ko: '중급', en: 'Medium' }, elements: ['Switch', 'Toggle wall'] },
+    draft: draft({ width: 7, height: 5, start: { x: 0, y: 2 }, goals: [{ x: 6, y: 2 }], walls: corridorWalls(7), switches: [{ x: 1, y: 2, groupId: 'G1' }, { x: 5, y: 2, groupId: 'G1' }], toggleWalls: [{ x: 3, y: 2, groupId: 'G1' }] }),
+  },
+  {
+    id: 'mixedChallenge',
+    metadata: { name: { ko: 'Mixed Challenge · 복합 도전', en: 'Mixed Challenge' }, description: { ko: '포털, 스위치, 붕괴, 방향 제약을 하나의 경로에서 해결합니다.', en: 'Combine teleportation, switches, collapse and direction constraints.' }, difficulty: { ko: '고급', en: 'Hard' }, elements: ['Portal', 'One-way', 'Fragile', 'Switch', 'Toggle wall'] },
+    draft: draft({ width: 9, height: 7, start: { x: 0, y: 3 }, goals: [{ x: 8, y: 4 }], walls: mixedWalls.filter(tile => tile.x !== 4 || tile.y !== 2), bombs: [{ x: 4, y: 2 }], portals: [{ id: 'P1', ends: [{ x: 2, y: 3 }, { x: 4, y: 3 }] }], switches: [{ x: 5, y: 3, groupId: 'G1' }], fragiles: [{ x: 6, y: 3 }], oneWays: [{ x: 7, y: 3, direction: 3 }], toggleWalls: [{ x: 8, y: 3, groupId: 'G1' }] }),
+  },
+)

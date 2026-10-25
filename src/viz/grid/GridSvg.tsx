@@ -5,6 +5,7 @@
 
 import type { EnvRenderModel } from '../../core/types/render'
 import type { StateKey } from '../../core/types/rl'
+import { FeatureOverlay } from './FeatureOverlay'
 
 type GridRenderModel = Extract<EnvRenderModel, { kind: 'grid' }>
 
@@ -44,6 +45,12 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
   const agent = parsePosition(agentPos)
   const svgWidth = width * cellSize
   const svgHeight = height * cellSize
+  const descriptions = new Map<string, string>()
+  renderModel.features?.portals?.forEach(pair => pair.ends.forEach(end => descriptions.set(`${end.x},${end.y}`, `Portal ${pair.id}`)))
+  renderModel.features?.oneWays?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `One-way ${['up', 'down', 'left', 'right'][tile.direction]}`))
+  renderModel.features?.fragiles?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, renderModel.collapsedFragiles?.includes(`${tile.x},${tile.y}`) ? 'Collapsed fragile tile' : 'Fragile tile'))
+  renderModel.features?.switches?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `Switch ${tile.groupId}`))
+  renderModel.features?.toggleWalls?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `Toggle wall ${tile.groupId}, ${renderModel.openGroups?.includes(tile.groupId) ? 'open' : 'closed'}`))
 
   const cellFill: Record<CellKind, string> = {
     empty: '#ffffff',
@@ -95,7 +102,7 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
               onClick={onStateSelect ? () => onStateSelect(cell.key) : undefined}
               role={onStateSelect ? 'button' : undefined}
               tabIndex={onStateSelect ? 0 : undefined}
-              aria-label={onStateSelect ? `Cell ${cell.key}: ${cell.kind}` : undefined}
+              aria-label={onStateSelect ? `Cell ${cell.key}: ${descriptions.get(cell.key) ?? cell.kind}` : undefined}
               onKeyDown={onStateSelect ? (event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault()
@@ -129,6 +136,7 @@ export function GridSvg({ renderModel, cellSize = 48, selectedState = null, onSt
           </g>
         )
       })}
+      <FeatureOverlay model={renderModel} cellSize={cellSize} selected={selectedState} />
       {selectedState ? (
         <rect
           x={parsePosition(selectedState).x * cellSize}

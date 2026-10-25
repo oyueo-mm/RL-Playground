@@ -9,7 +9,9 @@
 
 import type { AgentSnapshot, EnvRenderModel } from '../../core/types/render'
 import type { StateKey } from '../../core/types/rl'
-import { parseStateKey, stateMask } from './stateKey'
+import { featurePositions, positionId } from '../../core/environments/gridworld/features'
+import { parseStateKey } from './stateKey'
+import { visibleQEntries } from './visibleQEntries'
 
 type GridRenderModel = Extract<EnvRenderModel, { kind: 'grid' }>
 
@@ -32,16 +34,12 @@ export function ValueHeatmap({ renderModel, agentSnapshot, currentState, cellSiz
   // V(s) is only defined for a Q-table (this Phase's only Agent, Q-Learning). A
   // ValueAgent (Future — TD(0)) would already store V(s) directly, but no Algorithm
   // uses it yet (ARCHITECTURE.md §11), so there's nothing to generalize to here yet.
-  const currentMask = currentState ? stateMask(currentState) : undefined
-  const values =
-    agentSnapshot.kind === 'Q'
-      ? Object.entries(agentSnapshot.qTable)
-          .filter(([state]) => stateMask(state) === currentMask)
+  const values = visibleQEntries(renderModel, agentSnapshot, currentState)
           .map(([state, qVector]) => ({
             state,
             value: Math.max(...qVector),
           }))
-      : []
+  const protectedCells = new Set([renderModel.start, ...renderModel.walls, ...renderModel.bombs, ...renderModel.goals, ...featurePositions(renderModel.features ?? {}).map(positionId)])
 
   const maxAbs = Math.max(MIN_MAX_ABS, ...values.map((entry) => Math.abs(entry.value)))
 
@@ -62,7 +60,7 @@ export function ValueHeatmap({ renderModel, agentSnapshot, currentState, cellSiz
         // visual range regardless of how large Q-values grow.
         const intensity = Math.min(1, Math.abs(value) / maxAbs)
         const position = `${x},${y}`
-        const protectedCell = position === renderModel.start || renderModel.walls.includes(position) || renderModel.bombs.includes(position) || renderModel.goals.includes(position)
+        const protectedCell = protectedCells.has(position)
         const opacity = protectedCell ? 0 : intensity * MAX_OPACITY
         const color = value >= 0 ? `rgba(34, 197, 94, ${opacity})` : `rgba(239, 68, 68, ${opacity})`
         return (

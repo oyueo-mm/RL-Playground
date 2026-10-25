@@ -1041,12 +1041,12 @@ describe('App (integration, real Engine — Phase 20: Bomb)', () => {
     render(<App />)
     openEditor()
 
-    expect(screen.getByTestId('env-editor-mode-bomb').textContent).toBe('bomb')
+    expect(screen.getByTestId('env-editor-mode-bomb').getAttribute('aria-label')).toBe('bomb')
     expect(screen.getByText('Bomb Penalty')).toBeTruthy()
 
     fireEvent.change(screen.getByTestId('language-selector'), { target: { value: 'ko' } })
 
-    expect(screen.getByTestId('env-editor-mode-bomb').textContent).toBe('폭탄')
+    expect(screen.getByTestId('env-editor-mode-bomb').getAttribute('aria-label')).toBe('폭탄')
     expect(screen.getByText('폭탄 페널티')).toBeTruthy()
   })
 

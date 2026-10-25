@@ -32,5 +32,5 @@ export function toStateKey(pos: { x: number; y: number }): StateKey {
  * cells at the same position.
  */
 export function stateMask(stateKey: StateKey): string | undefined {
-  return stateKey.split(',')[2]
+  return stateKey.includes(',') && stateKey.split(',').length > 2 ? stateKey.split(',').slice(2).join(',') : undefined
 }

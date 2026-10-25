@@ -335,3 +335,15 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
   .mobile-open .sidebar-language { display: block; }
   .mobile-open .mobile-language { display: none; }
 }
+.special-tools { position: relative; font-size: 12px; color: #506b49; }
+.special-tools summary { cursor: pointer; padding: 7px; list-style: none; white-space: nowrap; }
+.special-tools[open] summary { background: #e6efdd; border-radius: 4px; }
+.special-tool-menu { position: absolute; top: 100%; left: 0; width: 170px; display: flex; flex-direction: column; padding: 7px; gap: 4px; background: white; border: 1px solid #c7d7be; border-radius: 6px; box-shadow: 0 5px 20px #23401a12; }
+.special-tool-menu button { padding: 8px 10px; text-align: left; font-size: 12px; }
+.special-tool-menu button[aria-pressed=true] { background: #e7efdf; }
+.property-fields strong { color: #395b35; }
+.property-fields select { border: 1px solid #cbd8c2; padding: 4px; border-radius: 3px; }
+.editor-validation { max-height: 92px; overflow-y: auto; }
+.preset-metadata { font-size: 11px; color: #617b56; margin-top: 12px; }
+.preset-metadata > div { display: flex; flex-wrap: wrap; gap: 5px; }
+.preset-metadata small { padding: 4px 6px; background: #edf3e7; border-radius: 3px; }

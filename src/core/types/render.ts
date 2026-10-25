@@ -2,6 +2,7 @@
 // viz/** can render without casting.
 
 import type { StateKey } from './rl'
+import type { GridFeatures } from '../environments/gridworld/types'
 
 export type EnvRenderModel = {
   kind: 'grid'
@@ -61,6 +62,10 @@ export type EnvRenderModel = {
    */
   allGoals?: StateKey[]
   agentPos: StateKey
+  features?: GridFeatures
+  staticWalls?: StateKey[]
+  collapsedFragiles?: StateKey[]
+  openGroups?: string[]
 }
 // Future non-grid environments add a member to this union (e.g. { kind: 'graph'; ... }).
 

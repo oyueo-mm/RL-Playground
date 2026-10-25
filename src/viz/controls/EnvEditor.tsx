@@ -15,7 +15,8 @@
 // neither reaches the live Environment before Apply.
 
 import { useEffect, useRef, useState, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
-import type { GridWorldConfig } from '../../core/environments/gridworld/types'
+import type { GridWorldConfig, Direction } from '../../core/environments/gridworld/types'
+import { featurePositions, positionId, stateSpaceEstimate, STATE_SPACE_BUDGET } from '../../core/environments/gridworld/features'
 import type { EnvRenderModel } from '../../core/types/render'
 import type { StateKey } from '../../core/types/rl'
 import { GridSvg } from '../grid/GridSvg'
@@ -34,6 +35,8 @@ import {
   MIN_SIZE,
   samePosition,
   validateDraft,
+  removeFeaturesAt,
+  cropFeatures,
   type EditMode,
   type GridEditorDraft,
 } from './envEditorDraft'
@@ -69,7 +72,7 @@ export function EnvEditor({
   const [draft, setDraftState] = useState<GridEditorDraft>(() => draftFromRenderModel(currentRenderModel))
   const dirty = useRef(false)
   const setDraft: Dispatch<SetStateAction<GridEditorDraft>> = action => { dirty.current = true; setDraftState(action) }
-  const seedKey = JSON.stringify([currentRenderModel.width, currentRenderModel.height, currentRenderModel.start, currentRenderModel.allGoals ?? currentRenderModel.goals, currentRenderModel.walls, currentRenderModel.bombs, currentRenderModel.stepReward, currentRenderModel.wallPenalty, currentRenderModel.goalReward, currentRenderModel.bombPenalty])
+  const seedKey = JSON.stringify([currentRenderModel.width, currentRenderModel.height, currentRenderModel.start, currentRenderModel.allGoals ?? currentRenderModel.goals, currentRenderModel.staticWalls ?? currentRenderModel.walls, currentRenderModel.bombs, currentRenderModel.stepReward, currentRenderModel.wallPenalty, currentRenderModel.goalReward, currentRenderModel.bombPenalty, currentRenderModel.features])
   const previousSeed = useRef(seedKey)
   useEffect(() => {
     if (previousSeed.current !== seedKey && !dirty.current) setDraftState(draftFromRenderModel(currentRenderModel))
@@ -80,6 +83,10 @@ export function EnvEditor({
   const [propertiesOpen, setPropertiesOpen] = useState(false)
   const [galleryOpen, setGalleryOpen] = useState(false)
   const [selectedCell, setSelectedCell] = useState<StateKey | null>(null)
+  const [portalId, setPortalId] = useState('P1')
+  const [groupId, setGroupId] = useState('G1')
+  const [direction, setDirection] = useState<Direction>(3)
+  const [editMessage, setEditMessage] = useState('')
   useEffect(() => {
     if (!active) return
     const close = (event: KeyboardEvent) => { if (event.key === 'Escape') { setPropertiesOpen(false); setGalleryOpen(false) } }
@@ -103,6 +110,7 @@ export function EnvEditor({
       walls: prev.walls.filter((w) => w.x < value),
       bombs: prev.bombs.filter((b) => b.x < value),
       goals: prev.goals.filter((g) => g.x < value),
+      ...cropFeatures(prev, value, prev.height),
     }))
   }
 
@@ -113,6 +121,7 @@ export function EnvEditor({
       walls: prev.walls.filter((w) => w.y < value),
       bombs: prev.bombs.filter((b) => b.y < value),
       goals: prev.goals.filter((g) => g.y < value),
+      ...cropFeatures(prev, prev.width, value),
     }))
   }
 
@@ -151,11 +160,36 @@ export function EnvEditor({
   function handleCellClick(stateKey: StateKey) {
     const pos = parseStateKey(stateKey)
     setSelectedCell(stateKey)
-    if (mode === 'select') { setPropertiesOpen(true); return }
+    setEditMessage('')
+    if (mode === 'select') {
+      const pair = draft.portals?.find(pair => pair.ends.some(end => samePosition(end, pos)))
+      if (pair) setPortalId(pair.id)
+      const group = [...(draft.switches ?? []), ...(draft.toggleWalls ?? [])].find(tile => samePosition(tile, pos))
+      if (group) setGroupId(group.groupId)
+      const way = draft.oneWays?.find(tile => samePosition(tile, pos))
+      if (way) setDirection(way.direction)
+      setPropertiesOpen(true); return
+    }
     if (mode === 'erase') {
-      setDraft(prev => ({ ...prev, walls: prev.walls.filter(p => !samePosition(p, pos)), bombs: prev.bombs.filter(p => !samePosition(p, pos)), goals: prev.goals.filter(p => !samePosition(p, pos)) }))
+      setDraft(prev => ({ ...prev, ...removeFeaturesAt(prev, pos), walls: prev.walls.filter(p => !samePosition(p, pos)), bombs: prev.bombs.filter(p => !samePosition(p, pos)), goals: prev.goals.filter(p => !samePosition(p, pos)) }))
       return
     }
+    const occupiedSpecial = featurePositions(draft).some(tile => samePosition(tile, pos))
+    if (['portal', 'oneWay', 'fragile', 'switch', 'toggleWall'].includes(mode)) {
+      if (occupiedSpecial || [draft.start, ...draft.goals, ...draft.walls, ...draft.bombs].some(tile => samePosition(tile, pos))) {
+        setEditMessage(locale === 'ko' ? '다른 요소와 중복 배치할 수 없습니다. 선택 도구로 수정하거나 지우개로 제거하세요.' : 'Elements cannot overlap. Use Select to edit or Erase to remove.'); return
+      }
+      if (mode === 'portal') {
+        const pair = draft.portals?.find(pair => pair.id === portalId)
+        if (pair && pair.ends.length >= 2) { setEditMessage(locale === 'ko' ? '이 포털 쌍은 완성되었습니다. 새 쌍 ID를 입력하세요.' : 'This portal pair is complete. Enter a new pair ID.'); return }
+        setDraft(prev => ({ ...prev, portals: pair ? prev.portals?.map(item => item.id === portalId ? { ...item, ends: [...item.ends, pos] } : item) : [...(prev.portals ?? []), { id: portalId, ends: [pos] }] }))
+      } else if (mode === 'oneWay') setDraft(prev => ({ ...prev, oneWays: [...(prev.oneWays ?? []), { ...pos, direction }] }))
+      else if (mode === 'fragile') setDraft(prev => ({ ...prev, fragiles: [...(prev.fragiles ?? []), pos] }))
+      else if (mode === 'switch') setDraft(prev => ({ ...prev, switches: [...(prev.switches ?? []), { ...pos, groupId }] }))
+      else setDraft(prev => ({ ...prev, toggleWalls: [...(prev.toggleWalls ?? []), { ...pos, groupId }] }))
+      return
+    }
+    if (occupiedSpecial) { setEditMessage(locale === 'ko' ? '특수 요소를 먼저 지워 주세요.' : 'Erase the special element first.'); return }
 
     if (mode === 'start') {
       setDraft((prev) => ({
@@ -273,6 +307,11 @@ export function EnvEditor({
     bomb: t.envEditor.modeBomb,
     erase: locale === 'ko' ? '지우개' : 'Erase',
     select: locale === 'ko' ? '선택' : 'Select',
+    portal: locale === 'ko' ? '포털' : 'Portal',
+    oneWay: locale === 'ko' ? '단방향' : 'One-way',
+    fragile: locale === 'ko' ? '부서지는 바닥' : 'Fragile',
+    switch: locale === 'ko' ? '스위치' : 'Switch',
+    toggleWall: locale === 'ko' ? '토글 벽' : 'Toggle wall',
   }
 
   const presetLabel: Record<string, string> = {
@@ -311,7 +350,8 @@ export function EnvEditor({
   if (fullscreen) return <div className="fullscreen-editor" data-testid="env-editor">
     <h2 className="sr-only">{t.envEditor.heading}</h2>
     <FloatingToolbar className="editor-toolbar" active={active} label={locale === 'ko' ? '맵 편집 도구' : 'Map editing tools'}>
-      <div className="tool-buttons" role="group" aria-label={locale === 'ko' ? '배치 요소' : 'Placement tool'}>{(['select', 'wall', 'start', 'goal', 'bomb', 'erase'] as EditMode[]).map(tool => <button key={tool} aria-pressed={mode === tool} onClick={() => setMode(tool)} data-testid={`env-editor-mode-${tool}`}>{modeLabel[tool]}</button>)}</div>
+      <div className="tool-buttons" role="group" aria-label={locale === 'ko' ? '배치 요소' : 'Placement tool'}>{(['select', 'wall', 'start', 'goal', 'bomb', 'erase'] as const).map(tool => <button key={tool} title={modeLabel[tool]} aria-label={modeLabel[tool]} aria-pressed={mode === tool} onClick={() => setMode(tool)} data-testid={`env-editor-mode-${tool}`}><span aria-hidden="true">{({ select: '↖', wall: '▦', start: 'S', goal: '⚑', bomb: '×', erase: '⌫' })[tool]}</span></button>)}</div>
+      <details className="special-tools"><summary data-testid="special-tools-toggle">{locale === 'ko' ? '특수 요소' : 'Elements'} {['portal', 'oneWay', 'fragile', 'switch', 'toggleWall'].includes(mode) ? `· ${modeLabel[mode]}` : ''}</summary><div className="special-tool-menu">{(['portal', 'oneWay', 'fragile', 'switch', 'toggleWall'] as EditMode[]).map(tool => <button key={tool} aria-pressed={mode === tool} data-testid={`env-editor-mode-${tool}`} onClick={event => { setMode(tool); setPropertiesOpen(true); event.currentTarget.closest('details')?.removeAttribute('open') }}>{modeLabel[tool]}</button>)}</div></details>
       <button onClick={() => setGalleryOpen(!galleryOpen)} data-testid="open-map-gallery">{locale === 'ko' ? '맵 프리셋' : 'Map presets'}</button>
       <button onClick={() => setPropertiesOpen(!propertiesOpen)} aria-expanded={propertiesOpen} aria-controls="editor-properties">{locale === 'ko' ? '속성 / 파일' : 'Properties / files'}</button>
       <button className="toolbar-primary" onClick={handleApply} disabled={!isValid} data-testid="env-editor-apply">{t.envEditor.apply}</button>
@@ -321,16 +361,31 @@ export function EnvEditor({
       <aside className="properties-panel" id="editor-properties" hidden={!propertiesOpen} aria-label={locale === 'ko' ? '맵 속성' : 'Map properties'}>
         <header><h2>{locale === 'ko' ? '맵 속성' : 'Map properties'}</h2><button onClick={() => setPropertiesOpen(false)} aria-label={locale === 'ko' ? '속성 닫기' : 'Close properties'}>×</button></header>
         <div className="property-fields">
+          <p>{locale === 'ko' ? '현재 도구' : 'Current tool'}: <strong>{modeLabel[mode]}</strong>{selectedCell ? ` · (${selectedCell})` : ''}</p>
+          <label>{locale === 'ko' ? '포털 쌍 ID' : 'Portal pair ID'}<input value={portalId} maxLength={24} data-testid="portal-id" onChange={event => {
+            const id = event.target.value; setPortalId(id)
+            if (mode === 'select' && selectedCell) setDraft(prev => ({ ...prev, portals: prev.portals?.map(pair => pair.ends.some(end => positionId(end) === selectedCell) ? { ...pair, id } : pair) }))
+          }} /></label>
+          <label>{locale === 'ko' ? '벽 그룹 ID' : 'Wall group ID'}<input value={groupId} maxLength={24} data-testid="group-id" onChange={event => {
+            const id = event.target.value; setGroupId(id)
+            if (mode === 'select' && selectedCell) setDraft(prev => ({ ...prev, switches: prev.switches?.map(tile => positionId(tile) === selectedCell ? { ...tile, groupId: id } : tile), toggleWalls: prev.toggleWalls?.map(tile => positionId(tile) === selectedCell ? { ...tile, groupId: id } : tile) }))
+          }} /></label>
+          <label>{locale === 'ko' ? '허용 방향' : 'Allowed direction'}<select value={direction} data-testid="one-way-direction" onChange={event => {
+            const next = Number(event.target.value) as Direction; setDirection(next)
+            if (mode === 'select' && selectedCell) setDraft(prev => ({ ...prev, oneWays: prev.oneWays?.map(tile => positionId(tile) === selectedCell ? { ...tile, direction: next } : tile) }))
+          }}>{(locale === 'ko' ? ['↑ 위', '↓ 아래', '← 왼쪽', '→ 오른쪽'] : ['↑ Up', '↓ Down', '← Left', '→ Right']).map((label, index) => <option key={index} value={index}>{label}</option>)}</select></label>
+          <p>{locale === 'ko' ? '포털은 같은 ID로 두 셀을 배치하세요. 벽 그룹에는 스위치와 토글 벽이 모두 필요합니다. 선택 도구로 요소를 누르면 연결선과 ID를 확인·수정할 수 있습니다. ID: 영문·숫자·_·- (1~24자).' : 'Place two portal cells with the same ID. Each wall group needs a switch and toggle wall. Select an element to inspect its links or edit its ID/direction. IDs: letters, numbers, _ and -, 1–24 characters.'}</p>
+          <p data-testid="state-space-estimate">{locale === 'ko' ? '추정 상태 수 상한' : 'Estimated state upper bound'}: {stateSpaceEstimate(draft) > Number.MAX_SAFE_INTEGER ? stateSpaceEstimate(draft).toExponential(2) : stateSpaceEstimate(draft).toLocaleString()} · {locale === 'ko' ? '동적 맵 제한' : 'Dynamic-map limit'} {STATE_SPACE_BUDGET.toLocaleString()}</p>
           <label>{t.envEditor.width}<input type="number" min={3} max={20} value={draft.width} onChange={e => updateWidth(Number(e.target.value))} data-testid="env-editor-width-input" /></label>
           <label>{t.envEditor.height}<input type="number" min={3} max={20} value={draft.height} onChange={e => updateHeight(Number(e.target.value))} data-testid="env-editor-height-input" /></label>
           {(['stepReward', 'wallPenalty', 'goalReward', 'bombPenalty'] as const).map(key => <label key={key}>{({ stepReward: t.envEditor.stepReward, wallPenalty: t.envEditor.wallPenalty, goalReward: t.envEditor.goalReward, bombPenalty: t.envEditor.bombPenalty })[key]}<input type="number" step="0.1" value={draft[key]} data-testid={`env-editor-${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}-input`} onChange={e => setDraft(previous => ({ ...previous, [key]: Number(e.target.value) }))} /></label>)}
-          <button onClick={handleImportClick} data-testid="env-editor-import">{t.envEditor.importButton}</button><button onClick={handleExport} data-testid="env-editor-export">{t.envEditor.exportButton}</button>
+          <button onClick={handleImportClick} data-testid="env-editor-import">{t.envEditor.importButton}</button><button onClick={handleExport} disabled={!isValid} data-testid="env-editor-export">{t.envEditor.exportButton}</button>
           <input hidden ref={importFileInputRef} type="file" accept=".json,application/json" onChange={handleImportFileChange} data-testid="env-editor-import-input" />
           <p>{locale === 'ko' ? '가져오기는 초안만 변경합니다. 적용은 현재 학습을 초기화합니다.' : 'Import changes only the draft. Applying resets the current experiment.'}</p>
         </div>
       </aside>
     </div>
-    {(errors.length > 0 || importError) && <div className="editor-validation" role="status" data-testid="env-editor-errors">{importError ?? errors.map(error => translateValidationError(error, locale)).join(' ')}</div>}
+    {(errors.length > 0 || importError || editMessage) && <div className="editor-validation" role="status" data-testid="env-editor-errors">{editMessage || (importError ? translateValidationError(importError, locale) : errors.map(error => translateValidationError(error, locale)).join(' '))}</div>}
     {galleryOpen && <MapGallery locale={locale} labels={presetLabel} onClose={() => setGalleryOpen(false)} onSelect={next => { setDraft(next); setPresetId('custom'); setSelectedCell(null) }} />}
   </div>
 

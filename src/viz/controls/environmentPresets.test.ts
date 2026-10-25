@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { ENVIRONMENT_PRESETS } from './environmentPresets'
 import { MAX_SIZE, MIN_SIZE, samePosition, validateDraft, type GridEditorDraft } from './envEditorDraft'
 import type { Position } from '../../core/environments/gridworld/types'
+import { solveGrid } from '../../test/solveGrid'
+import { draftToGridWorldConfig } from './envEditorDraft'
 
 // Phase 56 §3 — "Start에서 적어도 하나의 Goal까지 도달 가능한 경로가 존재한다" is the one
 // requirement `validateDraft()` (envEditorDraft.ts) does NOT already check — it validates
@@ -11,6 +13,7 @@ import type { Position } from '../../core/environments/gridworld/types'
 // obstacle is a Wall, which keeps `next = current`), so only Walls need to be excluded
 // from the traversal.
 function isReachable(draft: GridEditorDraft): boolean {
+  if (draft.portals?.length || draft.oneWays?.length || draft.fragiles?.length || draft.switches?.length) return solveGrid(draftToGridWorldConfig(draft)) !== null
   const wallSet = new Set(draft.walls.map((w) => `${w.x},${w.y}`))
   const goalSet = new Set(draft.goals.map((g) => `${g.x},${g.y}`))
   const visited = new Set<string>()

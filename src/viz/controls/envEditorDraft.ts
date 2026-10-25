@@ -3,7 +3,8 @@
 // only-export-components). No React here at all.
 
 import { createDefaultGridWorldConfig } from '../../core/environments/gridworld/GridWorldEnv'
-import type { GridWorldConfig, Position } from '../../core/environments/gridworld/types'
+import type { GridWorldConfig, GridFeatures, Position } from '../../core/environments/gridworld/types'
+import { copyFeatures, validateFeatures } from '../../core/environments/gridworld/features'
 import type { EnvRenderModel } from '../../core/types/render'
 import { parseStateKey, toStateKey } from '../grid/stateKey'
 
@@ -14,7 +15,7 @@ export const MAX_SIZE = 20
 
 const DEFAULT_CONFIG = createDefaultGridWorldConfig()
 
-export interface GridEditorDraft {
+export interface GridEditorDraft extends GridFeatures {
   width: number
   height: number
   start: Position
@@ -30,7 +31,29 @@ export interface GridEditorDraft {
 
 // 'goal' mode still refers to editing the (now plural) Goal set one cell at a time —
 // same click-to-toggle interaction Bomb mode already uses (see EnvEditor.tsx).
-export type EditMode = 'wall' | 'start' | 'goal' | 'bomb' | 'erase' | 'select'
+export type EditMode = 'wall' | 'start' | 'goal' | 'bomb' | 'erase' | 'select' | 'portal' | 'oneWay' | 'fragile' | 'switch' | 'toggleWall'
+
+export function removeFeaturesAt(features: GridFeatures, pos: Position): GridFeatures {
+  return {
+    portals: features.portals?.map(pair => ({ ...pair, ends: pair.ends.filter(end => !samePosition(end, pos)) })).filter(pair => pair.ends.length > 0),
+    oneWays: features.oneWays?.filter(tile => !samePosition(tile, pos)),
+    fragiles: features.fragiles?.filter(tile => !samePosition(tile, pos)),
+    switches: features.switches?.filter(tile => !samePosition(tile, pos)),
+    toggleWalls: features.toggleWalls?.filter(tile => !samePosition(tile, pos)),
+  }
+}
+
+/** Keep surviving endpoints/groups, including incomplete ones, so validation can
+ * explain broken links rather than silently reconnecting the user's map. */
+export function cropFeatures(features: GridFeatures, width: number, height: number): GridFeatures {
+  return {
+    portals: features.portals?.map(pair => ({ ...pair, ends: pair.ends.filter(end => end.x < width && end.y < height) })).filter(pair => pair.ends.length > 0),
+    oneWays: features.oneWays?.filter(tile => tile.x < width && tile.y < height),
+    fragiles: features.fragiles?.filter(tile => tile.x < width && tile.y < height),
+    switches: features.switches?.filter(tile => tile.x < width && tile.y < height),
+    toggleWalls: features.toggleWalls?.filter(tile => tile.x < width && tile.y < height),
+  }
+}
 
 export function samePosition(a: Position, b: Position): boolean {
   return a.x === b.x && a.y === b.y
@@ -42,7 +65,8 @@ export function draftFromRenderModel(renderModel: Extract<EnvRenderModel, { kind
     height: renderModel.height,
     start: parseStateKey(renderModel.start),
     goals: (renderModel.allGoals ?? renderModel.goals).map(parseStateKey),
-    walls: renderModel.walls.map(parseStateKey),
+    walls: (renderModel.staticWalls ?? renderModel.walls).map(parseStateKey),
+    ...copyFeatures(renderModel.features ?? {}),
     bombs: renderModel.bombs.map(parseStateKey),
     // renderModel's reward fields are optional (see EnvRenderModel's Phase 30 comment) —
     // fall back to the environment's own documented defaults when a caller's renderModel
@@ -90,6 +114,7 @@ export function draftToRenderModel(draft: GridEditorDraft): Extract<EnvRenderMod
     // No live agent exists for a Draft — Start is shown as a stand-in so the preview
     // still renders a marker, without implying a real simulation is running there.
     agentPos: toStateKey(draft.start),
+    ...(Object.keys(copyFeatures(draft)).length ? { features: copyFeatures(draft) } : {}),
   }
 }
 
@@ -130,7 +155,7 @@ export function validateDraft(draft: GridEditorDraft): string[] {
   if (!Number.isFinite(draft.wallPenalty)) errors.push('Wall penalty must be a number.')
   if (!Number.isFinite(draft.goalReward)) errors.push('Goal reward must be a number.')
 
-  return errors
+  return [...errors, ...validateFeatures(draft)]
 }
 
 export function draftToGridWorldConfig(draft: GridEditorDraft): GridWorldConfig {
@@ -146,5 +171,6 @@ export function draftToGridWorldConfig(draft: GridEditorDraft): GridWorldConfig 
     wallPenalty: draft.wallPenalty,
     goalReward: draft.goalReward,
     terminalCells: DEFAULT_CONFIG.terminalCells,
+    ...copyFeatures(draft),
   }
 }

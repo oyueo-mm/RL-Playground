@@ -11,12 +11,14 @@
 // manual-edit path and this file-import path.
 
 import type { Position } from '../../core/environments/gridworld/types'
+import type { GridFeatures } from '../../core/environments/gridworld/types'
+import { copyFeatures, readFeatures } from '../../core/environments/gridworld/features'
 import { validateDraft, type GridEditorDraft } from './envEditorDraft'
 
-export const ENV_EXPORT_VERSION = 1
+export const ENV_EXPORT_VERSION = 2
 export const ENV_EXPORT_TYPE = 'gridworld'
 
-export interface EnvExportFile {
+export interface EnvExportFile extends GridFeatures {
   version: number
   type: string
   width: number
@@ -45,6 +47,7 @@ export function draftToExportFile(draft: GridEditorDraft): EnvExportFile {
     wallPenalty: draft.wallPenalty,
     goalReward: draft.goalReward,
     bombPenalty: draft.bombPenalty,
+    ...copyFeatures(draft),
   }
 }
 
@@ -95,7 +98,7 @@ export function parseEnvImport(text: string): ImportResult {
   const candidate = parsed as Record<string, unknown>
   if (candidate.rewardTiles !== undefined && (!Array.isArray(candidate.rewardTiles) || candidate.rewardTiles.length > 0)) return { ok: false, error: 'Reward tiles are no longer supported. Remove rewardTiles explicitly before importing this map.' }
 
-  if (candidate.version !== ENV_EXPORT_VERSION) {
+  if (candidate.version !== 1 && candidate.version !== ENV_EXPORT_VERSION) {
     return { ok: false, error: `Unsupported export version (expected ${ENV_EXPORT_VERSION}).` }
   }
   if (candidate.type !== ENV_EXPORT_TYPE) {
@@ -126,6 +129,9 @@ export function parseEnvImport(text: string): ImportResult {
   const wallPenalty = isFiniteNumber(candidate.wallPenalty) ? candidate.wallPenalty : -1
   const goalReward = isFiniteNumber(candidate.goalReward) ? candidate.goalReward : 10
   const bombPenalty = isFiniteNumber(candidate.bombPenalty) ? candidate.bombPenalty : -10
+  let features: GridFeatures
+  try { features = readFeatures(candidate) } catch (error) { return { ok: false, error: (error as Error).message } }
+  if (candidate.version === 1 && Object.keys(features).length) return { ok: false, error: 'New environment elements require schema version 2.' }
 
   const draft: GridEditorDraft = {
     width: candidate.width,
@@ -138,6 +144,7 @@ export function parseEnvImport(text: string): ImportResult {
     wallPenalty,
     goalReward,
     bombPenalty,
+    ...features,
   }
 
   // Structural checks above only prove "this parses into the right SHAPE" — width/height
