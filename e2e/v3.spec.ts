@@ -19,7 +19,7 @@ test('V3 very-hard gallery shows six maps with real previews, metadata and appli
     const gallery = page.locator('#preset-panel')
     await gallery.getByRole('tab', { name: /매우 어려움/ }).click()
     await expect(gallery.locator('.gallery-thumbnails > button')).toHaveCount(6)
-    for (const img of await gallery.locator('.gallery-thumbnails img').all()) expect(await img.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true)
+    for (const img of await gallery.locator('.gallery-thumbnails img').all()) await expect.poll(() => img.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0)).toBe(true)
     for (const [stem, size, goals, steps] of V3) {
       await gallery.getByTestId(`preset-${stem}`).click()
       const preview = gallery.locator('.gallery-preview')

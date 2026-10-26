@@ -79,7 +79,9 @@ Desktop (1366×768, 1440×900, 1920×1080, 768×1024) and mobile (iPhone 13, 390
 
 Home demos use the same solution data; the existing home E2E (map 30 steps on its mini demo) passes. Screenshots: `docs/screenshots/v3/`.
 
-Not separately verified in a browser: a full, uninterrupted 419-step home demo run to its end and replacement; per-map hands-on play of every switch/portal on all six maps (covered by engine replay, not UI play-through); 48×40 zoom/follow beyond the existing follow/zoom E2E.
+`e2e/v3Home.spec.ts` (fake clock, desktop + mobile): the map-30 home demo advances monotonically to step 419/419, shows the success mark, and is then replaced by a different map (four cards remain).
+
+Not separately verified in a browser: per-map hands-on play of every switch/portal on all six maps (covered by engine replay, not UI play-through); 48×40 zoom/follow beyond the existing follow/zoom E2E.
 
 ## 8. Turbo / training regression
 
