@@ -115,4 +115,4 @@ Presets: 18 files under `src/data/presets/{maps,solutions,previews}` for 25–30
 
 ## 12. Commit
 
-See the final commit on the branch (SHA reported with the push; recorded in the follow-up note commit).
+Implementation commit: `6280eb7fd5899140fb6f94849e8aa301f1346d44`. (Added in a follow-up docs commit, so branch HEAD is one commit later.)
