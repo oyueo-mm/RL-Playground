@@ -31,12 +31,12 @@ const descriptions = [
 ]
 const originalNames = ["Meadow Walk", "First Portal Lesson", "One Switch, One Door", "Fragile Bridge", "Arrow Alley", "Forked Village", "Marsh Detour", "Twin Portal Plaza", "Lab Corridors", "Ruin Retrieval", "Crossroads Expedition", "Portal City", "Power Control Zone", "Crumbling Canyon", "One-Way Circuit", "Multi-Goal Expedition", "Sealed Research Base", "Collapsing Archipelago", "Warp Nexus", "Final Proving Grounds"]
 const revisedDescriptions: Record<string,string> = {
-  "The Endless Labyrinth": "Pass staged security doors, a portal and a one-use bridge, then return to unlock the starting vault.",
-  "Empire of Oblivion": "Cross the empire\u2019s one-use gateway, release successive seals and return by portal for the final goal.",
-  "Nemesis Complex": "Solve four research security stages using a disposable bridge and portal before returning to the starting vault.",
-  "Fractured Metropolis": "Follow dependencies across the broken city, release four security stages, and return for the final goal.",
-  "Abyssal Fortress": "Enter the fortress through its one-use bridge and portal, release successive gates, and return to the vault.",
-  "Obsidian Citadel": "Cross the citadel bridge, solve staged security gates and return to retrieve the sealed starting goal.",
+  "The Endless Labyrinth": "Resolve the final twelve-sector labyrinth through portal routes, one-use passages, and seven interacting security circuits.",
+  "Empire of Oblivion": "Explore non-linear ruins with seven control circuits and intersecting portals, unlocking seals in a planned order.",
+  "Nemesis Complex": "Revisit research wings while managing doors that toggle open and closed to retrieve all goals.",
+  "Fractured Metropolis": "Explore six dense city districts, reconnect distributed power gates, and navigate a two-line transit portal network.",
+  "Abyssal Fortress": "Advance deep into the fortress and navigate alternate return routes to recover all sealed goals.",
+  "Obsidian Citadel": "Unlock five linked security stages across six sectors, then use the portal to recover the final vault goal.",
   "The Sealed Observatory": "Cross the disposable entrance bridge, unlock observation sectors in sequence and restore access to the starting vault.",
   "Final Proving Grounds": "Release successive security doors in the correct order, then return to the starting region for the final goal.",
   "Warp Nexus": "Resolve portal-linked regions and security switches in order before recovering the final sealed goal.",

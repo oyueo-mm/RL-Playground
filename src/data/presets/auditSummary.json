@@ -171,8 +171,8 @@
     "losingStates": null,
     "gimmicks": {
       "switch": "required-proven",
-      "portal": "required-proven",
-      "fragile": "required-proven"
+      "portal": "incomplete",
+      "fragile": "incomplete"
     }
   },
   "26_abyssal_fortress": {
@@ -180,7 +180,7 @@
     "losingStates": null,
     "gimmicks": {
       "switch": "required-proven",
-      "portal": "required-proven",
+      "portal": "incomplete",
       "fragile": "incomplete"
     }
   },
@@ -189,7 +189,7 @@
     "losingStates": null,
     "gimmicks": {
       "switch": "required-proven",
-      "portal": "required-proven",
+      "portal": "incomplete",
       "fragile": "incomplete"
     }
   },
@@ -199,15 +199,15 @@
     "gimmicks": {
       "switch": "required-proven",
       "portal": "incomplete",
-      "fragile": "required-proven"
+      "fragile": "incomplete"
     }
   },
   "29_empire_of_oblivion": {
     "status": "incomplete",
     "losingStates": null,
     "gimmicks": {
-      "switch": "incomplete",
-      "portal": "required-proven",
+      "switch": "required-proven",
+      "portal": "incomplete",
       "fragile": "required-proven"
     }
   },

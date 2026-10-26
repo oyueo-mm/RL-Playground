@@ -1,0 +1,74 @@
+[
+  {
+    "path": "src/data/presets/maps/25_obsidian_citadel.json",
+    "sha256": "28625537a28c687cd11d4e79bd8fdfa998e980384e2289a690a70229d5391ffa"
+  },
+  {
+    "path": "src/data/presets/solutions/25_obsidian_citadel_solution.json",
+    "sha256": "2d1dee447b643c8ecbbd7091c1a7543f8ec9d45934c2f15ff9e233e9eac7dc85"
+  },
+  {
+    "path": "src/data/presets/previews/25_obsidian_citadel.png",
+    "sha256": "3a42dc37e768c375a763fa1a0d9c63c8bc8abed315f12e3d46b88ae165298a6c"
+  },
+  {
+    "path": "src/data/presets/maps/26_abyssal_fortress.json",
+    "sha256": "30764a335fed0cff528ab2a84e17888e64fb5c6998a5dcff7734817e6148a05d"
+  },
+  {
+    "path": "src/data/presets/solutions/26_abyssal_fortress_solution.json",
+    "sha256": "fdb96ae99ae4527bba7bc76353a11a309566afb3563e41d1d6afd4b1433b97d8"
+  },
+  {
+    "path": "src/data/presets/previews/26_abyssal_fortress.png",
+    "sha256": "e2bed89ccf6a351dea8b901231e2912f06a29e15522ace85318d87a3678ed46b"
+  },
+  {
+    "path": "src/data/presets/maps/27_fractured_metropolis.json",
+    "sha256": "f52c983d46ec7be363a0418c94a856a92ebe6309eca369bff2a757dc320d6aee"
+  },
+  {
+    "path": "src/data/presets/solutions/27_fractured_metropolis_solution.json",
+    "sha256": "9b4041493e0db3f94a38ac05b052acf49f7dcf58e48fd87f7b291c0009cf23be"
+  },
+  {
+    "path": "src/data/presets/previews/27_fractured_metropolis.png",
+    "sha256": "cdeec169e6d3981b1c6c0921f1ac3a71ace0853eace1f1d756e3e9d31ee9bb00"
+  },
+  {
+    "path": "src/data/presets/maps/28_nemesis_complex.json",
+    "sha256": "787cc715b4922de0e7449d6e0100fb7c5508b947d695cfa5d6fb56ec7745df6d"
+  },
+  {
+    "path": "src/data/presets/solutions/28_nemesis_complex_solution.json",
+    "sha256": "209b350c133b37e5078cef56a8ecd57d141eb57bcc0270144b4d28c49cdba5b8"
+  },
+  {
+    "path": "src/data/presets/previews/28_nemesis_complex.png",
+    "sha256": "cf7b47ec167b2c9590359c1e2c80eabd977e4cabf83843f064221a07ce25fa45"
+  },
+  {
+    "path": "src/data/presets/maps/29_empire_of_oblivion.json",
+    "sha256": "a968c3d112b50ad07dfc7287cbe609ebb8cef426361924206a9b89e82ef7e3db"
+  },
+  {
+    "path": "src/data/presets/solutions/29_empire_of_oblivion_solution.json",
+    "sha256": "60ad22d3e68569d4cd6aff48ca84f635b22ad9d925fdcc6602ae7790918c0534"
+  },
+  {
+    "path": "src/data/presets/previews/29_empire_of_oblivion.png",
+    "sha256": "2129f0895a43be80334f9baf64684e05a6888c2d1d45cf5ce67fa838a76a1bd9"
+  },
+  {
+    "path": "src/data/presets/maps/30_the_endless_labyrinth.json",
+    "sha256": "b15109b20e02139269c499038f32ca3b1d76de61cd987081c088a874894541db"
+  },
+  {
+    "path": "src/data/presets/solutions/30_the_endless_labyrinth_solution.json",
+    "sha256": "29dce24210b5853cdf03a1d77692d0de5ede725c2c37eae2ba658883c43f4ae1"
+  },
+  {
+    "path": "src/data/presets/previews/30_the_endless_labyrinth.png",
+    "sha256": "8aa54adc4aa8a92733ef7cbb81e55e56cb82a7cd7be1f4e0d436aaea00c7fb7e"
+  }
+]

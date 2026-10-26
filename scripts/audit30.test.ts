@@ -45,13 +45,13 @@ describe('bounded full-state audit and declared gimmick bypass checks',()=>{
         return[k,{...result,meaning:result.successReachable?'bypass-found':result.status==='complete'?'required-proven':'incomplete'}]
       }))
       const summary=(JSON.parse(summaryJSON) as Record<string,unknown>)[p.id]
-      if (process.env.UPDATE_V2_AUDIT) {
+      if (process.env.UPDATE_V3_AUDIT) {
         summaries[p.id] = {status:dynamic.status,losingStates:dynamic.losingStates,gimmicks:Object.fromEntries(Object.entries(bypass).map(([k,v])=>[k,v.meaning]))}
       } else expect(summary).toEqual({status:dynamic.status,losingStates:dynamic.losingStates,gimmicks:Object.fromEntries(Object.entries(bypass).map(([k,v])=>[k,v.meaning]))})
       return{id:p.id,name:p.metadata.name,witness:{status:'success',steps:p.solution.length,remainingGoals:witnessEnv.getRenderModel().goals.length,finalState:witnessEnv.getState()},staticAudit,dynamic,bypass}
     })
-    writeFileSync('docs/v2-audit.json',JSON.stringify({stateBudget:5000,stateBudgetOverrides:{'11_ruin_retrieval':20000},semantics:'Full actual TS states; static doors-open checks are not dynamic proofs. Optional portals/fragiles are not automatically design failures.',results},null,2))
-    if (process.env.UPDATE_V2_AUDIT) writeFileSync('src/data/presets/auditSummary.json',JSON.stringify(summaries,null,2)+'\n')
+    writeFileSync('docs/v3-audit.json',JSON.stringify({stateBudget:5000,stateBudgetOverrides:{'11_ruin_retrieval':20000},semantics:'Full actual TS states; static doors-open checks are not dynamic proofs. Optional portals/fragiles are not automatically design failures.',results},null,2))
+    if (process.env.UPDATE_V3_AUDIT) writeFileSync('src/data/presets/auditSummary.json',JSON.stringify(summaries,null,2)+'\n')
     expect(results).toHaveLength(30)
   },120000)
 })

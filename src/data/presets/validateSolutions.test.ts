@@ -5,6 +5,7 @@ import { draftToGridWorldConfig, validateDraft } from '../../viz/controls/envEdi
 import { parseEnvImport, serializeEnvExport } from '../../viz/controls/envEditorIO'
 import inventoryJSON from '../../../docs/preset30-source/inventory.json?raw'
 import v2Inventory from '../../../docs/v2-source-inventory.json'
+import v3Inventory from '../../../docs/v3-source-inventory.json'
 
 describe('ZIP official maps and supplied witnesses', () => {
   it('preserves untouched maps 1–18 and exact V2 map/solution bytes', async () => {
@@ -15,7 +16,14 @@ describe('ZIP official maps and supplied witnesses', () => {
       const source = path.replace('./maps/', 'json/').replace('./solutions/', 'solutions/')
       if (path.includes('/11_')) continue // Authorized repair; verified by full-state audit.
       const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(raw))
-      expect([...new Uint8Array(digest)].map(n => n.toString(16).padStart(2,'0')).join('')).toBe((Number(path.split('/').at(-1)!.slice(0,2)) >= 19 ? v2Inventory.find(item => item.path.endsWith(path.slice(1)))! : inventory.find(item => item.path === source)!).sha256)
+      const number = Number(path.split('/').at(-1)!.slice(0,2))
+      const expected = number >= 25
+        ? v3Inventory.find(item => item.path.endsWith(path.slice(1)))?.sha256
+        : number >= 19
+          ? v2Inventory.find(item => item.path.endsWith(path.slice(1)))?.sha256
+          : inventory.find(item => item.path === source)?.sha256
+      expect(expected).toBeDefined()
+      expect([...new Uint8Array(digest)].map(n => n.toString(16).padStart(2,'0')).join('')).toBe(expected)
     }
     expect(Object.keys(maps)).toHaveLength(30); expect(Object.keys(solutions)).toHaveLength(30)
   })
