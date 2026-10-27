@@ -11,73 +11,98 @@ async function setEpisodes(page: Page, n: number) {
 }
 async function fastTraining(page: Page) { await page.getByTestId('speed-slider').fill('100') }
 
-test('a normally finished run opens the completion dialog with this run’s real numbers, once', async ({ page }) => {
+test('a normally finished run shows a small grid toast with the real episode count, once', async ({ page }) => {
   test.setTimeout(120000)
   page.on('dialog', d => d.accept()); await page.goto('./')
   await loadMap(page, config(3, 3)); await fastTraining(page); await setEpisodes(page, 25)
   await page.getByTestId('playback-run-episode').click()
-  const box = page.getByTestId('training-complete')
-  await expect(box).toBeVisible()
-  await expect(box).toContainText('학습 완료!'); await expect(box).toContainText('25개 에피소드')
-  await expect(page.getByTestId('completion-episodes')).toHaveText('25')
-  const success = (await page.getByTestId('completion-success').textContent())!, [, hit, total] = /\((\d+) \/ (\d+)\)/.exec(success)!
-  expect(Number(total)).toBe(25); expect(success).toContain(`${(Number(hit) / 25 * 100).toFixed(1)}%`)
-  expect(await page.getByTestId('completion-reward').textContent()).toMatch(/^[+−]?\d+\.\d{2}$/)
-  // The dialog stays closed on its own afterwards and across navigation.
-  await page.keyboard.press('Escape'); await expect(box).toHaveCount(0)
+  const toast = page.getByTestId('training-complete')
+  await expect(toast).toBeVisible()
+  await expect(page.getByTestId('completion-message')).toHaveText('25번 학습 완료!')
+  expect(await page.locator('dialog[open]').count()).toBe(0) // no modal and no dimmed backdrop
+  // the grid stays usable while the toast is open
+  await page.getByTestId('learning-grid').getByTestId('grid-svg').click({ position: { x: 5, y: 5 }, force: true })
+  await expect(toast).toBeVisible()
+  await page.getByTestId('completion-close').click(); await expect(toast).toHaveCount(0)
   await navigate(page, 'results'); await navigate(page, 'environment'); await page.waitForTimeout(800)
-  await expect(box).toHaveCount(0)
-  // A second request reports only itself.
+  await expect(toast).toHaveCount(0)
+  // a second request reports only itself
   await setEpisodes(page, 10); await page.getByTestId('playback-run-episode').click()
-  await expect(page.getByTestId('completion-episodes')).toHaveText('10')
-  // View results: navigates and keeps the learned data.
-  const rows = await page.evaluate(() => document.querySelector('[data-testid=q-state-count]')?.textContent ?? '')
-  await page.getByTestId('completion-results').click()
-  await expect(page.getByTestId('nav-results')).toHaveAttribute('aria-current', 'page'); await expect(box).toHaveCount(0)
-  await navigate(page, 'environment'); expect(await page.evaluate(() => document.querySelector('[data-testid=q-state-count]')?.textContent ?? '')).toBe(rows)
+  await expect(page.getByTestId('completion-message')).toHaveText('10번 학습 완료!')
 })
 
-test('Turbo Training finishes with the same dialog', async ({ page }) => {
+test('the toast closes itself after about eight seconds', async ({ page }) => {
+  test.setTimeout(60000)
+  page.on('dialog', d => d.accept()); await page.goto('./')
+  await loadMap(page, config(3, 3)); await fastTraining(page); await setEpisodes(page, 5)
+  await page.getByTestId('playback-run-episode').click()
+  await expect(page.getByTestId('training-complete')).toBeVisible()
+  await expect(page.getByTestId('training-complete')).toHaveCount(0, { timeout: 12000 })
+})
+
+test('Run policy plays the learned policy on the same grid without leaving the page', async ({ page }) => {
+  test.setTimeout(120000)
+  page.on('dialog', d => d.accept()); await page.goto('./')
+  await loadMap(page, config(4, 4)); await fastTraining(page); await setEpisodes(page, 60)
+  await page.getByTestId('playback-run-episode').click()
+  await expect(page.getByTestId('training-complete')).toBeVisible()
+  const marker = page.getByTestId('learning-grid').getByTestId('agent-marker'), at = () => marker.evaluate(n => n.getAttribute('cx') + ',' + n.getAttribute('cy'))
+  const before = await at()
+  await page.getByTestId('completion-run-policy').click()
+  await expect(page.getByTestId('training-complete')).toHaveCount(0)
+  await expect(page.getByTestId('nav-environment')).toHaveAttribute('aria-current', 'page') // still on the learning screen
+  await expect.poll(at, { timeout: 8000 }).not.toBe(before) // the agent really walks
+  await expect(page.getByTestId('playback-run-greedy')).toBeEnabled({ timeout: 15000 }) // greedy replay ended
+  await page.waitForTimeout(600)
+  await expect(page.getByTestId('training-complete')).toHaveCount(0) // ending the replay does not announce again
+})
+
+test('Turbo Training shows the same toast and Run policy plays on the normal grid', async ({ page }) => {
   test.setTimeout(120000)
   page.on('dialog', d => d.accept()); await page.goto('./')
   await loadMap(page, config(4, 4)); await setEpisodes(page, 40)
   await page.getByTestId('training-mode').selectOption('turbo'); await page.getByTestId('playback-run-episode').click()
-  await expect(page.getByTestId('training-complete')).toBeVisible()
-  await expect(page.getByTestId('completion-episodes')).toHaveText('40'); await expect(page.getByTestId('training-complete')).toContainText('Turbo')
-  await page.getByTestId('completion-close').click()
+  await expect(page.getByTestId('completion-message')).toHaveText('40번 학습 완료!')
   await expect(page.getByTestId('turbo-dashboard')).toContainText('완료')
+  await page.getByTestId('completion-run-policy').click()
+  await expect(page.getByTestId('training-complete')).toHaveCount(0)
+  await expect(page.getByTestId('learning-grid').getByTestId('agent-marker')).toBeVisible()
+  await expect(page.getByTestId('nav-environment')).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByTestId('playback-run-greedy')).toBeEnabled({ timeout: 15000 })
+  await page.waitForTimeout(600)
+  await expect(page.getByTestId('training-complete')).toHaveCount(0)
 })
 
-test('stopping, pausing and greedy replay never show the dialog', async ({ page }) => {
+test('stopping, pausing and greedy replay never show the toast', async ({ page }) => {
   test.setTimeout(120000)
   page.on('dialog', d => d.accept()); await page.goto('./')
   await loadMap(page, config(9, 9)); await setEpisodes(page, 100000)
-  const dialog = page.getByTestId('training-complete')
+  const toast = page.getByTestId('training-complete')
   await page.getByTestId('playback-run-episode').click(); await page.waitForTimeout(500)
-  await page.getByTestId('playback-pause').click(); await page.waitForTimeout(600); await expect(dialog).toHaveCount(0)
+  await page.getByTestId('playback-pause').click(); await page.waitForTimeout(600); await expect(toast).toHaveCount(0)
   await page.getByTestId('playback-resume').click(); await page.waitForTimeout(300)
-  await page.getByTestId('playback-stop').click(); await page.waitForTimeout(600); await expect(dialog).toHaveCount(0)
+  await page.getByTestId('playback-stop').click(); await page.waitForTimeout(600); await expect(toast).toHaveCount(0)
   await page.getByTestId('playback-run-greedy').click(); await page.waitForTimeout(800); await page.getByTestId('playback-stop').click()
-  await expect(dialog).toHaveCount(0)
+  await expect(toast).toHaveCount(0)
 })
 
-test('the dialog fits phones and desktop, and keyboard users reach its actions', async ({ page }, info) => {
-  test.setTimeout(120000)
-  const sizes = info.project.name === 'mobile' ? PHONES : [[1440, 900]] as const
+test('the toast fits every viewport, stays clear of the toolbar and shows no backdrop', async ({ page }, info) => {
+  test.setTimeout(150000)
+  const sizes = info.project.name === 'mobile' ? PHONES : [[768, 1024], [1440, 900]] as const
   page.on('dialog', d => d.accept()); await page.goto('./'); await loadMap(page, config(3, 3)); await fastTraining(page)
   for (const [width, height] of sizes) {
     await page.setViewportSize({ width, height }); await setEpisodes(page, 8)
     await page.getByTestId('playback-run-episode').click()
-    const box = page.getByTestId('training-complete'); await expect(box).toBeVisible()
-    const b = (await box.boundingBox())!
+    const toast = page.getByTestId('training-complete'); await expect(toast).toBeVisible()
+    const b = (await toast.boundingBox())!
     expect(b.x).toBeGreaterThanOrEqual(0); expect(b.x + b.width).toBeLessThanOrEqual(width + 1); expect(b.y).toBeGreaterThanOrEqual(0); expect(b.y + b.height).toBeLessThanOrEqual(height + 1)
-    for (const id of ['completion-close', 'completion-results']) expect((await page.getByTestId(id).boundingBox())!.height).toBeGreaterThanOrEqual(44)
-    await expect(page.getByTestId('completion-results')).toBeFocused()
-    await page.keyboard.press('Tab'); await expect(page.getByTestId('completion-close')).toBeFocused() // wraps inside the modal
-    await page.keyboard.press('Shift+Tab'); await expect(page.getByTestId('completion-results')).toBeFocused()
+    expect(b.height).toBeLessThan(110)
+    const bar = await page.getByTestId('learning-grid').locator('.floating-toolbar').boundingBox()
+    if (bar) expect(b.y).toBeGreaterThanOrEqual(bar.y + bar.height - 1)
+    for (const id of ['completion-run-policy', 'completion-close']) expect((await page.getByTestId(id).boundingBox())!.height).toBeGreaterThanOrEqual(30)
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
-    await page.screenshot({ animations: 'disabled', path: `docs/screenshots/v51/completion-${width}x${height}.png` })
-    await page.keyboard.press('Escape'); await expect(box).toHaveCount(0)
+    await page.screenshot({ animations: 'disabled', path: `docs/screenshots/v51/toast-${width}x${height}.png` })
+    await page.getByTestId('completion-close').click(); await expect(toast).toHaveCount(0)
   }
 })
 

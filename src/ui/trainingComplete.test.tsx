@@ -14,80 +14,126 @@ beforeEach(() => {
 })
 afterEach(() => { cleanup(); engine.reset(); vi.useRealTimers(); vi.restoreAllMocks() })
 const run = (ms = 4000) => act(() => { vi.advanceTimersByTime(ms) })
-const dialog = () => screen.queryByTestId('training-complete')
+const toast = () => screen.queryByTestId('training-complete')
+const mount = () => { const view = render(<App />); fireEvent.click(screen.getByTestId('nav-environment')); return view }
 const start = (episodes: number, turbo = false) => { act(() => engine.run({ episodes, turbo })); run() }
 
-describe('training-complete dialog', () => {
-  it('opens once, with this run’s real numbers, when the requested episodes are all done', () => {
-    render(<App />)
-    expect(dialog()).toBeNull()
+describe('training-complete toast', () => {
+  it('appears once, as a small non-blocking status with this run’s real episode count', () => {
+    mount()
+    expect(toast()).toBeNull()
     start(12)
     expect(engine.getSnapshot().status).toBe('idle')
-    const box = dialog()!
-    expect(box.textContent).toContain('학습 완료!')
-    expect(box.textContent).toContain('12개 에피소드')
-    const history = engine.getSnapshot().stats.episodeStatsHistory
-    const successes = history.filter(e => e.terminationReason === 'goal').length
-    expect(screen.getByTestId('completion-episodes').textContent).toBe('12')
-    expect(screen.getByTestId('completion-success').textContent).toContain(`${(successes / 12 * 100).toFixed(1)}%`)
-    expect(screen.getByTestId('completion-success').textContent).toContain(`${successes} / 12`)
-    const mean = history.reduce((n, e) => n + e.totalReward, 0) / 12
-    expect(screen.getByTestId('completion-reward').textContent!.replace('−', '-').replace('+', '')).toBe(mean.toFixed(2))
-    expect(box.textContent).toContain('최적 정책에 수렴했다는 뜻은 아닙니다')
+    const box = toast()!
+    expect(screen.getByTestId('completion-message').textContent).toBe('12번 학습 완료!')
+    expect(box.getAttribute('role')).toBe('status'); expect(box.getAttribute('aria-live')).toBe('polite')
+    expect(document.querySelector('dialog')).toBeNull() // no modal, no backdrop, no focus trap
+    expect(box.textContent).not.toMatch(/%|보상/) // no success rate or reward statistics
+    expect(box.contains(document.activeElement)).toBe(false) // focus is not stolen
   })
-  it('reports only the latest request, not earlier history', () => {
-    render(<App />)
+  it('formats thousands and reports only the latest request', () => {
+    mount()
     start(8); fireEvent.click(screen.getByTestId('completion-close'))
-    start(5)
-    expect(screen.getByTestId('completion-episodes').textContent).toBe('5')
-    expect(engine.getSnapshot().episode).toBe(13)
-    const mine = engine.getSnapshot().stats.episodeStatsHistory.slice(-5)
-    expect(screen.getByTestId('completion-reward').textContent!.replace('−', '-').replace('+', '')).toBe((mine.reduce((n, e) => n + e.totalReward, 0) / 5).toFixed(2))
+    start(1000)
+    expect(screen.getByTestId('completion-message').textContent).toBe('1,000번 학습 완료!')
+    expect(engine.getSnapshot().episode).toBe(1008)
   })
-  it('shows once per run: re-renders, navigation and language switches do not reopen it', () => {
-    const { rerender } = render(<App />)
-    start(6); expect(dialog()).not.toBeNull()
-    fireEvent.click(screen.getByTestId('completion-close')); expect(dialog()).toBeNull()
+  it('shows English copy when the language is English', () => {
+    mount()
+    fireEvent.change(screen.getAllByTestId('language-selector')[0], { target: { value: 'en' } })
+    start(4)
+    expect(screen.getByTestId('completion-message').textContent).toBe('4 episodes complete!')
+    expect(screen.getByTestId('completion-run-policy').textContent).toContain('Run policy')
+  })
+  it('× removes only the note and keeps the Q-table and history', () => {
+    mount()
+    start(6)
+    const learned = engine.getSnapshot().agentSnapshot, history = engine.getSnapshot().stats.episodeStatsHistory
+    fireEvent.click(screen.getByTestId('completion-close'))
+    expect(toast()).toBeNull()
+    expect(engine.getSnapshot().agentSnapshot).toEqual(learned)
+    expect(engine.getSnapshot().stats.episodeStatsHistory).toEqual(history)
+  })
+  it('closes by itself after about eight seconds, unless hovered or focused', () => {
+    mount()
+    start(6)
+    run(3000); expect(toast()).not.toBeNull()
+    run(5500); expect(toast()).toBeNull()
+    start(6)
+    fireEvent.mouseEnter(toast()!)
+    run(30000); expect(toast()).not.toBeNull() // paused while hovered
+    fireEvent.mouseLeave(toast()!); run(8500); expect(toast()).toBeNull()
+    start(6)
+    fireEvent.focus(screen.getByTestId('completion-run-policy'))
+    run(30000); expect(toast()).not.toBeNull() // paused while a button has focus
+  })
+  it('does not reappear after re-renders, navigation or language switches', () => {
+    const { rerender } = mount()
+    start(6); expect(toast()).not.toBeNull()
+    fireEvent.click(screen.getByTestId('completion-close')); expect(toast()).toBeNull()
     rerender(<App />); run(1000)
     fireEvent.click(screen.getByTestId('nav-guide')); fireEvent.click(screen.getByTestId('nav-environment'))
     fireEvent.change(screen.getAllByTestId('language-selector')[0], { target: { value: 'en' } })
-    expect(dialog()).toBeNull()
+    expect(toast()).toBeNull()
   })
-  it('closes with Escape, keeps the Q-table and results, and focus returns to the page', () => {
-    render(<App />)
-    const before = document.activeElement
+  it('disappears when leaving the learning screen and is not replayed on return', () => {
+    mount()
+    start(6); expect(toast()).not.toBeNull()
+    fireEvent.click(screen.getByTestId('nav-results'))
+    expect(toast()).toBeNull()
+    fireEvent.click(screen.getByTestId('nav-environment')); run(500)
+    expect(toast()).toBeNull()
+  })
+  it('a run that finishes while another page is open is not announced later', () => {
+    mount()
+    fireEvent.click(screen.getByTestId('nav-guide'))
     start(6)
-    const learned = engine.getSnapshot().agentSnapshot
-    expect(document.activeElement?.getAttribute('data-testid')).toBe('completion-results') // keyboard users land on the main action
-    fireEvent(dialog()!, new Event('cancel', { cancelable: true }))
-    expect(dialog()).toBeNull()
-    expect(engine.getSnapshot().agentSnapshot).toEqual(learned)
-    expect(engine.getSnapshot().episode).toBe(6)
-    expect(document.activeElement === before || document.activeElement === document.body).toBe(true)
+    expect(engine.getSnapshot().completedRun?.id).toBeGreaterThan(0)
+    fireEvent.click(screen.getByTestId('nav-environment')); run(500)
+    expect(toast()).toBeNull()
   })
-  it('“View results” opens the results page and leaves training data untouched', () => {
-    render(<App />)
-    start(6)
-    const before = engine.getSnapshot()
-    fireEvent.click(screen.getByTestId('completion-results'))
-    expect(dialog()).toBeNull()
-    expect(screen.getByTestId('nav-results').getAttribute('aria-current')).toBe('page')
-    expect(engine.getSnapshot().agentSnapshot).toEqual(before.agentSnapshot)
-    expect(engine.getSnapshot().stats.episodeStatsHistory).toEqual(before.stats.episodeStatsHistory)
+  it('a new run or a reset removes an open note', () => {
+    mount()
+    start(6); expect(toast()).not.toBeNull()
+    act(() => engine.run({ episodes: 100000 })); run(60)
+    expect(toast()).toBeNull()
+    act(() => engine.restartEpisode())
+    start(6); expect(toast()).not.toBeNull()
+    act(() => engine.reset({ envConfig: config })); expect(toast()).toBeNull()
   })
-  it('Turbo Training completes with the same dialog', () => {
-    render(<App />)
+  it('Run policy replays the Q-table greedily on the same screen, with no results navigation or learning', () => {
+    mount()
+    start(30)
+    const before = engine.getSnapshot(), learned = before.agentSnapshot
+    const nav = screen.getByTestId('nav-environment').getAttribute('aria-current')
+    fireEvent.click(screen.getByTestId('completion-run-policy'))
+    expect(toast()).toBeNull()
+    expect(engine.getSnapshot().isGreedyRun).toBe(true) // the same run as the toolbar's playback-run-greedy
+    expect(screen.getByTestId('nav-environment').getAttribute('aria-current')).toBe(nav)
+    expect(screen.getByTestId('nav-environment').getAttribute('aria-current')).toBe('page')
+    run(30000)
+    expect(engine.getSnapshot().status).toBe('idle')
+    expect(toast()).toBeNull() // the end of a greedy replay is not announced
+    expect(engine.getSnapshot().agentSnapshot).toEqual(learned) // no learning, no reset
+  })
+  it('the toolbar button and the toast share the same greedy path', () => {
+    mount()
+    start(10)
+    fireEvent.click(screen.getByTestId('playback-run-greedy'))
+    expect(engine.getSnapshot().isGreedyRun).toBe(true)
+    expect(toast()).toBeNull()
+    run(30000)
+  })
+  it('Turbo Training completes with the same toast and Run policy leaves the Turbo dashboard for the grid', () => {
+    mount()
+    fireEvent.change(screen.getByTestId('training-mode'), { target: { value: 'turbo' } })
     start(15, true)
     expect(engine.getSnapshot().status).toBe('idle')
-    expect(screen.getByTestId('completion-episodes').textContent).toBe('15')
-    expect(dialog()!.textContent).toContain('Turbo')
-  })
-  it('shows English copy when the language is English', () => {
-    render(<App />)
-    fireEvent.change(screen.getAllByTestId('language-selector')[0], { target: { value: 'en' } })
-    start(4)
-    expect(dialog()!.textContent).toContain('Training complete!')
-    expect(screen.getByTestId('completion-results').textContent).toBe('View results')
+    expect(screen.getByTestId('completion-message').textContent).toBe('15번 학습 완료!')
+    fireEvent.click(screen.getByTestId('completion-run-policy'))
+    expect(engine.getSnapshot().isGreedyRun).toBe(true)
+    expect(screen.queryByTestId('turbo-dashboard')).toBeNull()
+    expect(screen.getAllByTestId('agent-marker').length).toBeGreaterThan(0)
   })
   it.each([
     ['a user stop', () => { act(() => engine.run({ episodes: 100000 })); run(60); act(() => engine.restartEpisode()); run(2000) }],
@@ -95,23 +141,23 @@ describe('training-complete dialog', () => {
     ['greedy playback', () => { act(() => engine.run({ episodes: 1, greedy: true })); run(30000) }],
     ['a single episode', () => { act(() => engine.runEpisode()); run(30000) }],
     ['a reset', () => { act(() => engine.run({ episodes: 100000 })); run(60); act(() => engine.reset({ envConfig: config })); run(2000) }],
-  ])('never opens for %s', (_name, action) => {
-    render(<App />); action()
-    expect(dialog()).toBeNull()
+  ])('never appears for %s', (_name, action) => {
+    mount(); action()
+    expect(toast()).toBeNull()
     expect(engine.getSnapshot().completedRun).toBeUndefined()
   })
-  it('does not open for a resource-limit pause, but does once the resumed run finishes', () => {
+  it('does not appear for a resource-limit pause, but does once the resumed run finishes', () => {
     engine.reset({ envConfig: { ...config, width: 6, height: 6, goals: [{ x: 5, y: 5 }], bombs: [] } })
     engine.setResourceBudget({ maxQStates: 12, maxEpisodeSteps: 30 })
-    render(<App />); start(300)
-    expect(engine.getSnapshot().status).toBe('paused'); expect(dialog()).toBeNull()
+    mount(); start(300)
+    expect(engine.getSnapshot().status).toBe('paused'); expect(toast()).toBeNull()
     act(() => { engine.setResourceBudget({ maxQStates: 1000 }); engine.resume() }); run()
-    expect(screen.getByTestId('completion-episodes').textContent).toBe('300')
+    expect(screen.getByTestId('completion-message').textContent).toBe('300번 학습 완료!')
   })
-  it('does not reopen after a stale completed run when the page is mounted later', () => {
+  it('does not announce a completion that happened before the page was mounted', () => {
     start(5)
     expect(engine.getSnapshot().completedRun?.id).toBeGreaterThan(0)
-    render(<App />); run(500)
-    expect(dialog()).toBeNull() // a completion that happened before mounting is not announced
+    mount(); run(500)
+    expect(toast()).toBeNull()
   })
 })

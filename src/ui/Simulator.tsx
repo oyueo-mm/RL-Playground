@@ -1,6 +1,7 @@
 import { defaultEpisodesForDifficulty } from '../data/presets/defaultEpisodes'
 import { RewardInfo } from '../viz/grid/RewardInfo'
 import { TurboDashboard } from './TurboDashboard'
+import { TrainingCompleteToast } from './TrainingCompleteToast'
 import { trainingCopy } from './trainingCopy'
 import { RewardVisualization } from '../viz/grid/RewardVisualization'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -114,11 +115,13 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
   const handleStateSelect = useCallback((state: StateKey) => { if (!model.walls.includes(state)) setSelectedState(state) }, [model.walls])
   const clearSelections = () => { setSelectedState(null); setSelectedEpisode(null); setViewedStep(null) }
   const idle = snapshot.status === 'idle'
+  const runPolicy = useCallback(() => { if (engine.getSnapshot().status === 'idle') engine.run({ episodes: 1, greedy: true }) }, [])
   const analysisVisible = !turboActive && !presetsOpen && (section === 'results' || (section === 'environment' && analysisOpen))
   return <section className={`simulator fullscreen-simulator ${section === 'results' ? 'results-view' : ''}`} aria-label={ko ? '강화학습 실험실' : 'Reinforcement learning lab'}>
     <div className="environment-screen" hidden={section !== 'environment'} data-testid="learning-grid">
       <div className="workspace-stage">
         <div className="workspace-feedback" hidden={settingsOpen}>
+          <TrainingCompleteToast locale={locale} visible={active && section === 'environment'} onRunPolicy={runPolicy} />
     {section !== 'editor' && snapshot.resources?.pauseReason && <Notice eventKey={`${snapshot.resources.pauseReason}:${snapshot.resources.budget.maxQStates}:${snapshot.resources.totalSteps}`} title={ko ? 'Q 상태 예산으로 학습 일시정지' : 'Training paused at Q row budget'} kind="warning" locale={locale} testId="resource-pause-reason"><button onClick={() => { setSettingsOpen(true); setSettingsTab('learning') }}>{ko ? '설정에서 예산 조절' : 'Adjust budget in settings'}</button></Notice>}
     {section === 'environment' && (applied || homeAppliedVersion > 0) && <Notice eventKey={`${cameraReset}:${homeAppliedVersion}`} title={ko ? '맵이 적용되었습니다. 학습을 시작할 수 있습니다.' : 'Map applied. You can start learning.'} locale={locale} kind="info" testId="environment-applied" />}
         </div>
@@ -128,7 +131,7 @@ export default function Simulator({ locale: sharedLocale, section = 'environment
           <TooltipButton tip={tips.learn} className="toolbar-primary" disabled={!idle} onClick={() => engine.run({ episodes: episodeCount, turbo: trainingMode === 'turbo' })} data-testid="playback-run-episode">{t.playback.learn}</TooltipButton>
           <TooltipButton tip={snapshot.status === 'paused' ? tips.resume : tips.pause} disabled={idle} onClick={() => snapshot.status === 'paused' ? engine.resume() : engine.pause()} data-testid={snapshot.status === 'paused' ? 'playback-resume' : 'playback-pause'}>{snapshot.status === 'paused' ? t.playback.resume : t.playback.pause}</TooltipButton>
           <TooltipButton tip={tips.stop} disabled={idle} onClick={() => engine.restartEpisode()} data-testid="playback-stop">{ko ? '학습 중단' : 'Stop'}</TooltipButton>
-          <TooltipButton tip={tips.greedy} disabled={!idle} onClick={() => engine.run({ episodes: 1, greedy: true })} data-testid="playback-run-greedy">{ko ? '학습 결과 실행' : 'Run policy'}</TooltipButton>
+          <TooltipButton tip={tips.greedy} disabled={!idle} onClick={runPolicy} data-testid="playback-run-greedy">{ko ? '학습 결과 실행' : 'Run policy'}</TooltipButton>
           <TooltipButton tip={tips.settings} aria-expanded={settingsOpen} aria-controls="learning-settings" onClick={() => { setSettingsOpen(!settingsOpen) }}>{ko ? '설정' : 'Settings'}</TooltipButton>
           <TooltipButton tip={tips.analysis} disabled={turboActive} aria-expanded={analysisOpen} aria-controls="analysis-panel" onClick={() => { onClosePresets(); setAnalysisOpen(!analysisOpen) }} data-testid="toggle-analysis">{ko ? '분석' : 'Analysis'}</TooltipButton>
           {sharedLocale === undefined && <LanguageSelector locale={locale} onChange={setLocale} t={t} />}
