@@ -245,7 +245,9 @@ export function EnvEditor({
 
   function handleCellClick(stateKey: StateKey, source?: 'keyboard') {
     // Pointer clicks were already applied by the stroke/drag; keyboard activation never was.
-    if (source !== 'keyboard' && (drag.consumeClick() || paint.consumeClick())) return
+    // Only the hook that owns the current mode may swallow a click: a stroke's pointer
+    // capture can retarget its trailing click away from the cell, leaving a stale flag.
+    if (source !== 'keyboard' && (mode === 'select' ? drag.consumeClick() : paint.consumeClick())) return
     const pos = parseStateKey(stateKey)
     setSelectedCell(stateKey)
     setEditMessage('')

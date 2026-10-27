@@ -7,7 +7,7 @@ import type { EnvRenderModel } from '../../core/types/render'
 import type { StateKey } from '../../core/types/rl'
 import { FeatureOverlay } from './FeatureOverlay'
 import { toggleWallOpen } from '../../core/environments/gridworld/features'
-import { memo, type SVGProps } from 'react'
+import { memo, useCallback, useLayoutEffect, useRef, type SVGProps } from 'react'
 
 type GridRenderModel = Extract<EnvRenderModel, { kind: 'grid' }>
 
@@ -43,6 +43,70 @@ function parsePosition(stateKey: string): { x: number; y: number } {
 
 type CellKind = 'empty' | 'wall' | 'start' | 'goal' | 'bomb'
 
+const cellFill: Record<CellKind, string> = {
+  empty: '#ffffff',
+  wall: '#374151',
+  start: '#93c5fd',
+  goal: '#22c55e',
+  // Light red — distinct from Wall's dark gray at a glance, and from the light gray
+  // grid lines; the bomb glyph drawn on top (see below) carries the rest of the
+  // distinction so this cell doesn't rely on color alone.
+  bomb: '#fecaca',
+}
+
+interface GridCellProps { cellKey: StateKey; x: number; y: number; kind: CellKind; cellSize: number; select?: (key: StateKey, source?: 'keyboard') => void; description?: string; movable?: boolean }
+const GridCell = memo(function GridCell({ cellKey, x, y, kind, cellSize, select, description, movable }: GridCellProps) {
+  const cx = x * cellSize + cellSize / 2
+  const cy = y * cellSize + cellSize / 2
+  return (
+    <g>
+      <rect
+        x={x * cellSize}
+        y={y * cellSize}
+        width={cellSize}
+        height={cellSize}
+        fill={cellFill[kind]}
+        stroke="#d1d5db"
+        style={{ cursor: select ? 'pointer' : undefined }}
+        onClick={select ? () => select(cellKey) : undefined}
+        role={select ? 'button' : undefined}
+        tabIndex={select ? 0 : undefined}
+        aria-label={select ? `Cell ${cellKey}: ${description ?? kind}` : undefined}
+        onKeyDown={select ? (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            select(cellKey, 'keyboard')
+          }
+        } : undefined}
+        data-testid={`cell-${cellKey}`}
+        data-cell-kind={kind}
+        data-movable={movable && (kind !== 'empty' || description !== undefined) ? 'true' : undefined}
+      />
+      {/*
+        Phase 20: a simple bomb glyph (body + fuse + spark) built from the same
+        SVG primitives already used elsewhere in this file (circle/line) — no icon
+        dependency. pointerEvents="none" so it never intercepts the cell's own
+        click handler above.
+      */}
+      {kind === 'bomb' && (
+        <g pointerEvents="none" data-testid={`bomb-marker-${cellKey}`}>
+          <circle cx={cx} cy={cy + cellSize * 0.08} r={cellSize * 0.24} fill="#1f2937" />
+          <line
+            x1={cx + cellSize * 0.1}
+            y1={cy - cellSize * 0.14}
+            x2={cx + cellSize * 0.24}
+            y2={cy - cellSize * 0.32}
+            stroke="#b45309"
+            strokeWidth={2}
+            strokeLinecap="round"
+          />
+          <circle cx={cx + cellSize * 0.26} cy={cy - cellSize * 0.36} r={cellSize * 0.05} fill="#f59e0b" />
+        </g>
+      )}
+    </g>
+  )
+})
+
 function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onStateSelect, className, showAgent = true, ariaLabel = 'GridWorld', movable, interaction }: GridSvgProps) {
   const { width, height, walls, bombs, start, goals, agentPos } = renderModel
   const wallSet = new Set(walls)
@@ -58,16 +122,11 @@ function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onState
   renderModel.features?.switches?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `Switch ${tile.groupId}`))
   renderModel.features?.toggleWalls?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `Toggle wall ${tile.groupId}, ${toggleWallOpen(tile, renderModel.openGroups?.includes(tile.groupId) ?? false) ? 'open' : 'closed'}`))
 
-  const cellFill: Record<CellKind, string> = {
-    empty: '#ffffff',
-    wall: '#374151',
-    start: '#93c5fd',
-    goal: '#22c55e',
-    // Light red — distinct from Wall's dark gray at a glance, and from the light gray
-    // grid lines; the bomb glyph drawn on top (see below) carries the rest of the
-    // distinction so this cell doesn't rely on color alone.
-    bomb: '#fecaca',
-  }
+  // V4 — a ref-backed, identity-stable select callback lets unchanged cells skip
+  // re-rendering (drag painting on 64×64 re-renders ~4k cells per crossed cell otherwise).
+  const selectRef = useRef(onStateSelect)
+  useLayoutEffect(() => { selectRef.current = onStateSelect })
+  const select = useCallback((key: StateKey, source?: 'keyboard') => source ? selectRef.current?.(key, source) : selectRef.current?.(key), [])
 
   const cells: Array<{ key: string; x: number; y: number; kind: CellKind }> = []
   for (let y = 0; y < height; y++) {
@@ -95,57 +154,7 @@ function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onState
       aria-label={ariaLabel}
       data-testid="grid-svg"
     >
-      {cells.map((cell) => {
-        const cx = cell.x * cellSize + cellSize / 2
-        const cy = cell.y * cellSize + cellSize / 2
-        return (
-          <g key={cell.key}>
-            <rect
-              x={cell.x * cellSize}
-              y={cell.y * cellSize}
-              width={cellSize}
-              height={cellSize}
-              fill={cellFill[cell.kind]}
-              stroke="#d1d5db"
-              style={{ cursor: onStateSelect ? 'pointer' : undefined }}
-              onClick={onStateSelect ? () => onStateSelect(cell.key) : undefined}
-              role={onStateSelect ? 'button' : undefined}
-              tabIndex={onStateSelect ? 0 : undefined}
-              aria-label={onStateSelect ? `Cell ${cell.key}: ${descriptions.get(cell.key) ?? cell.kind}` : undefined}
-              onKeyDown={onStateSelect ? (event) => {
-                if (event.key === 'Enter' || event.key === ' ') {
-                  event.preventDefault()
-                  onStateSelect(cell.key, 'keyboard')
-                }
-              } : undefined}
-              data-testid={`cell-${cell.key}`}
-              data-cell-kind={cell.kind}
-              data-movable={movable && (cell.kind !== 'empty' || descriptions.has(cell.key)) ? 'true' : undefined}
-            />
-            {/*
-              Phase 20: a simple bomb glyph (body + fuse + spark) built from the same
-              SVG primitives already used elsewhere in this file (circle/line) — no icon
-              dependency. pointerEvents="none" so it never intercepts the cell's own
-              click handler above.
-            */}
-            {cell.kind === 'bomb' && (
-              <g pointerEvents="none" data-testid={`bomb-marker-${cell.key}`}>
-                <circle cx={cx} cy={cy + cellSize * 0.08} r={cellSize * 0.24} fill="#1f2937" />
-                <line
-                  x1={cx + cellSize * 0.1}
-                  y1={cy - cellSize * 0.14}
-                  x2={cx + cellSize * 0.24}
-                  y2={cy - cellSize * 0.32}
-                  stroke="#b45309"
-                  strokeWidth={2}
-                  strokeLinecap="round"
-                />
-                <circle cx={cx + cellSize * 0.26} cy={cy - cellSize * 0.36} r={cellSize * 0.05} fill="#f59e0b" />
-              </g>
-            )}
-          </g>
-        )
-      })}
+      {cells.map(cell => <GridCell key={cell.key} cellKey={cell.key} x={cell.x} y={cell.y} kind={cell.kind} cellSize={cellSize} select={onStateSelect ? select : undefined} description={descriptions.get(cell.key)} movable={movable} />)}
       <FeatureOverlay model={renderModel} cellSize={cellSize} selected={selectedState} />
       {selectedState ? (
         <rect

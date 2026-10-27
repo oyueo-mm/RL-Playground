@@ -112,6 +112,21 @@ describe('V4 drag painting in the editor', () => {
     click('editor-undo'); click('editor-undo')
     expect((screen.getByTestId('editor-undo') as HTMLButtonElement).disabled).toBe(true)
   })
+  it('swallows the trailing click even after a drag longer than the click window', () => {
+    vi.useFakeTimers()
+    try {
+      const { svg } = setup()
+      click('env-editor-mode-wall')
+      fireEvent.pointerDown(screen.getByTestId('cell-1,1'), at(1, 1))
+      vi.advanceTimersByTime(2000)
+      fireEvent.pointerMove(svg, at(3, 1)); fireEvent.pointerUp(svg, at(3, 1))
+      fireEvent.click(screen.getByTestId('cell-1,1')) // captured cell receives the click
+      expect(['1,1', '2,1', '3,1'].map(kind)).toEqual(['wall', 'wall', 'wall'])
+      vi.advanceTimersByTime(600)
+      click('env-editor-mode-select'); click('cell-2,1') // a later select click is never swallowed
+      expect(screen.getByTestId('element-inspector').getAttribute('data-kind')).toBe('wall')
+    } finally { vi.useRealTimers() }
+  })
   it('erases by drag and keeps keyboard placement working', () => {
     const { svg } = setup({ walls: [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }] })
     click('env-editor-mode-erase')

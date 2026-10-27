@@ -30,6 +30,9 @@ export function usePaintStroke(draft: GridEditorDraft, enabled: boolean, element
     const current = stroke.current
     if (!current || current.pointer !== pointer) return
     cancel()
+    // The click that trails pointer-up belongs to this stroke, however long the drag took.
+    suppressClick.current = true
+    clickTimer.current = setTimeout(() => { suppressClick.current = false }, 500)
     if (current.value.error) onError(current.value.error)
     if (current.value.draft !== draft) onCommit(current.value.draft, current.first)
   }
@@ -41,13 +44,13 @@ export function usePaintStroke(draft: GridEditorDraft, enabled: boolean, element
       if (event.pointerType === 'touch' && !touchEnabled) return
       const first = cell(event)
       if (first.x < 0 || first.y < 0 || first.x >= draft.width || first.y >= draft.height) return
-      // The following click belongs to this stroke; keyboard activation never passes here.
+      // Until pointer-up, any click belongs to this stroke; keyboard activation never passes here.
       suppressClick.current = true
-      clickTimer.current = setTimeout(() => { suppressClick.current = false }, 500)
       const value = beginStroke(draft, first, element())
       stroke.current = { value, first, pointer: event.pointerId }
       setPreview(value.draft)
-      event.currentTarget.setPointerCapture?.(event.pointerId)
+      // Capture the cell like useElementDrag does, so the trailing click still targets it.
+      if (event.target instanceof Element) event.target.setPointerCapture?.(event.pointerId)
     },
     onPointerMove: event => {
       const current = stroke.current
