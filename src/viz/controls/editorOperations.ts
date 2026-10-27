@@ -59,6 +59,8 @@ export function placeElement(d: GridEditorDraft, p: Position, incoming: MapEleme
     if (incoming.kind === 'oneWay') return { draft: { ...d, oneWays: d.oneWays?.map(tile => samePosition(tile, p) ? { ...tile, direction: ({ 0: 3, 3: 1, 1: 2, 2: 0 } as const)[tile.direction] } : tile) } }
     // V4: re-clicking a toggle wall cycles its initial state closed -> open -> closed.
     if (incoming.kind === 'toggleWall') return { draft: setToggleInitialOpen(d, p, !old.initialOpen) }
+    // V5: re-clicking a portal end edits the pair that end belongs to, whatever ID the tool currently has.
+    if (incoming.kind === 'portal') return { draft: cyclePortalAt(d, p) }
     if (incoming.kind === 'goal' && d.goals.length === 1) return { draft: d, error: 'last-goal' }
     if (['wall', 'bomb', 'goal', 'terrain'].includes(incoming.kind)) return { draft: erase(d, p) }
     return { draft: d }
@@ -99,6 +101,23 @@ export function setPortalDirected(d: GridEditorDraft, id: string, directed: bool
     const copy = { ...pair }
     delete copy.directed
     return directed ? { ...copy, directed: true as const } : copy
+  }) }
+}
+/**
+ * V5 — click-to-direct. The clicked end of a complete pair becomes the destination:
+ *   two-way A↔B --click A--> B→A --click B--> A→B --click the destination--> two-way.
+ * An incomplete pair is left untouched so repeated clicks can never create a duplicate end.
+ */
+export function cyclePortalAt(d: GridEditorDraft, p: Position): GridEditorDraft {
+  const pair = d.portals?.find(item => item.ends.some(end => samePosition(end, p)))
+  if (!pair || pair.ends.length !== 2) return d
+  const clickedIsDestination = pair.directed === true && samePosition(pair.ends[1], p)
+  const clicked = pair.ends.find(end => samePosition(end, p))!, other = pair.ends.find(end => !samePosition(end, p))!
+  return { ...d, portals: d.portals?.map(item => {
+    if (item !== pair) return item
+    const copy = { ...item }
+    delete copy.directed
+    return clickedIsDestination ? copy : { ...copy, ends: [other, clicked], directed: true as const }
   }) }
 }
 /** V5 — swap entrance and exit of a one-way pair (A -> B becomes B -> A). */

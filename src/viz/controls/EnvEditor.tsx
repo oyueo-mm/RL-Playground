@@ -161,7 +161,8 @@ export function EnvEditor({
         if (event.key.toLowerCase() === 'z') { event.preventDefault(); if (event.shiftKey) redo(); else undo(); return }
         if (event.key.toLowerCase() === 'y' && event.ctrlKey) { event.preventDefault(); redo(); return }
       }
-      if (mode === 'select' && selectedCell && (event.key === 'Backspace' || event.key === 'Delete')) { event.preventDefault(); deleteCell(selectedCell) }
+      // Any tool: the last clicked / placed cell is the edit target. Text fields were excluded above.
+      if (selectedCell && (event.key === 'Backspace' || event.key === 'Delete') && elementAt(draft, parseStateKey(selectedCell))) { event.preventDefault(); deleteCell(selectedCell) }
     }
     window.addEventListener('keydown', handle)
     return () => window.removeEventListener('keydown', handle)
@@ -185,6 +186,7 @@ export function EnvEditor({
 
   function deleteCell(key: StateKey) {
     const pos = parseStateKey(key)
+    if (!elementAt(draft, pos)) return // nothing to delete: never report or change anything
     if (samePosition(pos, draft.start)) { setEditMessage(locale === 'ko' ? '시작점은 삭제할 수 없습니다. 다른 셀로 옮겨 주세요.' : 'Start cannot be deleted. Move it to another cell.'); return }
     if (isAnyGoal(pos, draft.goals) && draft.goals.length === 1) { setEditMessage(locale === 'ko' ? '최소 하나의 목표가 필요합니다. 마지막 목표는 삭제할 수 없습니다.' : 'At least one goal is required. The last goal cannot be deleted.'); return }
     setEditMessage('')
