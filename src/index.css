@@ -632,3 +632,49 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden]), select, textarea { border-color: var(--control-border); }
 input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden]):focus-visible, select:focus-visible, textarea:focus-visible { border-color: var(--primary); }
 .simulator select.border, .simulator input.border, .simulator textarea.border { border-color: var(--control-border); }
+
+/* ---- V5: compact (phone) map editor. The grid is the page; tools, mode and actions are single compact rows. ---- */
+.mobile-editor { --actions-h: calc(64px + env(safe-area-inset-bottom, 0px)); position: relative; height: calc(100% - var(--kb, 0px)); min-height: 0; }
+.mobile-editor-session { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.mobile-editor-session[hidden] { display: none; }
+.tool-strip { position: relative; flex: none; background: var(--surface); border-bottom: 1px solid var(--line); }
+.tool-strip-scroll { display: flex; gap: 4px; padding: 6px 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.tool-strip-scroll::-webkit-scrollbar { display: none; }
+.tool-strip-scroll > button { flex: none; scroll-snap-align: center; min-width: 58px; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 4px 8px; border: 1px solid transparent; border-radius: 8px; color: var(--text-body); font-size: 11px; white-space: nowrap; }
+.tool-strip-scroll > button svg { width: 22px; height: 22px; }
+.tool-strip-scroll > button[aria-pressed=true] { background: var(--primary-soft); border-color: var(--accent); color: var(--primary); font-weight: 650; }
+/* Functional scroll hint: a fade plus a chevron on the side that still has tools. */
+.tool-strip::before, .tool-strip::after { position: absolute; top: 0; bottom: 0; width: 30px; display: grid; place-items: center; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 1; font-size: 20px; line-height: 1; color: var(--primary); }
+.tool-strip::before { content: '‹'; left: 0; background: linear-gradient(to right, var(--surface) 55%, transparent); }
+.tool-strip::after { content: '›'; right: 0; background: linear-gradient(to left, var(--surface) 55%, transparent); }
+.tool-strip[data-more-left=true]::before, .tool-strip[data-more-right=true]::after { opacity: 1; }
+.mobile-status { flex: none; display: flex; align-items: center; gap: 8px; min-height: 46px; padding: 5px 10px; background: var(--bg-app); border-bottom: 1px solid var(--line); font-size: 12px; }
+.status-tool { display: inline-flex; align-items: center; gap: 6px; font-weight: 650; color: var(--navy); white-space: nowrap; }
+.status-tool svg { width: 18px; height: 18px; }
+.touch-mode { margin-left: auto; display: flex; flex: none; }
+.touch-mode button { min-height: 36px; padding: 4px 12px; border: 1px solid var(--control-border); background: var(--surface); color: var(--text-body); font-size: 12px; white-space: nowrap; }
+.touch-mode button:first-child { border-radius: 8px 0 0 8px; }
+.touch-mode button:last-child { border-radius: 0 8px 8px 0; border-left-width: 0; }
+.touch-mode button[aria-pressed=true] { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 650; }
+.mobile-editor .editor-body { flex: 1; min-height: 0; padding: 0; gap: 0; height: auto; overflow: hidden; position: relative; }
+.mobile-editor .editor-body { flex-direction: column; }
+.mobile-editor .camera-shell { gap: 0; }
+.mobile-editor .grid-viewport-shell { flex: 1 1 0; }
+.mobile-editor .camera-chrome { position: absolute; right: 6px; top: 6px; z-index: 3; width: auto; opacity: .94; }
+.mobile-editor .camera-chrome .zoom-controls button { min-height: 32px; min-width: 32px; padding: 3px 6px; }
+.mobile-actions { flex: none; display: flex; align-items: center; gap: 6px; padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px)); background: var(--surface); border-top: 1px solid var(--line); position: relative; z-index: 31; }
+.mobile-actions button { min-height: 44px; padding: 0 12px; border: 1px solid var(--control-border); border-radius: 8px; background: var(--surface); color: var(--text-body); font-size: 13px; font-weight: 600; white-space: nowrap; }
+.mobile-actions .icon-action { width: 44px; padding: 0; display: grid; place-items: center; }
+.mobile-actions button[aria-expanded=true] { background: var(--primary-soft); border-color: var(--accent); color: var(--primary); }
+.mobile-actions .primary-action { flex: 1 1 auto; background: var(--primary); border-color: var(--primary); color: #fff; }
+.mobile-actions .primary-action:hover:not(:disabled) { background: var(--primary-hover); }
+/* In flow, not overlaid: the grid re-fits above the sheet so the selected cell stays visible. */
+.mobile-editor .properties-panel.is-sheet { position: relative; flex: 0 1 auto; left: auto; right: auto; bottom: auto; top: auto; width: 100%; max-width: none; height: auto; max-height: 40%; padding: 0 14px 14px; border: 1px solid var(--line); border-bottom: 0; border-radius: 16px 16px 0 0; box-shadow: none; z-index: 30; overflow-y: auto; overscroll-behavior: contain; scroll-padding-bottom: 80px; }
+.mobile-editor .properties-panel.is-sheet[data-sheet=expanded] { max-height: 72%; }
+.mobile-editor .properties-panel.is-sheet > header { position: sticky; top: 0; z-index: 2; margin: 0 -14px 8px; padding: 0 14px 6px; background: var(--surface); }
+.mobile-editor .properties-panel.is-sheet > header h2 { font-size: 15px; }
+.sheet-handle { position: sticky; top: 0; z-index: 3; display: grid; place-items: center; width: calc(100% + 28px); margin: 0 -14px; min-height: 28px; background: var(--surface); border: 0; }
+.sheet-handle span { width: 40px; height: 4px; border-radius: 2px; background: var(--control-border); }
+.mobile-editor .notice:not(.notice-inline) { left: 8px; right: 8px; max-width: none; bottom: calc(var(--actions-h) + 8px); }
+@media (max-width: 380px) { .mobile-actions { gap: 4px; padding-left: 8px; padding-right: 8px; } .mobile-actions button { padding: 0 9px; font-size: 12px; } .mobile-actions .icon-action { width: 40px; } .touch-mode button { padding: 4px 9px; } }
+@media (prefers-reduced-motion: reduce) { .tool-strip::before, .tool-strip::after { transition: none; } }

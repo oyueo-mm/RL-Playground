@@ -14,7 +14,7 @@
 // Environment Preset selector were added; both still only ever mutate the local Draft —
 // neither reaches the live Environment before Apply.
 
-import { useEffect, useRef, useState, type ChangeEvent, type Dispatch, type SetStateAction } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent, type CSSProperties, type Dispatch, type SetStateAction } from 'react'
 import type { GridWorldConfig, Direction } from '../../core/environments/gridworld/types'
 import { featurePositions, positionId, stateSpaceDetails } from '../../core/environments/gridworld/features'
 import type { EnvRenderModel } from '../../core/types/render'
@@ -22,14 +22,18 @@ import type { StateKey } from '../../core/types/rl'
 import { GridSvg } from '../grid/GridSvg'
 import { GridViewport } from '../../ui/GridViewport'
 import { FloatingToolbar } from '../../ui/FloatingToolbar'
+import { ToolStrip } from '../../ui/ToolStrip'
+import { MOBILE_TOOLS } from '../../ui/mobileTools'
 import { TooltipButton } from '../../ui/TooltipButton'
 import { toolbarTips } from '../../ui/toolbarTips'
 import { EditorIcon } from '../../ui/EditorIcon'
 import { ManualPlay } from '../../ui/ManualPlay'
 import { Notice } from '../../ui/Notice'
 import { useElementDrag } from '../../ui/hooks/useElementDrag'
-import { elementAt, nextPortalId, nextGroupId, placeElement, setElementValue, setToggleInitialOpen, PAINTABLE_TOOLS, type EditError, type MapElement } from './editorOperations'
+import { elementAt, nextPortalId, nextGroupId, placeElement, setElementValue, setToggleInitialOpen, setTerrainCost, setPortalDirected, flipPortal, PAINTABLE_TOOLS, type EditError, type MapElement } from './editorOperations'
 import { usePaintStroke } from '../../ui/hooks/usePaintStroke'
+import { useMediaQuery } from '../../ui/hooks/useMediaQuery'
+import { useKeyboardInset } from '../../ui/hooks/useKeyboardInset'
 import { ElementInspector } from './ElementInspector'
 import { useDraftHistory } from '../../ui/hooks/useDraftHistory'
 import { parseStateKey } from '../grid/stateKey'
@@ -116,11 +120,19 @@ export function EnvEditor({
   const [editMessage, setEditMessage] = useState('')
   const [touchMove, setTouchMove] = useState(false)
   const [touchPaint, setTouchPaint] = useState(false)
+  // V5 — compact (phone) layout: one explicit touch mode instead of two separate toggles.
+  const compact = useMediaQuery('(max-width: 760px)') && fullscreen
+  const [touchMode, setTouchMode] = useState<'edit' | 'pan'>('edit')
+  const [sheetExpanded, setSheetExpanded] = useState(false)
+  const [portalDirected, setPortalDirectedTool] = useState(false)
+  const keyboardInset = useKeyboardInset(compact)
+  const touchMoveOn = compact ? touchMode === 'edit' : touchMove
+  const touchPaintOn = compact ? touchMode === 'edit' : touchPaint
   const touchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
-  const drag = useElementDrag(draft, fullscreen && active && mode === 'select', (next, to) => { setDraft(next); setSelectedCell(positionId(to)) }, showEditError, touchMove || !touchDevice)
+  const drag = useElementDrag(draft, fullscreen && active && mode === 'select', (next, to) => { setDraft(next); setSelectedCell(positionId(to)) }, showEditError, touchMoveOn || !touchDevice)
   // V4 — one element description for both pointer strokes and keyboard/click placement.
-  const toolElement = (): MapElement | null => mode === 'erase' || mode === 'select' ? null : { kind: mode, portalId: effectivePortalId, groupId: effectiveGroupId, direction }
-  const paint = usePaintStroke(draft, fullscreen && active && !playing && mode !== 'select', toolElement, (next, first) => { setDraft(next); setSelectedCell(positionId(first)) }, showEditError, touchPaint || !touchDevice)
+  const toolElement = (): MapElement | null => mode === 'erase' || mode === 'select' ? null : { kind: mode, portalId: effectivePortalId, groupId: effectiveGroupId, direction, ...(mode === 'portal' && portalDirected ? { directed: true } : {}) }
+  const paint = usePaintStroke(draft, fullscreen && active && !playing && mode !== 'select', toolElement, (next, first) => { setDraft(next); setSelectedCell(positionId(first)) }, showEditError, touchPaintOn || !touchDevice)
   const handledPreset = useRef<typeof presetRequest>(null)
   useEffect(() => {
     if (!presetRequest || handledPreset.current === presetRequest) return
@@ -427,40 +439,23 @@ export function EnvEditor({
     fragile: locale === 'ko' ? '부서지는 바닥' : 'Fragile',
     switch: locale === 'ko' ? '스위치' : 'Switch',
     toggleWall: locale === 'ko' ? '토글 벽' : 'Toggle wall',
+    terrain: locale === 'ko' ? '늪' : 'Swamp',
   }
 
   const presetLabel = { custom: t.envEditor.presetCustom }
   const presetDescription = Object.fromEntries(ENVIRONMENT_PRESETS.map(preset => [preset.id, preset.metadata.description[locale]]))
 
-  if (fullscreen) return <div className="fullscreen-editor" data-testid="env-editor">
-    {playing && <ManualPlay config={draftToGridWorldConfig(draft)} locale={locale} active={active} onClose={() => { setPlaying(false); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-testid=manual-play-start]')?.focus()) }} />}
-    <div className="editor-edit-session" hidden={playing}>
-    <h2 className="sr-only">{t.envEditor.heading}</h2>
-    <FloatingToolbar className="editor-toolbar" active={active} label={locale === 'ko' ? '맵 편집 도구' : 'Map editing tools'}>
-      <div className="element-palette">{[
-        { name: locale === 'ko' ? '기본 요소' : 'Basic', tools: ['select','wall','start','goal','bomb'] as EditMode[] },
-        { name: locale === 'ko' ? '특수 요소' : 'Special', tools: ['portal','oneWay','fragile','switch','toggleWall'] as EditMode[] },
-        { name: locale === 'ko' ? '보조 도구' : 'Utility', tools: ['erase'] as EditMode[] },
-      ].map(group => <div className="tool-buttons" role="group" aria-label={group.name} key={group.name}><small>{group.name}</small>{group.tools.map(tool => <TooltipButton key={tool} tip={tips[tool]} aria-label={modeLabel[tool]} aria-pressed={mode===tool} onClick={()=>setMode(tool)} data-testid={`env-editor-mode-${tool}`}><EditorIcon tool={tool}/><span>{modeLabel[tool]}</span></TooltipButton>)}</div>)}<p className="palette-help" role="status">{modeLabel[mode]}: {tips[mode].split('. ')[0]}{PAINTABLE_TOOLS.has(mode) ? (locale === 'ko' ? ' · 끌어서 연속 편집 (Space+드래그: 화면 이동)' : ' · drag to paint (Space+drag pans)') : ''}</p></div>
-      {(mode === 'portal' || mode === 'switch' || mode === 'toggleWall') && <span className="link-indicator" data-testid="current-link-id">{mode === 'portal' ? `${effectivePortalId} · ${draft.portals?.find(pair => pair.id === effectivePortalId)?.ends.length ?? 0}/2` : effectiveGroupId}</span>}
-      <span className="toolbar-separator" />
-      {touchDevice && mode === 'select' && <TooltipButton tip={locale === 'ko' ? '켜면 손가락으로 요소를 이동합니다. 끄면 확대된 격자를 스크롤할 수 있습니다.' : 'Enable to move elements by touch. Disable to scroll the zoomed grid.'} aria-pressed={touchMove} onClick={() => setTouchMove(value => !value)} data-testid="touch-move-mode">{locale === 'ko' ? '터치 이동' : 'Touch move'}</TooltipButton>}
-      {touchDevice && mode !== 'select' && <TooltipButton tip={locale === 'ko' ? '켜면 한 손가락으로 끌며 연속 배치합니다. 끄면 탭으로 한 칸씩 배치하고 손가락으로 화면을 이동합니다. 두 손가락은 항상 확대·이동입니다.' : 'On: drag one finger to paint cells. Off: tap places one cell and dragging scrolls. Two fingers always zoom and pan.'} aria-pressed={touchPaint} onClick={() => setTouchPaint(value => !value)} data-testid="touch-paint-mode">{locale === 'ko' ? '터치 그리기' : 'Touch paint'}</TooltipButton>}
-      <TooltipButton tip={tips.undo} aria-label={locale === 'ko' ? '실행 취소' : 'Undo'} disabled={!canUndo} onClick={undo} data-testid="editor-undo"><EditorIcon tool="undo" /></TooltipButton>
-      <TooltipButton tip={tips.redo} aria-label={locale === 'ko' ? '다시 실행' : 'Redo'} disabled={!canRedo} onClick={redo} data-testid="editor-redo"><EditorIcon tool="redo" /></TooltipButton>
-      <TooltipButton tip={tips.properties} onClick={() => { onOpenProperties?.(); setPropertiesOpen(!propertiesOpen || panelBlocked) }} aria-expanded={propertiesOpen && !panelBlocked} aria-controls="editor-properties">{locale === 'ko' ? '속성 / 파일' : 'Properties / files'}</TooltipButton>
-      <TooltipButton tip={tips.apply} className="toolbar-primary" onClick={handleApply} disabled={!isValid} data-testid="env-editor-apply">{t.envEditor.apply}</TooltipButton>
-      <TooltipButton tip={locale === 'ko' ? '현재 초안에서 방향키 / WASD로 플레이합니다. 학습 데이터는 변경되지 않습니다.' : 'Play this draft with arrows / WASD in an isolated environment.'} disabled={!isValid} onClick={() => setPlaying(true)} data-testid="manual-play-start">{locale === 'ko' ? '직접 플레이' : 'Play draft'}</TooltipButton>
-    </FloatingToolbar>
-    <div className={`editor-body ${mode === 'select' ? 'editor-move-mode' : 'editor-paint-mode'} ${(mode === 'select' && touchMove) || (mode !== 'select' && touchPaint) ? 'touch-element-mode' : ''}`} data-testid="env-editor-grid" data-painting={paint.preview ? 'true' : undefined}>
-      <GridViewport editable locale={locale} onPanStart={() => { drag.cancel(); paint.cancel() }} width={draft.width} height={draft.height} active={active}><GridSvg interaction={mode === 'select' ? drag.interaction : paint.interaction} movable={mode === 'select' && (!touchDevice || touchMove)} renderModel={draftToRenderModel(paint.preview ?? draft)} selectedState={selectedCell} cellSize={48} onStateSelect={handleCellClick} className="stage-grid" />
+  const bodyEl = (
+    <div className={`editor-body ${mode === 'select' ? 'editor-move-mode' : 'editor-paint-mode'} ${(mode === 'select' && touchMoveOn) || (mode !== 'select' && touchPaintOn) ? 'touch-element-mode' : ''} ${compact ? 'is-compact' : ''}`} data-testid="env-editor-grid" data-painting={paint.preview ? 'true' : undefined}>
+      <GridViewport editable touchPan={compact && touchMode === 'pan'} locale={locale} onPanStart={() => { drag.cancel(); paint.cancel() }} width={draft.width} height={draft.height} active={active}><GridSvg interaction={mode === 'select' ? drag.interaction : paint.interaction} movable={mode === 'select' && (!touchDevice || touchMoveOn)} renderModel={draftToRenderModel(paint.preview ?? draft)} selectedState={selectedCell} cellSize={48} onStateSelect={handleCellClick} className="stage-grid" />
       {drag.preview && <svg className="stage-overlay drag-preview" viewBox={`0 0 ${draft.width * 48} ${draft.height * 48}`} data-testid="drag-preview" data-valid={drag.preview.valid}>
         <rect x={drag.preview.from.x * 48} y={drag.preview.from.y * 48} width={48} height={48} fill="#ffffffaa" stroke="#5F6B7A" strokeDasharray="3 3" />
         <rect x={drag.preview.to.x * 48} y={drag.preview.to.y * 48} width={48} height={48} fill={drag.preview.valid ? '#2479d833' : '#f2b5ae99'} stroke={drag.preview.valid ? '#0754A5' : '#b34134'} strokeWidth={2} />
         <svg x={drag.preview.to.x * 48 + 10} y={drag.preview.to.y * 48 + 10} width={28} height={28} viewBox="0 0 24 24"><EditorIcon tool={elementAt(draft, drag.preview.from)?.kind ?? 'select'} /></svg>
       </svg>}
       </GridViewport>
-      <aside className="properties-panel" id="editor-properties" hidden={!propertiesOpen || panelBlocked} aria-label={locale === 'ko' ? '속성' : 'Properties'}>
+      <aside className={`properties-panel ${compact ? 'is-sheet' : ''}`} id="editor-properties" hidden={!propertiesOpen || panelBlocked} aria-label={locale === 'ko' ? '속성' : 'Properties'} data-sheet={compact ? (sheetExpanded ? 'expanded' : 'peek') : undefined}>
+        {compact && <button type="button" className="sheet-handle" aria-expanded={sheetExpanded} aria-controls="editor-properties" aria-label={sheetExpanded ? (locale === 'ko' ? '속성 시트 줄이기' : 'Collapse properties') : (locale === 'ko' ? '속성 시트 펼치기' : 'Expand properties')} onClick={() => setSheetExpanded(value => !value)} data-testid="sheet-handle"><span aria-hidden="true" /></button>}
         <header><h2>{inspecting ? (locale === 'ko' ? '요소 속성' : 'Element properties') : (locale === 'ko' ? '맵 속성' : 'Map properties')}</h2><button onClick={() => setPropertiesOpen(false)} aria-label={locale === 'ko' ? '속성 닫기' : 'Close properties'}>×</button></header>
         <div className="property-fields" onBlurCapture={boundary}>
           <datalist id="existing-portals">{draft.portals?.map(pair => <option key={pair.id} value={pair.id}>{pair.ends.length}/2</option>)}</datalist>
@@ -470,14 +465,19 @@ export function EnvEditor({
             onDirection={next => { setDirection(next); setDraft(prev => ({ ...prev, oneWays: prev.oneWays?.map(tile => positionId(tile) === selectedCell ? { ...tile, direction: next } : tile) })) }}
             onValue={(kind, value, typing) => { const pos = parseStateKey(selectedCell); const change = (prev: GridEditorDraft) => setElementValue(prev, pos, kind, value); if (typing) recordInput(change, `element-value-${selectedCell}`); else setDraft(change) }}
             onInitialOpen={open => setDraft(prev => setToggleInitialOpen(prev, parseStateKey(selectedCell), open))}
+            onTerrainCost={(cost, typing) => { const pos = parseStateKey(selectedCell); const change = (prev: GridEditorDraft) => setTerrainCost(prev, pos, cost); if (typing) recordInput(change, `terrain-cost-${selectedCell}`); else setDraft(change) }}
+            onPortalDirected={directed => { const id = draft.portals?.find(pair => pair.ends.some(end => positionId(end) === selectedCell))?.id; if (id) setDraft(prev => setPortalDirected(prev, id, directed)) }}
+            onFlipPortal={() => { const id = draft.portals?.find(pair => pair.ends.some(end => positionId(end) === selectedCell))?.id; if (id) setDraft(prev => flipPortal(prev, id)) }}
             onDelete={() => deleteCell(selectedCell)} />}
           {mode === 'select' && !selectedCell && <p className="inspector-empty" data-testid="element-inspector-hint">{locale === 'ko' ? '맵에서 요소를 클릭하면 이곳에 해당 요소의 설정이 표시됩니다.' : 'Click an element on the map to edit its settings here.'}</p>}
-          {['portal', 'switch', 'toggleWall', 'oneWay'].includes(mode) && <section className="tool-settings" aria-label={locale === 'ko' ? '도구 설정' : 'Tool settings'}>
+          {['portal', 'switch', 'toggleWall', 'oneWay', 'terrain'].includes(mode) && <section className="tool-settings" aria-label={locale === 'ko' ? '도구 설정' : 'Tool settings'}>
             <h3>{modeLabel[mode]} · {locale === 'ko' ? '새로 배치할 요소' : 'next placement'}</h3>
             {mode === 'portal' && <>
               <label><input type="checkbox" checked={autoPortal} data-testid="auto-portal" onChange={event => setAutoPortal(event.target.checked)} />{locale === 'ko' ? '포털 자동 연결' : 'Automatic portal pairing'}</label>
               <label>{locale === 'ko' ? '포털 쌍 ID' : 'Portal pair ID'}<input value={effectivePortalId} list="existing-portals" maxLength={24} data-testid="portal-id" onChange={event => renamePortal(event.target.value)} /></label>
+              <label><input type="checkbox" checked={portalDirected} data-testid="portal-directed-tool" onChange={event => setPortalDirectedTool(event.target.checked)} />{locale === 'ko' ? '단방향 포털로 배치 (첫 칸 A → 둘째 칸 B)' : 'Place as one-way (first cell A → second cell B)'}</label>
             </>}
+            {mode === 'terrain' && <p>{locale === 'ko' ? `새 늪 타일은 맵 기본 비용(${draft.terrainCost ?? -1})을 따릅니다. 선택 도구로 타일마다 비용을 따로 정할 수 있습니다. 칸을 다시 누르면 제거됩니다.` : `New swamp tiles use the map default cost (${draft.terrainCost ?? -1}). Use Select to give a tile its own cost. Tapping a swamp tile again removes it.`}</p>}
             {(mode === 'switch' || mode === 'toggleWall') && <>
               <label><input type="checkbox" checked={autoGroup} data-testid="auto-group" onChange={event => setAutoGroup(event.target.checked)} />{locale === 'ko' ? '그룹 자동 생성' : 'Automatic wall groups'}</label>
               <label><input type="checkbox" checked={keepGroup} data-testid="keep-group" onChange={event => setKeepGroup(event.target.checked)} />{locale === 'ko' ? '현재 그룹에 계속 추가' : 'Keep adding to current group'}</label>
@@ -494,6 +494,7 @@ export function EnvEditor({
           {errors.length > 0 && <details><summary>{locale === 'ko' ? '적용 / 플레이 불가 이유' : 'Why apply / play is unavailable'}</summary>{errors.map(error => <p key={error}>{translateValidationError(error, locale)}</p>)}</details>}
           <label>{t.envEditor.width}<input type="number" min={3} max={MAX_SIZE} value={draft.width} onChange={e => updateWidth(Number(e.target.value))} data-testid="env-editor-width-input" /></label>
           <label>{t.envEditor.height}<input type="number" min={3} max={MAX_SIZE} value={draft.height} onChange={e => updateHeight(Number(e.target.value))} data-testid="env-editor-height-input" /></label>
+          <label>{locale === 'ko' ? '늪 기본 비용' : 'Swamp default cost'}<input type="number" step="0.1" max={0} value={draft.terrainCost ?? -1} data-testid="env-editor-terrain-cost-input" onChange={e => recordInput(previous => ({ ...previous, terrainCost: e.target.value === '' ? Number.NaN : Number(e.target.value) }), 'terrainCost')} /></label>
           {(['stepReward', 'wallPenalty', 'goalReward', 'bombPenalty'] as const).map(key => <label key={key}>{({ stepReward: t.envEditor.stepReward, wallPenalty: t.envEditor.wallPenalty, goalReward: t.envEditor.goalReward, bombPenalty: t.envEditor.bombPenalty })[key]}<input type="number" step="0.1" value={draft[key]} data-testid={`env-editor-${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}-input`} onChange={e => recordInput(previous => ({ ...previous, [key]: Number(e.target.value) }), key)} /></label>)}
           <p>{locale === 'ko' ? `목표 보상과 폭탄 페널티는 개별 값을 지정하지 않은 요소의 기본값입니다. (개별 지정: 목표 ${draft.goals.filter(goal => goal.reward !== undefined).length}개 · 폭탄 ${draft.bombs.filter(bomb => bomb.penalty !== undefined).length}개)` : `Goal reward and bomb penalty are defaults for elements without their own value. (Custom: ${draft.goals.filter(goal => goal.reward !== undefined).length} goals · ${draft.bombs.filter(bomb => bomb.penalty !== undefined).length} bombs)`}</p>
           <button onClick={handleImportClick} data-testid="env-editor-import">{t.envEditor.importButton}</button><button onClick={handleExport} disabled={!isValid} data-testid="env-editor-export">{t.envEditor.exportButton}</button>
@@ -504,7 +505,57 @@ export function EnvEditor({
         </div>
       </aside>
     </div>
-    {(errors.length > 0 || importError || editMessage) && <Notice eventKey={JSON.stringify([errors, importError, editMessage, importAttempt])} kind={errors.length || importError ? 'error' : 'info'} title={locale === 'ko' ? '편집 알림' : 'Editor notification'} locale={locale} testId="env-editor-errors">{editMessage || (importError ? translateValidationError(importError, locale) : errors.map(error => translateValidationError(error, locale)).join(' '))}</Notice>}
+  )
+  const noticeEl = (errors.length > 0 || importError || editMessage) ? <Notice eventKey={JSON.stringify([errors, importError, editMessage, importAttempt])} kind={errors.length || importError ? 'error' : 'info'} title={locale === 'ko' ? '편집 알림' : 'Editor notification'} locale={locale} testId="env-editor-errors">{editMessage || (importError ? translateValidationError(importError, locale) : errors.map(error => translateValidationError(error, locale)).join(' '))}</Notice> : null
+
+  const compactLayout = <div className="mobile-editor" data-testid="env-editor" style={{ '--kb': `${keyboardInset}px` } as CSSProperties}>
+    {playing && <ManualPlay config={draftToGridWorldConfig(draft)} locale={locale} active={active} onClose={() => { setPlaying(false); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-testid=manual-play-start]')?.focus()) }} />}
+    <div className="editor-edit-session mobile-editor-session" hidden={playing}>
+      <h2 className="sr-only">{t.envEditor.heading}</h2>
+      <ToolStrip tools={MOBILE_TOOLS} mode={mode} labels={modeLabel} onSelect={setMode} ariaLabel={locale === 'ko' ? '맵 편집 도구' : 'Map editing tools'} />
+      <div className="mobile-status" role="status" aria-live="polite" data-testid="mobile-status">
+        <span className="status-tool" data-testid="mobile-active-tool"><EditorIcon tool={mode} />{modeLabel[mode]}</span>
+        {(mode === 'portal' || mode === 'switch' || mode === 'toggleWall') && <span className="link-indicator" data-testid="current-link-id">{mode === 'portal' ? `${effectivePortalId} · ${draft.portals?.find(pair => pair.id === effectivePortalId)?.ends.length ?? 0}/2${portalDirected ? ' →' : ''}` : effectiveGroupId}</span>}
+        <div className="touch-mode" role="group" aria-label={locale === 'ko' ? '한 손가락 동작' : 'One-finger action'}>
+          <button type="button" aria-pressed={touchMode === 'edit'} onClick={() => setTouchMode('edit')} data-testid="touch-edit-mode">{mode === 'select' ? (locale === 'ko' ? '이동' : 'Move') : mode === 'erase' ? (locale === 'ko' ? '지우기' : 'Erase') : (locale === 'ko' ? '그리기' : 'Draw')}</button>
+          <button type="button" aria-pressed={touchMode === 'pan'} onClick={() => setTouchMode('pan')} data-testid="touch-pan-mode">{locale === 'ko' ? '화면 이동' : 'Pan view'}</button>
+        </div>
+      </div>
+      {bodyEl}
+      <div className="mobile-actions" role="group" aria-label={locale === 'ko' ? '편집 작업' : 'Editor actions'}>
+        <button type="button" className="icon-action" aria-label={locale === 'ko' ? '실행 취소' : 'Undo'} disabled={!canUndo} onClick={undo} data-testid="editor-undo"><EditorIcon tool="undo" /></button>
+        <button type="button" className="icon-action" aria-label={locale === 'ko' ? '다시 실행' : 'Redo'} disabled={!canRedo} onClick={redo} data-testid="editor-redo"><EditorIcon tool="redo" /></button>
+        <button type="button" aria-label={locale === 'ko' ? '속성 / 파일' : 'Properties / files'} aria-expanded={propertiesOpen && !panelBlocked} aria-controls="editor-properties" onClick={() => { onOpenProperties?.(); setPropertiesOpen(!propertiesOpen || panelBlocked) }} data-testid="properties-toggle">{locale === 'ko' ? '속성' : 'Properties'}</button>
+        <button type="button" aria-label={locale === 'ko' ? '직접 플레이' : 'Play draft'} disabled={!isValid} onClick={() => setPlaying(true)} data-testid="manual-play-start">{locale === 'ko' ? '플레이' : 'Play'}</button>
+        <button type="button" className="primary-action" onClick={handleApply} disabled={!isValid} data-testid="env-editor-apply">{t.envEditor.apply}</button>
+      </div>
+      {noticeEl}
+    </div>
+  </div>
+
+  if (fullscreen && compact) return compactLayout
+  if (fullscreen) return <div className="fullscreen-editor" data-testid="env-editor">
+    {playing && <ManualPlay config={draftToGridWorldConfig(draft)} locale={locale} active={active} onClose={() => { setPlaying(false); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-testid=manual-play-start]')?.focus()) }} />}
+    <div className="editor-edit-session" hidden={playing}>
+    <h2 className="sr-only">{t.envEditor.heading}</h2>
+    <FloatingToolbar className="editor-toolbar" active={active} label={locale === 'ko' ? '맵 편집 도구' : 'Map editing tools'}>
+      <div className="element-palette">{[
+        { name: locale === 'ko' ? '기본 요소' : 'Basic', tools: ['select','wall','start','goal','bomb'] as EditMode[] },
+        { name: locale === 'ko' ? '특수 요소' : 'Special', tools: ['portal','oneWay','fragile','switch','toggleWall','terrain'] as EditMode[] },
+        { name: locale === 'ko' ? '보조 도구' : 'Utility', tools: ['erase'] as EditMode[] },
+      ].map(group => <div className="tool-buttons" role="group" aria-label={group.name} key={group.name}><small>{group.name}</small>{group.tools.map(tool => <TooltipButton key={tool} tip={tips[tool]} aria-label={modeLabel[tool]} aria-pressed={mode===tool} onClick={()=>setMode(tool)} data-testid={`env-editor-mode-${tool}`}><EditorIcon tool={tool}/><span>{modeLabel[tool]}</span></TooltipButton>)}</div>)}<p className="palette-help" role="status">{modeLabel[mode]}: {tips[mode].split('. ')[0]}{PAINTABLE_TOOLS.has(mode) ? (locale === 'ko' ? ' · 끌어서 연속 편집 (Space+드래그: 화면 이동)' : ' · drag to paint (Space+drag pans)') : ''}</p></div>
+      {(mode === 'portal' || mode === 'switch' || mode === 'toggleWall') && <span className="link-indicator" data-testid="current-link-id">{mode === 'portal' ? `${effectivePortalId} · ${draft.portals?.find(pair => pair.id === effectivePortalId)?.ends.length ?? 0}/2` : effectiveGroupId}</span>}
+      <span className="toolbar-separator" />
+      {touchDevice && mode === 'select' && <TooltipButton tip={locale === 'ko' ? '켜면 손가락으로 요소를 이동합니다. 끄면 확대된 격자를 스크롤할 수 있습니다.' : 'Enable to move elements by touch. Disable to scroll the zoomed grid.'} aria-pressed={touchMove} onClick={() => setTouchMove(value => !value)} data-testid="touch-move-mode">{locale === 'ko' ? '터치 이동' : 'Touch move'}</TooltipButton>}
+      {touchDevice && mode !== 'select' && <TooltipButton tip={locale === 'ko' ? '켜면 한 손가락으로 끌며 연속 배치합니다. 끄면 탭으로 한 칸씩 배치하고 손가락으로 화면을 이동합니다. 두 손가락은 항상 확대·이동입니다.' : 'On: drag one finger to paint cells. Off: tap places one cell and dragging scrolls. Two fingers always zoom and pan.'} aria-pressed={touchPaint} onClick={() => setTouchPaint(value => !value)} data-testid="touch-paint-mode">{locale === 'ko' ? '터치 그리기' : 'Touch paint'}</TooltipButton>}
+      <TooltipButton tip={tips.undo} aria-label={locale === 'ko' ? '실행 취소' : 'Undo'} disabled={!canUndo} onClick={undo} data-testid="editor-undo"><EditorIcon tool="undo" /></TooltipButton>
+      <TooltipButton tip={tips.redo} aria-label={locale === 'ko' ? '다시 실행' : 'Redo'} disabled={!canRedo} onClick={redo} data-testid="editor-redo"><EditorIcon tool="redo" /></TooltipButton>
+      <TooltipButton tip={tips.properties} onClick={() => { onOpenProperties?.(); setPropertiesOpen(!propertiesOpen || panelBlocked) }} aria-expanded={propertiesOpen && !panelBlocked} aria-controls="editor-properties">{locale === 'ko' ? '속성 / 파일' : 'Properties / files'}</TooltipButton>
+      <TooltipButton tip={tips.apply} className="toolbar-primary" onClick={handleApply} disabled={!isValid} data-testid="env-editor-apply">{t.envEditor.apply}</TooltipButton>
+      <TooltipButton tip={locale === 'ko' ? '현재 초안에서 방향키 / WASD로 플레이합니다. 학습 데이터는 변경되지 않습니다.' : 'Play this draft with arrows / WASD in an isolated environment.'} disabled={!isValid} onClick={() => setPlaying(true)} data-testid="manual-play-start">{locale === 'ko' ? '직접 플레이' : 'Play draft'}</TooltipButton>
+    </FloatingToolbar>
+    {bodyEl}
+    {noticeEl}
     </div>
   </div>
 

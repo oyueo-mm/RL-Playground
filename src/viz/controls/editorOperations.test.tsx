@@ -59,7 +59,7 @@ const click = (id: string) => fireEvent.click(screen.getByTestId(id))
 describe('Connected editor UX', () => {
   it('shows SVG tool silhouettes and auto-advances portal IDs through undo/redo', () => {
     setup()
-    expect(document.querySelectorAll('.tool-buttons button svg[data-icon]')).toHaveLength(11)
+    expect(document.querySelectorAll('.tool-buttons button svg[data-icon]')).toHaveLength(12)
     click('env-editor-mode-portal'); click('cell-1,1'); click('cell-2,2')
     expect(screen.getByTestId('current-link-id').textContent).toContain('P2')
     click('cell-3,3'); click('cell-4,4')

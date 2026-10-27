@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 
 import { zoomAt, followAgent, type Camera } from './camera'
 const initial={zoom:1,x:0,y:0}
-export function GridViewport({width,height,children,active=true,editable=false,agentPos,resetKey,onPanStart,hud,locale='en'}:{width:number;height:number;children:ReactNode;active?:boolean;editable?:boolean;agentPos?:string;resetKey?:unknown;onPanStart?:()=>void;hud?:ReactNode;locale?:'ko'|'en'}) {
+export function GridViewport({width,height,children,active=true,editable=false,touchPan=false,agentPos,resetKey,onPanStart,hud,locale='en'}:{width:number;height:number;children:ReactNode;active?:boolean;editable?:boolean;touchPan?:boolean;agentPos?:string;resetKey?:unknown;onPanStart?:()=>void;hud?:ReactNode;locale?:'ko'|'en'}) {
   const ref=useRef<HTMLDivElement>(null)
   const [size,setSize]=useState({width:0,height:0}),[camera,setCamera]=useState<Camera>(initial),[follow,setFollow]=useState(false)
   const space=useRef(false),dragging=useRef(false),suppressClick=useRef(false),pointers=useRef(new Map<number,{x:number;y:number}>())
@@ -44,7 +44,7 @@ export function GridViewport({width,height,children,active=true,editable=false,a
         if(!active)return
         if(!pointers.current.size)suppressClick.current=false
         pointers.current.set(e.pointerId,{x:e.clientX,y:e.clientY})
-        if(!(e.button===1||e.button===0&&(!editable||space.current)||e.pointerType==='touch'&&pointers.current.size>=2))return
+        if(!(e.button===1||e.button===0&&(!editable||space.current||touchPan&&e.pointerType==='touch')||e.pointerType==='touch'&&pointers.current.size>=2))return
         onPanStart?.();e.currentTarget.focus({preventScroll:true})
         e.preventDefault();e.stopPropagation();e.currentTarget.setPointerCapture?.(e.pointerId);dragging.current=true
       }}

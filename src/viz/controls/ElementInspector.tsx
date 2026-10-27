@@ -26,10 +26,13 @@ export interface ElementInspectorProps {
   onDirection: (direction: Direction) => void
   onValue: (kind: 'goal' | 'bomb', value: number | undefined, typing: boolean) => void
   onInitialOpen: (open: boolean) => void
+  onTerrainCost: (cost: number | undefined, typing: boolean) => void
+  onPortalDirected: (directed: boolean) => void
+  onFlipPortal: () => void
   onDelete: () => void
 }
 
-export function ElementInspector({ draft, cell, locale, kindLabel, portalId, groupId, direction, onPortalId, onGroupId, onDirection, onValue, onInitialOpen, onDelete }: ElementInspectorProps) {
+export function ElementInspector({ draft, cell, locale, kindLabel, portalId, groupId, direction, onPortalId, onGroupId, onDirection, onValue, onInitialOpen, onTerrainCost, onPortalDirected, onFlipPortal, onDelete }: ElementInspectorProps) {
   const ko = locale === 'ko'
   const element = elementAt(draft, cell)
   if (!element) return <section className="element-inspector" data-testid="element-inspector" data-kind="empty">
@@ -38,6 +41,18 @@ export function ElementInspector({ draft, cell, locale, kindLabel, portalId, gro
 
   const deleteBlocked = element.kind === 'start' ? (ko ? '시작점은 삭제할 수 없습니다. 드래그로 옮기세요.' : 'Start cannot be deleted. Drag it to move it.')
     : element.kind === 'goal' && draft.goals.length === 1 ? (ko ? '마지막 목표는 삭제할 수 없습니다.' : 'The last goal cannot be deleted.') : null
+
+  const swampField = () => {
+    const own = element.cost, fallback = draft.terrainCost ?? -1, inherit = own === undefined
+    return <fieldset className="value-source" data-testid="element-value">
+      <legend>{ko ? '늪 진입 비용' : 'Swamp entry cost'}</legend>
+      <label><input type="radio" name="terrain-cost-source" checked={inherit} onChange={() => onTerrainCost(undefined, false)} data-testid="element-value-inherit" />{ko ? '맵 기본값 사용' : 'Use map default'}<span className="value-chip">{signed(fallback)}</span></label>
+      <label><input type="radio" name="terrain-cost-source" checked={!inherit} onChange={() => onTerrainCost(fallback, false)} data-testid="element-value-custom" />{ko ? '개별 값 지정' : 'Custom value'}
+        <input type="number" step="0.1" max={0} aria-label={ko ? '늪 비용' : 'Swamp cost'} disabled={inherit} value={own === undefined ? fallback : Number.isNaN(own) ? '' : own} data-testid="element-value-input" onChange={event => { if (!inherit) onTerrainCost(event.target.value === '' ? Number.NaN : Number(event.target.value), true) }} /></label>
+      {!inherit && !(Number.isFinite(own) && own <= 0) && <p className="inspector-problem" role="alert">{ko ? '늪 비용은 0 이하의 숫자여야 합니다.' : 'A swamp cost must be a number no greater than 0.'}</p>}
+      <p>{ko ? '이 타일에 들어갈 때 일반 이동 보상 대신 이 값을 받습니다. 벽에 막히거나 격자 밖으로 나가는 이동에는 적용되지 않습니다. 0 이하만 허용됩니다.' : 'Entering this tile pays this value instead of the normal step reward. Blocked moves and boundary hits are not charged. Only values of 0 or less are allowed.'}</p>
+    </fieldset>
+  }
 
   const valueField = (kind: 'goal' | 'bomb') => {
     const own = kind === 'goal' ? element.reward : element.penalty
@@ -83,6 +98,7 @@ export function ElementInspector({ draft, cell, locale, kindLabel, portalId, gro
   return <section className="element-inspector" data-testid="element-inspector" data-kind={element.kind} aria-label={ko ? '선택한 요소' : 'Selected element'}>
     <div className="inspector-heading"><EditorIcon tool={element.kind} /><div><strong data-testid="element-kind">{kindLabel[element.kind]}</strong><small data-testid="element-position">{ko ? '좌표' : 'Cell'} {at(cell)}</small></div></div>
     {element.kind === 'goal' && valueField('goal')}
+    {element.kind === 'terrain' && swampField()}
     {element.kind === 'bomb' && valueField('bomb')}
     {element.kind === 'oneWay' && <label>{ko ? '허용 방향' : 'Allowed direction'}<select value={direction} data-testid="one-way-direction" onChange={event => onDirection(Number(event.target.value) as Direction)}>{(ko ? ['↑ 위', '↓ 아래', '← 왼쪽', '→ 오른쪽'] : ['↑ Up', '↓ Down', '← Left', '→ Right']).map((label, index) => <option key={index} value={index}>{label}</option>)}</select></label>}
     {element.kind === 'oneWay' && <p>{ko ? '이 칸에서 나갈 때 선택한 방향으로만 이동할 수 있습니다. 단방향 도구로 다시 클릭해도 시계 방향으로 바뀝니다.' : 'Leaving this cell is only allowed in the chosen direction. Re-clicking with the One-way tool also rotates it clockwise.'}</p>}
@@ -94,8 +110,14 @@ export function ElementInspector({ draft, cell, locale, kindLabel, portalId, gro
     {(element.kind === 'toggleWall' || element.kind === 'switch') && groupFields()}
     {portal && <>
       <label>{ko ? '포털 쌍 ID' : 'Portal pair ID'}<input value={portalId} list="existing-portals" maxLength={24} data-testid="portal-id" onChange={event => onPortalId(event.target.value)} /></label>
-      <div className="link-summary" data-testid="element-links"><strong>{portal.ends.length === 2 ? (ko ? '연결됨' : 'Linked') : (ko ? '연결 미완성' : 'Incomplete')}</strong><ul>{portal.ends.map(end => <li key={positionId(end)} aria-current={samePosition(end, cell) || undefined}>{at(end)}{samePosition(end, cell) ? (ko ? ' · 선택됨' : ' · selected') : ''}</li>)}</ul></div>
-      {portalProblem ? <p className="inspector-problem" role="alert">{portalProblem}</p> : <p>{ko ? '한쪽 끝에 들어가면 즉시 다른 끝으로 이동합니다.' : 'Entering one end moves the agent to the other end.'}</p>}
+      <div className="segmented" role="group" aria-label={ko ? '포털 방향' : 'Portal direction'}>
+        <span>{ko ? '방향' : 'Direction'}</span>
+        <button type="button" aria-pressed={!portal.directed} onClick={() => onPortalDirected(false)} data-testid="portal-two-way">{ko ? '양방향' : 'Two-way'}</button>
+        <button type="button" aria-pressed={!!portal.directed} onClick={() => onPortalDirected(true)} data-testid="portal-one-way">{ko ? '단방향' : 'One-way'}</button>
+      </div>
+      <div className="link-summary" data-testid="element-links"><strong>{portal.ends.length === 2 ? (portal.directed ? (ko ? '연결됨 · A → B' : 'Linked · A → B') : (ko ? '연결됨 · 양방향' : 'Linked · two-way')) : (ko ? '연결 미완성' : 'Incomplete')}</strong><ul>{portal.ends.map((end, index) => <li key={positionId(end)} aria-current={samePosition(end, cell) || undefined}>{portal.directed && <span className="state-chip" data-testid={index === 0 ? 'portal-entrance' : 'portal-exit'}>{index === 0 ? (ko ? '입구 A' : 'Entrance A') : (ko ? '출구 B' : 'Exit B')}</span>}{at(end)}{samePosition(end, cell) ? (ko ? ' · 선택됨' : ' · selected') : ''}</li>)}</ul></div>
+      {portal.directed && portal.ends.length === 2 && <button type="button" onClick={onFlipPortal} data-testid="portal-flip">{ko ? '방향 뒤집기 (A ↔ B)' : 'Flip direction (A ↔ B)'}</button>}
+      {portalProblem ? <p className="inspector-problem" role="alert">{portalProblem}</p> : <p>{portal.directed ? (ko ? '입구 A에 들어가면 출구 B로 이동합니다. B로 들어가도 A로 돌아가지 않습니다.' : 'Entering A moves the agent to B. Walking into B does not send it back to A.') : (ko ? '한쪽 끝에 들어가면 즉시 다른 끝으로 이동합니다.' : 'Entering one end moves the agent to the other end.')}</p>}
     </>}
     {element.kind === 'start' && <p>{ko ? '에이전트가 매 에피소드를 시작하는 칸입니다.' : 'Every episode starts on this cell.'}</p>}
     <button type="button" className="danger-button" disabled={!!deleteBlocked} title={deleteBlocked ?? undefined} onClick={onDelete} data-testid="element-delete">{ko ? '이 요소 삭제' : 'Delete element'}</button>

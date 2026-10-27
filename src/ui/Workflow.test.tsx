@@ -223,9 +223,9 @@ describe('Editor history and keyboard', () => {
     expect((screen.getByTestId('env-editor-apply') as HTMLButtonElement).disabled).toBe(true)
     click('editor-undo'); expect((screen.getByTestId('env-editor-apply') as HTMLButtonElement).disabled).toBe(false)
   })
-  it('shows 11 tools, undoes multiple edits, clears redo on new edit and retains history after navigation', () => {
+  it('shows 12 tools, undoes multiple edits, clears redo on new edit and retains history after navigation', () => {
     render(<App />); click('nav-editor')
-    expect(editor().getAllByTestId(/^env-editor-mode-/)).toHaveLength(11)
+    expect(editor().getAllByTestId(/^env-editor-mode-/)).toHaveLength(12)
     expect(screen.queryByTestId('special-tools-toggle')).toBeNull()
     expect((screen.getByTestId('editor-undo') as HTMLButtonElement).disabled).toBe(true)
     fireEvent.click(cell('1,1')); fireEvent.click(cell('2,2'))
