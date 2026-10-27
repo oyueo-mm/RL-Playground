@@ -1,5 +1,6 @@
 import type { EnvRenderModel } from '../../core/types/render'
 import { positionId, toggleWallOpen } from '../../core/environments/gridworld/features'
+import { FRAGILE_CRACKS, FRAGILE_SLAB } from './fragileGlyph'
 
 const arrows = ['↑', '↓', '←', '→']
 // Drawn as shapes rather than glyphs: repeated clicks on a text arrow selected it like page text.
@@ -40,7 +41,14 @@ export function FeatureOverlay({ model, cellSize: s, selected }: { model: EnvRen
       <g transform={`translate(${center(tile).x} ${center(tile).y}) rotate(${arrowRotation[tile.direction]}) scale(${s / 48})`} fill="#5d7fa5" stroke="#5d7fa5"><path d="M0 13V-4" strokeWidth={4} strokeLinecap="round" fill="none" /><path d="M0 -15L-10 -2H10Z" strokeWidth={1.5} strokeLinejoin="round" /></g></g>)}
     {features.fragiles?.map(tile => {
       const collapsed = model.collapsedFragiles?.includes(positionId(tile)) ?? false
-      return <g key={positionId(tile)} data-testid={`fragile-${positionId(tile)}`} data-collapsed={collapsed}><title>{collapsed ? 'Collapsed: blocked' : 'Fragile: collapses after departure'}</title><rect x={tile.x * s + 1} y={tile.y * s + 1} width={s - 2} height={s - 2} fill={collapsed ? '#707975' : '#fff4db'} /><path d={`M${(tile.x + .3) * s} ${(tile.y + .1) * s}l${s * .2} ${s * .28}l${-s * .14} ${s * .2}l${s * .22} ${s * .32}`} fill="none" stroke={collapsed ? '#edf0ed' : '#b78b45'} strokeWidth={s * .06} /></g>
+      return <g key={positionId(tile)} data-testid={`fragile-${positionId(tile)}`} data-collapsed={collapsed}><title>{collapsed ? 'Collapsed: blocked' : 'Fragile: collapses after departure'}</title>
+        <g transform={`translate(${tile.x * s} ${tile.y * s}) scale(${s / 24})`} strokeLinecap="round" strokeLinejoin="round">
+          {/* Intact: a cream slab with fine cracks. Collapsed: a dark, blocked slab with wide light cracks and a broken (dashed) edge. */}
+          <rect x={1.5} y={1.5} width={21} height={21} fill={collapsed ? '#707975' : '#fff4db'} />
+          <path d={FRAGILE_SLAB} fill="none" stroke={collapsed ? '#4f5753' : '#c9a15b'} strokeWidth={collapsed ? 1.4 : 1} strokeDasharray={collapsed ? '3 2' : undefined} />
+          <path d={FRAGILE_CRACKS} fill="none" stroke={collapsed ? '#edf0ed' : '#a87c34'} strokeWidth={collapsed ? 2.2 : 1.5} />
+          {collapsed && <circle cx={12} cy={11} r={2} fill="#edf0ed" />}
+        </g></g>
     })}
     {[...(features.switches ?? []).map(tile => ({ ...tile, type: 'switch', initialOpen: false })), ...(features.toggleWalls ?? []).map(tile => ({ ...tile, type: 'toggle', initialOpen: !!tile.initialOpen }))].map(tile => {
       const toggled = model.openGroups?.includes(tile.groupId) ?? false
