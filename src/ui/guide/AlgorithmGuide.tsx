@@ -31,8 +31,8 @@ export function AlgorithmGuide({ locale, onStart }: { locale: Locale; onStart: (
         ].map(row => <tr key={row[0]}>{row.map((cell, i) => i === 0 ? <th key={i}>{cell}</th> : <td key={i}>{cell}</td>)}</tr>)}</tbody></table></div></>}
         {index === 5 && <ExplorationSlider ko={ko} />}
         <button className="primary-button" onClick={onStart}>{ko ? '실험실에서 직접 확인하기' : 'Try it in the lab'} ↗</button>
-        <StudyResources chapter={index} locale={locale} />
         <nav className="chapter-pager" aria-label={ko ? '이전 다음 단원' : 'Previous and next chapters'}>{index > 0 && <button onClick={() => navigate(index - 1)}>← {ko ? '이전 장' : 'Previous'} · {chapterTitles[locale][index - 1]}</button>}{index < 5 ? <button onClick={() => navigate(index + 1)}>{ko ? '다음 장' : 'Next'} · {chapterTitles[locale][index + 1]} →</button> : <button onClick={() => { const roadmap = document.getElementById('learning-roadmap'); roadmap?.scrollIntoView({ block: 'start' }); roadmap?.focus({ preventScroll: true }) }}>{ko ? '학습 로드맵으로' : 'Learning roadmap'} →</button>}</nav>
+        <StudyResources chapter={index} locale={locale} />
         {index === 5 && <LearningRoadmap locale={locale} onStart={onStart} />}
       </section>)}
     </article>

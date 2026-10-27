@@ -33,3 +33,18 @@ describe('Algorithm curriculum', () => {
     expect(calculateUpdate(2, -1, .5, .9, 1, done).updated).toBeCloseTo(sarsa.computeUpdate(transition, agent, hp, { action: 1, wasExploration: true, candidateValues: [4, 1, 0, 0] }).updatedEstimate)
   })
 })
+
+describe('V4 chapter layout', () => {
+  it.each(['ko', 'en'] as const)('places previous/next navigation between the body and the %s references in every chapter', locale => {
+    render(<AlgorithmGuide locale={locale} onStart={() => {}} />)
+    for (let index = 0; index < 6; index++) {
+      const section = document.getElementById(`chapter-${index}`)!
+      const pager = section.querySelector('.chapter-pager')!, resources = section.querySelector('.study-resources')!
+      expect(pager).toBeTruthy(); expect(resources).toBeTruthy()
+      expect(pager.compareDocumentPosition(resources) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      expect(section.querySelector('.lesson-intro')!.compareDocumentPosition(pager) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    }
+    const last = document.getElementById('chapter-5')!
+    expect(last.querySelector('.chapter-pager')!.textContent).toContain(locale === 'ko' ? '학습 로드맵으로' : 'Learning roadmap')
+  })
+})
