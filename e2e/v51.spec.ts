@@ -178,3 +178,52 @@ test('desktop keeps the single properties panel with files next to the map setti
   await expect(editor.getByRole('tablist')).toHaveCount(0)
   for (const id of ['env-editor-width-input', 'env-editor-import', 'env-editor-export', 'env-editor-reset']) await expect(editor.getByTestId(id)).toBeVisible()
 })
+
+type Box = { x: number; y: number; width: number; height: number }
+const same = (a: Box, b: Box, what: string) => { for (const k of ['x', 'y', 'width', 'height'] as const) expect(Math.abs(a[k] - b[k]), `${what}.${k}: ${a[k]} vs ${b[k]}`).toBeLessThanOrEqual(1) }
+
+test('the completion toast floats over the grid: grid, camera and toolbar never move or resize', async ({ page }, info) => {
+  test.setTimeout(150000)
+  const sizes = info.project.name === 'mobile' ? PHONES : [[768, 1024], [1440, 900]] as const
+  page.on('dialog', d => d.accept()); await page.goto('./'); await loadMap(page, config(5, 5)); await fastTraining(page)
+  const area = page.getByTestId('learning-grid')
+  const measure = async () => {
+    const box = async (loc: ReturnType<Page['locator']>) => (await loc.boundingBox())!
+    return { stack: await box(area.getByTestId('grid-stack')), viewport: await box(area.getByTestId('grid-viewport')), toolbar: await box(area.locator('.floating-toolbar')), zoom: await area.getByTestId('grid-stack').evaluate(el => getComputedStyle(el).transform + getComputedStyle(el).width) }
+  }
+  for (const [width, height] of sizes) {
+    await page.setViewportSize({ width, height }); await page.waitForTimeout(300); await setEpisodes(page, 8)
+    await expect(page.getByTestId('environment-applied')).toBeVisible() // the map-applied notice is still showing
+    const before = await measure()
+    await page.screenshot({ animations: 'disabled', path: `docs/screenshots/v51/fixed-before-${width}x${height}.png` })
+    await page.getByTestId('playback-run-episode').click()
+    const toast = page.getByTestId('training-complete'); await expect(toast).toBeVisible()
+    const during = await measure()
+    same(before.stack, during.stack, 'grid'); same(before.viewport, during.viewport, 'viewport'); same(before.toolbar, during.toolbar, 'toolbar'); expect(during.zoom).toBe(before.zoom)
+    // top centre of the grid area, below the toolbar, inside the screen
+    const t = (await toast.boundingBox())!, v = during.viewport
+    expect(Math.abs(t.x + t.width / 2 - (v.x + v.width / 2))).toBeLessThanOrEqual(width <= 430 ? 40 : 6)
+    expect(t.y).toBeGreaterThanOrEqual(during.toolbar.y + during.toolbar.height - 1); expect(t.x).toBeGreaterThanOrEqual(0); expect(t.x + t.width).toBeLessThanOrEqual(width + 1)
+    await page.screenshot({ animations: 'disabled', path: `docs/screenshots/v51/fixed-during-${width}x${height}.png` })
+    await page.getByTestId('completion-close').click(); await expect(toast).toHaveCount(0)
+    const after = await measure()
+    same(before.stack, after.stack, 'grid after close'); same(before.viewport, after.viewport, 'viewport after close'); same(before.toolbar, after.toolbar, 'toolbar after close')
+  }
+})
+
+test('Turbo completion toast does not move the dashboard or toolbar either', async ({ page }) => {
+  test.setTimeout(120000)
+  page.on('dialog', d => d.accept()); await page.goto('./'); await loadMap(page, config(4, 4)); await setEpisodes(page, 40)
+  const area = page.getByTestId('learning-grid')
+  await page.getByTestId('training-mode').selectOption('turbo')
+  const bars = async () => ({ bar: (await area.locator('.floating-toolbar').boundingBox())!, stage: (await area.locator('.workspace-stage').boundingBox())! })
+  const before = await bars()
+  await page.getByTestId('playback-run-episode').click()
+  const toast = page.getByTestId('training-complete'); await expect(toast).toBeVisible()
+  const dash = page.getByTestId('turbo-dashboard'); await expect(dash).toContainText('완료')
+  const during = await bars(), dashBox = (await dash.boundingBox())!
+  same(before.bar, during.bar, 'toolbar'); same(before.stage, during.stage, 'stage')
+  await page.waitForTimeout(300); same(dashBox, (await dash.boundingBox())!, 'dashboard')
+  await page.getByTestId('completion-close').click(); await expect(toast).toHaveCount(0)
+  same(dashBox, (await dash.boundingBox())!, 'dashboard after close')
+})

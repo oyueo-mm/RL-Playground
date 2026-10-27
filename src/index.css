@@ -535,7 +535,9 @@ button, a, input, select { -webkit-tap-highlight-color: transparent; }
 /* Camera chrome occupies layout space; the map, minimap, HUD and controls never stack. */
 .camera-shell { display:flex; flex-direction:column; gap:8px; }
 .workspace-stage { display:flex; flex-direction:column; gap:8px; }
-.workspace-stage > .workspace-feedback { position:static; align-self:flex-end; flex-shrink:0; }
+/* Feedback (map applied, resource pause, training complete) floats over the top centre of the grid area and never takes layout space, so the grid cannot move or shrink when it appears or closes. */
+.workspace-stage > .workspace-feedback { position:absolute; top:calc(var(--toolbar-space,100px) + 6px); left:50%; right:auto; transform:translateX(-50%); width:max-content; max-width:calc(100% - 24px); align-items:center; pointer-events:none; z-index:16; }
+.workspace-stage > .workspace-feedback > * { pointer-events:auto; }
 .workspace-feedback:empty { display:none; }
 .fullscreen-simulator .toolbar-popover { max-height:calc(100% - var(--toolbar-space,100px) - 130px); }
 .camera-shell > .camera-viewport { flex:1; height:auto; min-height:0; }
