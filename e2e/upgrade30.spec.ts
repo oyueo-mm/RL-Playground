@@ -76,7 +76,7 @@ test('policy playback starts Normal, changes live and paused, restores training 
  await loadMap(page,{...config(8,8),start:{x:0,y:7},goals:[{x:0,y:0}]})
  const slider=page.getByTestId('speed-slider');await slider.fill('100')
  await page.clock.pauseAt(await page.evaluate(()=>Date.now()+1000))
- await page.getByTestId('playback-run-greedy').click();await expect(slider).toBeEnabled();await expect(slider).toHaveValue('45')
+ await page.getByTestId('playback-run-greedy').click();await expect(slider).toBeEnabled();await expect(slider).toHaveValue('33')
  const marker=page.getByTestId('learning-grid').getByTestId('agent-marker'),first=await marker.getAttribute('cy')
  await slider.fill('30');await page.clock.runFor(200);await expect(marker).toHaveAttribute('cy',first!)
  await page.clock.runFor(40);expect(await marker.getAttribute('cy')).not.toBe(first)

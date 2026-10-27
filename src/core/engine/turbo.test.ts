@@ -4,7 +4,7 @@ import { createDefaultGridWorldConfig, GridWorldEnv } from '../environments/grid
 import { TabularQAgent } from '../agents/TabularQAgent'
 import type { TimerSource } from './Scheduler'
 import { Scheduler } from './Scheduler'
-import { sliderToSpeed } from '../../viz/controls/speedSlider'
+import { GREEDY_PLAYBACK_SPEED, sliderToSpeed } from '../../viz/controls/speedSlider'
 
 function timer() {
   let time=0,id=0
@@ -58,7 +58,7 @@ it('retains shared Q and completed statistics on stop, clears on reset and resum
   expect(trained.resources!.recordedSteps).toBeLessThanOrEqual(10)
   expect(engine.getSpeed()).toEqual(speed)
   engine.run({episodes:1,greedy:true})
-  expect(engine.getSnapshot().turbo).toBeUndefined();expect(engine.getSpeed()).toEqual(sliderToSpeed(45))
+  expect(engine.getSnapshot().turbo).toBeUndefined();expect(engine.getSpeed()).toEqual(GREEDY_PLAYBACK_SPEED)
   engine.setSpeed(sliderToSpeed(60));engine.pause();engine.resume();engine.restartEpisode()
   expect(engine.getSpeed()).toEqual(speed);expect(engine.getSnapshot().agentSnapshot).toEqual(trained.agentSnapshot)
   engine.run({episodes:1000,turbo:true});engine.pause()

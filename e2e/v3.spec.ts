@@ -37,7 +37,7 @@ test('V3 very-hard gallery shows six maps with real previews, metadata and appli
       await gallery.getByTestId(`preset-${stem}`).click()
       await gallery.getByRole('button', { name: '맵 적용하기', exact: true }).click()
       await expectFits(page)
-      await expect(page.getByTestId('episode-count-input')).toHaveValue('2000')
+      await expect(page.getByTestId('episode-count-input')).toHaveValue('5000')
       if (stem === '30_the_endless_labyrinth') await page.screenshot({ animations: 'disabled', path: `docs/screenshots/v3/learning-30-${width}x${height}.png` })
       await navigate(page, 'presets'); await gallery.getByRole('tab', { name: /매우 어려움/ }).click()
     }

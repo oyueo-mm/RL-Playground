@@ -4,7 +4,7 @@ import type { TurboProgress, TurboRunState } from './turbo'
 // by step(), runEpisode(), and run(): they differ only in how many times it's called
 // and when the loop stops, per §5.1.
 
-import { sliderToSpeed } from '../../viz/controls/speedSlider'
+import { GREEDY_PLAYBACK_SPEED } from '../../viz/controls/speedSlider'
 import { TabularQAgent } from '../agents/TabularQAgent'
 import { TabularValueAgent } from '../agents/TabularValueAgent'
 import type { Algorithm } from '../algorithms/Algorithm'
@@ -331,7 +331,7 @@ export class SimulationEngine {
         targetEpisodes:episodes!,elapsedMs:0,activeSince:this.timer.now()}
     }
     this.scheduler.setTurbo(this.turboActive)
-    if (greedy) { this.pendingAction = null; this.savedTrainingSpeed = this.scheduler.getSpeed(); this.scheduler.setSpeed(sliderToSpeed(45)) }
+    if (greedy) { this.pendingAction = null; this.savedTrainingSpeed = this.scheduler.getSpeed(); this.scheduler.setSpeed({ ...GREEDY_PLAYBACK_SPEED }) }
     this.runMode = mode
     this.remainingEpisodes = episodes
     this.greedyRun = greedy

@@ -15,3 +15,7 @@ export function speedToSlider(speed: SpeedSetting): number {
     : 81 + 19 * Math.log(Math.max(1, speed.stepsPerFrame)) / Math.log(100)
   return Math.max(1, Math.min(100, Math.round(position)))
 }
+
+/** Slider position whose interval mapping is ~205 ms/step; the default pace for Greedy result playback. */
+export const GREEDY_PLAYBACK_SLIDER = 33
+export const GREEDY_PLAYBACK_SPEED: SpeedSetting = sliderToSpeed(GREEDY_PLAYBACK_SLIDER)

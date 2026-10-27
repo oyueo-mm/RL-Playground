@@ -2,14 +2,14 @@ import { expect,it,vi } from 'vitest'
 import { SimulationEngine } from './SimulationEngine'
 import { createDefaultGridWorldConfig } from '../environments/gridworld/GridWorldEnv'
 import { Scheduler,type TimerSource } from './Scheduler'
-import { sliderToSpeed } from '../../viz/controls/speedSlider'
+import { GREEDY_PLAYBACK_SPEED, sliderToSpeed } from '../../viz/controls/speedSlider'
 
 function timer(){let clock=0,next=()=>{};const source:TimerSource={now:()=>clock,setTimeout:fn=>{next=fn;return 1},clearTimeout:()=>{},requestAnimationFrame:fn=>{next=fn;return 2},cancelAnimationFrame:()=>{}};return{source,fire:()=>{clock+=250;next()}}}
 it.each(['q-learning','sarsa'])('%s policy permits repeats until max steps, changes speed live and preserves Q and training speed',algorithmId=>{
  const t=timer(),engine=new SimulationEngine({algorithmId,envConfig:{...createDefaultGridWorldConfig(),start:{x:0,y:5}},resourceBudget:{maxEpisodeSteps:40},timerSource:t.source,speed:{mode:'batch',stepsPerFrame:100}})
  const before=engine.getSnapshot().agentSnapshot
  engine.run({episodes:1,greedy:true})
- expect(engine.getSpeed()).toEqual(sliderToSpeed(45))
+ expect(engine.getSpeed()).toEqual(GREEDY_PLAYBACK_SPEED)
  const steps=engine.getResourceMetrics().totalSteps
  engine.setSpeed(sliderToSpeed(60));expect(engine.getResourceMetrics().totalSteps).toBe(steps)
  expect(engine.getSpeed()).toEqual(sliderToSpeed(60))

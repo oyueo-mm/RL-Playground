@@ -32,7 +32,7 @@ test('V2 rewards, difficulty and apply/edit workflows fit the requested viewport
     await page.screenshot({path:info.outputPath(`v2-settings-${width}x${height}.png`),animations:'disabled'})
     await page.getByRole('button',{name:'설정',exact:true}).click()
     await page.getByTestId('speed-slider').fill('90')
-    await page.getByTestId('playback-run-greedy').click();await expect(page.getByTestId('speed-slider')).toHaveValue('45')
+    await page.getByTestId('playback-run-greedy').click();await expect(page.getByTestId('speed-slider')).toHaveValue('33')
     await page.getByTestId('playback-pause').click()
     await expect(page.getByTestId('last-reward')).not.toHaveText('—')
     await page.getByTestId('speed-slider').fill('60');await expect(page.getByTestId('speed-slider')).toHaveValue('60')

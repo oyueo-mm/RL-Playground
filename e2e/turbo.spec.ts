@@ -68,7 +68,7 @@ test('reward defaults, on-demand rules and layout slots fit all requested map si
 test('difficulty defaults, turbo controls, navigation safety, completion and policy share the trained Q-table',async({page},info)=>{
   test.setTimeout(120000);page.on('dialog',d=>d.accept());await page.goto('./')
   await navigate(page,'presets');await page.getByTestId('preset-30_the_endless_labyrinth').click();await page.getByRole('button',{name:'맵 적용하기',exact:true}).click()
-  await expect(page.getByTestId('episode-count-input')).toHaveValue('2000')
+  await expect(page.getByTestId('episode-count-input')).toHaveValue('5000')
   await page.getByTestId('training-mode').selectOption('turbo')
   await page.getByTestId('playback-run-episode').click()
   await expect(page.getByTestId('turbo-dashboard')).toBeVisible();await expect(page.getByTestId('learning-grid').getByTestId('grid-svg')).toHaveCount(0)
@@ -80,7 +80,7 @@ test('difficulty defaults, turbo controls, navigation safety, completion and pol
   await navigate(page,'results');await expect(page.getByTestId('turbo-results')).toContainText('일시정지')
   await page.getByRole('button',{name:'학습 중단 후 분석 보기',exact:true}).click();await expect(page.getByTestId('analysis-panel')).toBeVisible()
   await navigate(page,'environment');await expect(page.getByTestId('turbo-dashboard')).toContainText('중단')
-  await page.getByTestId('playback-run-greedy').click();await expect(page.getByTestId('turbo-dashboard')).toHaveCount(0);await expect(page.getByTestId('speed-slider')).toHaveValue('45');await expect(page.getByTestId('learning-grid').getByTestId('grid-svg')).toBeVisible()
+  await page.getByTestId('playback-run-greedy').click();await expect(page.getByTestId('turbo-dashboard')).toHaveCount(0);await expect(page.getByTestId('speed-slider')).toHaveValue('33');await expect(page.getByTestId('learning-grid').getByTestId('grid-svg')).toBeVisible()
   await page.getByTestId('playback-stop').click()
   await loadMap(page,{...config(3,3),start:{x:0,y:1},goals:[{x:0,y:0}]})
   await page.getByRole('button',{name:'설정',exact:true}).click();await page.getByTestId('episode-count-input').fill('5');await page.getByTestId('epsilon-number').fill('0');await page.getByRole('button',{name:'설정',exact:true}).click()

@@ -90,7 +90,7 @@ describe('Preset and settings workflow', () => {
     click('playback-run-greedy')
     expect(screen.queryByTestId('turbo-dashboard')).toBeNull()
     expect(within(screen.getByTestId('learning-grid')).getByTestId('grid-svg')).toBeTruthy()
-    expect((screen.getByTestId('speed-slider') as HTMLInputElement).value).toBe('45')
+    expect((screen.getByTestId('speed-slider') as HTMLInputElement).value).toBe('33')
     click('playback-stop');expect(engine.getSnapshot().agentSnapshot).toEqual(before)
     expect((screen.getByTestId('toggle-reward-animation') as HTMLInputElement).checked).toBe(true)
   })

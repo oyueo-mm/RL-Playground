@@ -1,5 +1,5 @@
 const episodeDefaults: Readonly<Record<string, number>> = {
-  'very-easy':100, easy:250, medium:500, hard:1000, 'very-hard':2000,
+  'very-easy':500, easy:1000, medium:2000, hard:3000, 'very-hard':5000,
 }
 
 /** Official difficulty metadata only. Custom/unknown environments retain 250. */
