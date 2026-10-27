@@ -608,6 +608,9 @@ export function translateValidationError(message: string, locale: Locale): strin
     'Bomb penalties must be finite numbers.': '폭탄별 페널티는 유한한 숫자여야 합니다.',
     'Toggle wall initial state must be open or closed.': '토글 벽의 초기 상태는 열림 또는 닫힘이어야 합니다.',
     'Per-element rewards and initial gate states require schema version 3.': '개별 보상·토글 벽 초기 상태는 JSON 버전 3이 필요합니다.',
+    'Swamps and one-way portals require schema version 4.': '늪과 단방향 포털은 JSON 버전 4가 필요합니다.',
+    'Swamp costs must be finite numbers no greater than 0.': '늪 비용은 0 이하의 유한한 숫자여야 합니다.',
+    'Portal direction must be one-way or omitted.': '포털 방향 값이 올바르지 않습니다.',
   }
   if (featureMessages[message]) return featureMessages[message]
   if (message.startsWith('Overlapping map elements at ')) return `같은 셀에 여러 요소가 겹칩니다: ${message.slice(28)}`

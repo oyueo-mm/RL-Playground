@@ -3,7 +3,7 @@ import { positionId } from '../../core/environments/gridworld/features'
 import { removeFeaturesAt, samePosition, type EditMode, type GridEditorDraft } from './envEditorDraft'
 
 export type ElementKind = Exclude<EditMode, 'select' | 'erase'>
-export interface MapElement { kind: ElementKind; portalId?: string; groupId?: string; direction?: Direction; initialOpen?: boolean; reward?: number; penalty?: number }
+export interface MapElement { kind: ElementKind; portalId?: string; groupId?: string; direction?: Direction; initialOpen?: boolean; reward?: number; penalty?: number; cost?: number; directed?: boolean }
 export type EditError = 'start' | 'last-goal' | 'portal-complete' | 'portal-merge' | 'bounds'
 export interface EditResult { draft: GridEditorDraft; error?: EditError }
 
@@ -15,7 +15,9 @@ export function elementAt(d: GridEditorDraft, p: Position): MapElement | null {
   const bomb = d.bombs.find(tile => samePosition(tile, p))
   if (bomb) return bomb.penalty === undefined ? { kind: 'bomb' } : { kind: 'bomb', penalty: bomb.penalty }
   const portal = d.portals?.find(pair => pair.ends.some(end => samePosition(end, p)))
-  if (portal) return { kind: 'portal', portalId: portal.id }
+  if (portal) return { kind: 'portal', portalId: portal.id, ...(portal.directed ? { directed: true } : {}) }
+  const swamp = d.terrains?.find(tile => samePosition(tile, p))
+  if (swamp) return swamp.cost === undefined ? { kind: 'terrain' } : { kind: 'terrain', cost: swamp.cost }
   const way = d.oneWays?.find(tile => samePosition(tile, p))
   if (way) return { kind: 'oneWay', direction: way.direction }
   const pressed = d.switches?.find(tile => samePosition(tile, p))
@@ -36,10 +38,11 @@ function insert(d: GridEditorDraft, p: Position, element: MapElement): GridEdito
     case 'oneWay': return { ...d, oneWays: [...(d.oneWays ?? []), { ...p, direction: element.direction ?? 3 }] }
     case 'switch': return { ...d, switches: [...(d.switches ?? []), { ...p, groupId: element.groupId ?? 'G1' }] }
     case 'toggleWall': return { ...d, toggleWalls: [...(d.toggleWalls ?? []), { ...p, groupId: element.groupId ?? 'G1', ...(element.initialOpen ? { initialOpen: true } : {}) }] }
+    case 'terrain': return { ...d, terrains: [...(d.terrains ?? []), element.cost === undefined ? p : { ...p, cost: element.cost }] }
     case 'portal': {
       const id = element.portalId ?? 'P1'
       const pair = d.portals?.find(pair => pair.id === id)
-      return { ...d, portals: pair ? d.portals?.map(pair => pair.id === id ? { ...pair, ends: [...pair.ends, p] } : pair) : [...(d.portals ?? []), { id, ends: [p] }] }
+      return { ...d, portals: pair ? d.portals?.map(pair => pair.id === id ? { ...pair, ends: [...pair.ends, p] } : pair) : [...(d.portals ?? []), { id, ends: [p], ...(element.directed ? { directed: true as const } : {}) }] }
     }
   }
 }
@@ -57,7 +60,7 @@ export function placeElement(d: GridEditorDraft, p: Position, incoming: MapEleme
     // V4: re-clicking a toggle wall cycles its initial state closed -> open -> closed.
     if (incoming.kind === 'toggleWall') return { draft: setToggleInitialOpen(d, p, !old.initialOpen) }
     if (incoming.kind === 'goal' && d.goals.length === 1) return { draft: d, error: 'last-goal' }
-    if (['wall', 'bomb', 'goal'].includes(incoming.kind)) return { draft: erase(d, p) }
+    if (['wall', 'bomb', 'goal', 'terrain'].includes(incoming.kind)) return { draft: erase(d, p) }
     return { draft: d }
   }
   if (incoming.kind === 'portal' && (d.portals?.find(pair => pair.id === (incoming.portalId ?? 'P1'))?.ends.length ?? 0) >= 2) return { draft: d, error: 'portal-complete' }
@@ -73,7 +76,34 @@ export function moveElement(d: GridEditorDraft, from: Position, to: Position): E
   const target = elementAt(d, to)
   if (target?.kind === 'start') return { draft: d, error: 'start' }
   if (element.kind === 'portal' && target?.kind === 'portal' && element.portalId === target.portalId) return { draft: d, error: 'portal-merge' }
+  if (element.kind === 'portal') {
+    // Move an endpoint in place: ends[0] is the entrance A and ends[1] the exit B of a one-way pair, so the slot must not change.
+    const cleared = erase(d, to)
+    return { draft: { ...cleared, portals: cleared.portals?.map(pair => ({ ...pair, ends: pair.ends.map(end => samePosition(end, from) ? to : end) })) } }
+  }
   return { draft: insert(erase(erase(d, from), to), to, element) }
+}
+/** V5 — undefined restores inheritance from the map-wide swamp cost. */
+export function setTerrainCost(d: GridEditorDraft, p: Position, cost: number | undefined): GridEditorDraft {
+  return { ...d, terrains: d.terrains?.map(tile => {
+    if (!samePosition(tile, p)) return tile
+    const copy = { ...tile }
+    delete copy.cost
+    return cost === undefined ? copy : { ...copy, cost }
+  }) }
+}
+/** V5 — switch a portal pair between two-way and one-way (A -> B). Two-way is stored by omission. */
+export function setPortalDirected(d: GridEditorDraft, id: string, directed: boolean): GridEditorDraft {
+  return { ...d, portals: d.portals?.map(pair => {
+    if (pair.id !== id) return pair
+    const copy = { ...pair }
+    delete copy.directed
+    return directed ? { ...copy, directed: true as const } : copy
+  }) }
+}
+/** V5 — swap entrance and exit of a one-way pair (A -> B becomes B -> A). */
+export function flipPortal(d: GridEditorDraft, id: string): GridEditorDraft {
+  return { ...d, portals: d.portals?.map(pair => pair.id === id && pair.ends.length === 2 ? { ...pair, ends: [pair.ends[1], pair.ends[0]] } : pair) }
 }
 export function nextPortalId(d: GridEditorDraft, preferred = ''): string {
   const partial = d.portals?.filter(pair => pair.ends.length === 1)
@@ -118,7 +148,7 @@ export function eraseElement(d: GridEditorDraft, p: Position): EditResult {
 // ---- V4 drag painting ----
 
 /** Tools whose drag continues past the first cell. Start, portals and switches stay single-cell so their links never fan out by accident. */
-export const PAINTABLE_TOOLS: ReadonlySet<EditMode> = new Set<EditMode>(['wall', 'goal', 'bomb', 'fragile', 'oneWay', 'toggleWall', 'erase'])
+export const PAINTABLE_TOOLS: ReadonlySet<EditMode> = new Set<EditMode>(['wall', 'goal', 'bomb', 'fragile', 'oneWay', 'toggleWall', 'terrain', 'erase'])
 export interface Stroke {
   /** null = eraser */
   element: MapElement | null
@@ -133,7 +163,7 @@ export interface Stroke {
 export function beginStroke(d: GridEditorDraft, p: Position, element: MapElement | null): Stroke {
   const old = elementAt(d, p)
   const result = element ? placeElement(d, p, element) : eraseElement(d, p)
-  const removable = element && ['wall', 'goal', 'bomb', 'fragile'].includes(element.kind)
+  const removable = element && ['wall', 'goal', 'bomb', 'fragile', 'terrain'].includes(element.kind)
   return { element, intent: removable && old?.kind === element.kind ? 'remove' : 'place', visited: new Set([positionId(p)]), last: p, draft: result.draft, error: result.error }
 }
 /** Bresenham cells after `from` up to and including `to`, so fast pointer moves leave no gaps. */

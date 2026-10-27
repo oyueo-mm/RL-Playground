@@ -122,7 +122,8 @@ function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onState
   const svgWidth = width * cellSize
   const svgHeight = height * cellSize
   const descriptions = new Map<string, string>()
-  renderModel.features?.portals?.forEach(pair => pair.ends.forEach(end => descriptions.set(`${end.x},${end.y}`, `Portal ${pair.id}`)))
+  renderModel.features?.portals?.forEach(pair => pair.ends.forEach((end, index) => descriptions.set(`${end.x},${end.y}`, pair.directed ? `One-way portal ${pair.id} ${index === 0 ? 'entrance' : 'exit'}` : `Portal ${pair.id}`)))
+  renderModel.features?.terrains?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `Swamp, cost ${tile.cost ?? renderModel.terrainCost ?? -1}`))
   renderModel.features?.oneWays?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `One-way ${['up', 'down', 'left', 'right'][tile.direction]}`))
   renderModel.features?.fragiles?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, renderModel.collapsedFragiles?.includes(`${tile.x},${tile.y}`) ? 'Collapsed fragile tile' : 'Fragile tile'))
   renderModel.features?.switches?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `Switch ${tile.groupId}`))

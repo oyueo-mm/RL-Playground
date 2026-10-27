@@ -73,6 +73,8 @@ export type EnvRenderModel = {
   collapsedFragiles?: StateKey[]
   /** Groups toggled an odd number of times this Episode; each wall's state is toggleWallOpen(tile, toggled). */
   openGroups?: string[]
+  /** V5 — effective map-wide swamp cost; present only when the map has swamps. */
+  terrainCost?: number
 }
 // Future non-grid environments add a member to this union (e.g. { kind: 'graph'; ... }).
 

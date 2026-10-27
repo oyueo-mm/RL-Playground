@@ -10,6 +10,7 @@ const paths: Record<EditMode | 'undo' | 'redo', string> = {
   fragile: 'M3 3h18v18H3ZM11 3l4 6-6 4 5 5-2 3',
   switch: 'M3 13h18v8H3ZM7 13V8h10v5M12 3v3M4 5l2 2m14-2-2 2',
   toggleWall: 'M3 21V3h18v18M8 21V6l10-2v17ZM13 13h1',
+  terrain: 'M3 3h18v18H3ZM5 9c2-2 3 2 5 0s3 2 5 0 3 2 4 0M5 14c2-2 3 2 5 0s3 2 5 0 3 2 4 0M5 19c2-2 3 2 5 0s3 2 5 0',
   erase: 'm3 14 10-11 8 7-10 11H8Zm4-4 8 7M11 21h11',
   undo: 'm8 4-5 5 5 5M3 9h11a7 7 0 0 1 0 14',
   redo: 'm16 4 5 5-5 5m5-5H10a7 7 0 0 0 0 14',

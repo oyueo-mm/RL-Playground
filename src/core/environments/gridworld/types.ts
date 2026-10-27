@@ -4,7 +4,13 @@ export interface Position {
 }
 
 export type Direction = 0 | 1 | 2 | 3
-export interface PortalPair { id: string; ends: Position[] }
+/** `directed: true` makes the pair one-way: entering `ends[0]` (A) lands on `ends[1]` (B); entering B is an ordinary move. Omitted = the original two-way pair. */
+export interface PortalPair { id: string; ends: Position[]; directed?: true }
+/**
+ * V5 — a swamp tile is walkable; entering it pays `cost` instead of `stepReward`. Omitted `cost`
+ * inherits the map-wide `terrainCost` (default -1). Static terrain: it adds no state bits.
+ */
+export interface TerrainTile extends Position { cost?: number }
 export interface OneWayTile extends Position { direction: Direction }
 export interface GroupTile extends Position { groupId: string }
 /**
@@ -23,6 +29,9 @@ export interface GridFeatures {
   fragiles?: Position[]
   switches?: GroupTile[]
   toggleWalls?: ToggleWallTile[]
+  terrains?: TerrainTile[]
+  /** Map-wide default swamp cost; finite and <= 0. Only meaningful (and only exported) with `terrains`. */
+  terrainCost?: number
 }
 
 export interface GridWorldConfig extends GridFeatures {

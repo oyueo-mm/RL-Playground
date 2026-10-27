@@ -32,7 +32,7 @@ import type { Environment, EnvironmentDefinition } from '../Environment'
 import type { StateKey, StepResult } from '../../types/rl'
 import type { EnvRenderModel } from '../../types/render'
 import type { GridWorldConfig, LegacyGridWorldConfigInput, Position } from './types'
-import { bombPenaltyOf, goalRewardOf, groupIds, readFeatures, toggleWallOpen, validateFeatures, positionId } from './features'
+import { bombPenaltyOf, DEFAULT_TERRAIN_COST, goalRewardOf, groupIds, readFeatures, toggleWallOpen, validateFeatures, positionId } from './features'
 
 // 0=up, 1=down, 2=left, 3=right — same encoding as the reference repo (LEGACY_ANALYSIS.md §2).
 const ACTION_SPACE = 4
@@ -145,6 +145,8 @@ export class GridWorldEnv implements Environment {
   /** V4 — resolved per-cell rewards (own override, else the map-wide default). */
   private goalRewards = new Map<string, number>()
   private bombPenalties = new Map<string, number>()
+  /** V5 — resolved swamp entry cost per cell (own cost, else map default, else -1). */
+  private terrainCosts = new Map<string, number>()
   private goalMask = 0n
   private fragileMask = 0n
   private toggleMask = 0n
@@ -158,7 +160,9 @@ export class GridWorldEnv implements Environment {
     this.goalBits = new Map(this.config.goals.map((p, i) => [positionKey(p), 1n << BigInt(i)]))
     this.fragileBits = new Map(this.config.fragiles?.map((p, i) => [positionKey(p), 1n << BigInt(i)]))
     this.groupBits = new Map(groupIds(this.config).map((id, i) => [id, 1n << BigInt(i)]))
-    this.portalIndex = new Map(this.config.portals?.flatMap(pair => [[positionKey(pair.ends[0]), pair.ends[1]], [positionKey(pair.ends[1]), pair.ends[0]]] as [string, Position][]))
+    // V5: a directed pair only registers A -> B; entering B is an ordinary move.
+    this.portalIndex = new Map(this.config.portals?.flatMap(pair => (pair.directed ? [[positionKey(pair.ends[0]), pair.ends[1]]] : [[positionKey(pair.ends[0]), pair.ends[1]], [positionKey(pair.ends[1]), pair.ends[0]]]) as [string, Position][]))
+    this.terrainCosts = new Map(this.config.terrains?.map(tile => [positionKey(tile), tile.cost ?? this.config.terrainCost ?? DEFAULT_TERRAIN_COST]))
     this.directionIndex = new Map(this.config.oneWays?.map(tile => [positionKey(tile), tile.direction]))
     this.switchIndex = new Map(this.config.switches?.map(tile => [positionKey(tile), tile.groupId]))
     this.wallGroups = new Map(this.config.toggleWalls?.map(tile => [positionKey(tile), tile.groupId]))
@@ -289,7 +293,8 @@ export class GridWorldEnv implements Environment {
         next = attempted
       } else {
         next = attempted
-        reward = this.config.stepReward
+        // V5: swamp entry replaces the ordinary step reward; walls, bounds and closed doors never reach here.
+        reward = this.terrainCosts.get(key) ?? this.config.stepReward
       }
     }
 
@@ -339,8 +344,9 @@ export class GridWorldEnv implements Environment {
       // "the true total Goal count" (StatsPanel's "N / M Goals Collected") have a source
       // that cannot shrink as Goals are collected — see render.ts's doc comment.
       allGoals: this.config.goals.map(positionKey),
-      ...(this.config.portals?.length || this.config.oneWays?.length || this.config.fragiles?.length || this.config.switches?.length || this.config.toggleWalls?.length ? {
-        features: { portals: this.config.portals, oneWays: this.config.oneWays, fragiles: this.config.fragiles, switches: this.config.switches, toggleWalls: this.config.toggleWalls },
+      ...(this.config.portals?.length || this.config.oneWays?.length || this.config.fragiles?.length || this.config.switches?.length || this.config.toggleWalls?.length || this.config.terrains?.length ? {
+        features: { portals: this.config.portals, oneWays: this.config.oneWays, fragiles: this.config.fragiles, switches: this.config.switches, toggleWalls: this.config.toggleWalls, terrains: this.config.terrains, ...(this.config.terrainCost !== undefined && this.config.terrains?.length ? { terrainCost: this.config.terrainCost } : {}) },
+        ...(this.config.terrains?.length ? { terrainCost: this.config.terrainCost ?? DEFAULT_TERRAIN_COST } : {}),
         staticWalls: this.config.walls.map(positionKey), collapsedFragiles: [...this.collapsed], openGroups: [...this.openGroups],
       } : {}),
     }

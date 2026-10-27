@@ -1,6 +1,9 @@
-import type { BombTile, GoalTile, GridFeatures, GridWorldConfig, Position, ToggleWallTile } from './types'
+import type { BombTile, GoalTile, GridFeatures, GridWorldConfig, Position, TerrainTile, ToggleWallTile } from './types'
 
-export const FEATURE_FIELDS = ['portals', 'oneWays', 'fragiles', 'switches', 'toggleWalls'] as const
+export const FEATURE_FIELDS = ['portals', 'oneWays', 'fragiles', 'switches', 'toggleWalls', 'terrains'] as const
+/** Swamp cost used when neither the tile nor the map sets one. */
+export const DEFAULT_TERRAIN_COST = -1
+export const validTerrainCost = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value <= 0
 /** Informational complexity threshold, never an admission limit. */
 export const STATE_SPACE_WARNING = 262_144
 export const positionId = (pos: Position) => `${pos.x},${pos.y}`
@@ -16,15 +19,20 @@ export function readFeatures(raw: Record<string, unknown>): GridFeatures {
     for (const item of value) {
       if (name === 'portals') {
         if (!item || !validId(item.id) || !Array.isArray(item.ends) || !item.ends.every(isPosition)) throw new Error('Invalid portal ID or endpoints.')
+        if (item.directed !== undefined && item.directed !== true) throw new Error('Portal direction must be one-way or omitted.')
       } else {
         if (!isPosition(item)) throw new Error(`Invalid ${name} coordinates.`)
         if (name === 'oneWays' && ![0, 1, 2, 3].includes((item as unknown as { direction: number }).direction)) throw new Error('One-way direction must be 0, 1, 2 or 3.')
         if ((name === 'switches' || name === 'toggleWalls') && !validId((item as unknown as { groupId: string }).groupId)) throw new Error('Invalid switch/wall group ID.')
+        if (name === 'terrains' && (item as TerrainTile).cost !== undefined && !validTerrainCost((item as TerrainTile).cost)) throw new Error('Swamp costs must be finite numbers no greater than 0.')
         if (name === 'toggleWalls' && (item as ToggleWallTile).initialOpen !== undefined && typeof (item as ToggleWallTile).initialOpen !== 'boolean') throw new Error('Toggle wall initial state must be open or closed.')
       }
     }
   }
-  return Object.fromEntries(FEATURE_FIELDS.filter(name => Array.isArray(raw[name]) && (raw[name] as unknown[]).length > 0).map(name => [name, structuredClone(raw[name])])) as GridFeatures
+  if (raw.terrainCost !== undefined && !validTerrainCost(raw.terrainCost)) throw new Error('Swamp costs must be finite numbers no greater than 0.')
+  const features = Object.fromEntries(FEATURE_FIELDS.filter(name => Array.isArray(raw[name]) && (raw[name] as unknown[]).length > 0).map(name => [name, structuredClone(raw[name])])) as GridFeatures
+  if (features.terrains?.length && raw.terrainCost !== undefined) features.terrainCost = raw.terrainCost as number
+  return features
 }
 
 /** V4 — a toggle wall's live state: its own initial state flipped once per odd group toggle. */
@@ -39,17 +47,23 @@ export function elementValueErrors(map: { goals: GoalTile[]; bombs: BombTile[] }
   if (map.bombs.some(bomb => bomb.penalty !== undefined && (typeof bomb.penalty !== 'number' || !Number.isFinite(bomb.penalty)))) errors.push('Bomb penalties must be finite numbers.')
   return errors
 }
-/** True when a map uses any V4-only per-element field (drives the export schema version). */
+/** True when a map needs the v4 export schema: swamps or one-way portals. */
+export function hasV5Elements(map: GridFeatures): boolean {
+  return !!map.terrains?.length || !!map.portals?.some(pair => pair.directed)
+}
+/** True when a map uses any v3-only per-element field (goal reward, bomb penalty, initially open door). */
 export function hasElementOverrides(map: { goals: GoalTile[]; bombs: BombTile[] } & GridFeatures): boolean {
   return map.goals.some(goal => goal.reward !== undefined) || map.bombs.some(bomb => bomb.penalty !== undefined) || !!map.toggleWalls?.some(tile => tile.initialOpen)
 }
 
 export function featurePositions(features: GridFeatures): Position[] {
-  return [...(features.portals ?? []).flatMap(pair => pair.ends), ...(features.oneWays ?? []), ...(features.fragiles ?? []), ...(features.switches ?? []), ...(features.toggleWalls ?? [])]
+  return [...(features.portals ?? []).flatMap(pair => pair.ends), ...(features.oneWays ?? []), ...(features.fragiles ?? []), ...(features.switches ?? []), ...(features.toggleWalls ?? []), ...(features.terrains ?? [])]
 }
 /** Drafts may be temporarily invalid; copying must never validate or repair them. */
 export function copyFeatures(features: GridFeatures): GridFeatures {
-  return Object.fromEntries(FEATURE_FIELDS.filter(field => features[field]?.length).map(field => [field, structuredClone(features[field])])) as GridFeatures
+  const copy = Object.fromEntries(FEATURE_FIELDS.filter(field => features[field]?.length).map(field => [field, structuredClone(features[field])])) as GridFeatures
+  if (copy.terrains?.length && features.terrainCost !== undefined) copy.terrainCost = features.terrainCost
+  return copy
 }
 export function groupIds(features: GridFeatures): string[] { return [...new Set((features.toggleWalls ?? []).map(wall => wall.groupId))].sort() }
 export function stateSpaceEstimate(map: Pick<GridWorldConfig, 'width' | 'height' | 'goals'> & GridFeatures): number {

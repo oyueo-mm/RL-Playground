@@ -6,14 +6,34 @@ const arrows = ['↑', '↓', '←', '→']
 const arrowRotation = [0, 180, 270, 90]
 const color = (id: string) => `hsl(${Math.abs([...id].reduce((sum, letter) => (Math.imul(sum, 31) + letter.charCodeAt(0)) | 0, 7)) * 137.508 % 360} 45% 38%)`
 
+const formatCost = (value: number) => `${value < 0 ? '−' : ''}${Math.abs(Number(value.toFixed(2)))}`
+/** Triangle pointing from `from` to `to`, placed just before `to`, so a one-way link reads without colour. */
+function arrowHead(from: { x: number; y: number }, to: { x: number; y: number }, size: number) {
+  const angle = Math.atan2(to.y - from.y, to.x - from.x), tip = { x: to.x - Math.cos(angle) * size * 1.2, y: to.y - Math.sin(angle) * size * 1.2 }
+  const back = (side: number) => `${tip.x - Math.cos(angle) * size + Math.cos(angle + Math.PI / 2) * side * size * .6},${tip.y - Math.sin(angle) * size + Math.sin(angle + Math.PI / 2) * side * size * .6}`
+  return `${tip.x},${tip.y} ${back(1)} ${back(-1)}`
+}
+
 export function FeatureOverlay({ model, cellSize: s, selected }: { model: EnvRenderModel; cellSize: number; selected?: string | null }) {
   const features = model.features ?? {}
   const center = (pos: { x: number; y: number }) => ({ x: (pos.x + 0.5) * s, y: (pos.y + 0.5) * s })
   return <g pointerEvents="none" className="feature-layer">
     {features.portals?.flatMap(pair => {
       const connected = pair.ends.some(end => positionId(end) === selected)
-      return [connected && pair.ends.length === 2 ? <line key={`link-${pair.id}`} x1={center(pair.ends[0]).x} y1={center(pair.ends[0]).y} x2={center(pair.ends[1]).x} y2={center(pair.ends[1]).y} stroke={color(pair.id)} strokeDasharray="4 4" strokeWidth={1.5} vectorEffect="non-scaling-stroke" /> : null,
-        ...pair.ends.map(end => <g key={`${pair.id}-${positionId(end)}`} data-testid={`portal-${positionId(end)}`}><title>{`Portal ${pair.id}`}</title><rect x={end.x * s + 1} y={end.y * s + 1} width={s - 2} height={s - 2} fill="#f2eff9" /><text {...center(end)} textAnchor="middle" dominantBaseline="central" fontSize={s * .47} fill={color(pair.id)}>◎</text><text x={(end.x + .5) * s} y={(end.y + .91) * s} textAnchor="middle" fontSize={s * .18} fill={color(pair.id)}>{pair.id.slice(0, 4)}</text></g>)]
+      const complete = pair.ends.length === 2
+      return [connected && complete ? <line key={`link-${pair.id}`} x1={center(pair.ends[0]).x} y1={center(pair.ends[0]).y} x2={center(pair.ends[1]).x} y2={center(pair.ends[1]).y} stroke={color(pair.id)} strokeDasharray="4 4" strokeWidth={1.5} vectorEffect="non-scaling-stroke" /> : null,
+        connected && complete && pair.directed ? <polygon key={`head-${pair.id}`} data-testid={`portal-arrow-${pair.id}`} points={arrowHead(center(pair.ends[0]), center(pair.ends[1]), s * .16)} fill={color(pair.id)} /> : null,
+        ...pair.ends.map((end, index) => {
+          // One-way pairs: ends[0] is the entrance (A, ◎ with an outgoing arrow label), ends[1] the exit (B, ◉).
+          const role = pair.directed ? (index === 0 ? 'entrance' : 'exit') : undefined
+          return <g key={`${pair.id}-${positionId(end)}`} data-testid={`portal-${positionId(end)}`} data-portal-role={role}><title>{role ? `One-way portal ${pair.id}: ${role}` : `Portal ${pair.id}`}</title><rect x={end.x * s + 1} y={end.y * s + 1} width={s - 2} height={s - 2} fill={role === 'exit' ? '#e8e3f4' : '#f2eff9'} /><text {...center(end)} textAnchor="middle" dominantBaseline="central" fontSize={s * .47} fill={color(pair.id)}>{role === 'exit' ? '◉' : '◎'}</text><text x={(end.x + .5) * s} y={(end.y + .91) * s} textAnchor="middle" fontSize={s * .18} fill={color(pair.id)}>{role === 'entrance' ? `${pair.id.slice(0, 3)}→` : role === 'exit' ? `→${pair.id.slice(0, 3)}` : pair.id.slice(0, 4)}</text></g>
+        })]
+    })}
+    {features.terrains?.map(tile => {
+      const cost = tile.cost ?? model.terrainCost ?? -1
+      return <g key={positionId(tile)} data-testid={`terrain-${positionId(tile)}`} data-cost={cost}><title>{`Swamp: entering costs ${formatCost(cost)}`}</title><rect x={tile.x * s + 1} y={tile.y * s + 1} width={s - 2} height={s - 2} fill="#d3e6e8" />
+        <path d={[.3, .5, .7].map(row => `M${(tile.x + .12) * s} ${(tile.y + row * .86) * s}q${s * .19} ${-s * .14} ${s * .38} 0t${s * .38} 0`).join('')} fill="none" stroke="#3a7f89" strokeWidth={Math.max(1, s * .045)} strokeLinecap="round" />
+        <text x={(tile.x + .5) * s} y={(tile.y + .93) * s} textAnchor="middle" fontSize={s * .19} fontWeight={600} fill="#1f5760" stroke="#d3e6e8" strokeWidth={s * .05} paintOrder="stroke">{formatCost(cost)}</text></g>
     })}
     {features.oneWays?.map(tile => <g key={positionId(tile)} data-testid={`one-way-${positionId(tile)}`} data-direction={tile.direction}><title>{`One-way ${arrows[tile.direction]}`}</title><rect x={tile.x * s + 1} y={tile.y * s + 1} width={s - 2} height={s - 2} fill="#edf3fa" />
       <g transform={`translate(${center(tile).x} ${center(tile).y}) rotate(${arrowRotation[tile.direction]}) scale(${s / 48})`} fill="#5d7fa5" stroke="#5d7fa5"><path d="M0 13V-4" strokeWidth={4} strokeLinecap="round" fill="none" /><path d="M0 -15L-10 -2H10Z" strokeWidth={1.5} strokeLinejoin="round" /></g></g>)}

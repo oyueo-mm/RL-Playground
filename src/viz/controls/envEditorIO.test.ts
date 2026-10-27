@@ -23,7 +23,7 @@ describe('envEditorIO — draftToExportFile / serializeEnvExport', () => {
     const file = draftToExportFile(sampleDraft())
     // V4: maps without per-element fields keep exporting as version 2 (lowest representable).
     expect(file.version).toBe(2)
-    expect(ENV_EXPORT_VERSION).toBe(3)
+    expect(ENV_EXPORT_VERSION).toBe(4)
     expect(file.type).toBe(ENV_EXPORT_TYPE)
     expect(file.width).toBe(4)
     expect(file.height).toBe(4)

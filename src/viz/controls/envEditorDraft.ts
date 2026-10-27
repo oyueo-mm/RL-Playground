@@ -4,7 +4,7 @@
 
 import { createDefaultGridWorldConfig, elementRewardFields } from '../../core/environments/gridworld/GridWorldEnv'
 import type { BombTile, GoalTile, GridWorldConfig, GridFeatures, Position } from '../../core/environments/gridworld/types'
-import { copyFeatures, validateFeatures } from '../../core/environments/gridworld/features'
+import { copyFeatures, DEFAULT_TERRAIN_COST, validateFeatures } from '../../core/environments/gridworld/features'
 import type { EnvRenderModel } from '../../core/types/render'
 import { parseStateKey, toStateKey } from '../grid/stateKey'
 
@@ -32,7 +32,7 @@ export interface GridEditorDraft extends GridFeatures {
 
 // 'goal' mode still refers to editing the (now plural) Goal set one cell at a time —
 // same click-to-toggle interaction Bomb mode already uses (see EnvEditor.tsx).
-export type EditMode = 'wall' | 'start' | 'goal' | 'bomb' | 'erase' | 'select' | 'portal' | 'oneWay' | 'fragile' | 'switch' | 'toggleWall'
+export type EditMode = 'wall' | 'start' | 'goal' | 'bomb' | 'erase' | 'select' | 'portal' | 'oneWay' | 'fragile' | 'switch' | 'toggleWall' | 'terrain'
 
 export function removeFeaturesAt(features: GridFeatures, pos: Position): GridFeatures {
   return {
@@ -41,6 +41,8 @@ export function removeFeaturesAt(features: GridFeatures, pos: Position): GridFea
     fragiles: features.fragiles?.filter(tile => !samePosition(tile, pos)),
     switches: features.switches?.filter(tile => !samePosition(tile, pos)),
     toggleWalls: features.toggleWalls?.filter(tile => !samePosition(tile, pos)),
+    terrains: features.terrains?.filter(tile => !samePosition(tile, pos)),
+    ...(features.terrainCost !== undefined ? { terrainCost: features.terrainCost } : {}),
   }
 }
 
@@ -53,6 +55,8 @@ export function cropFeatures(features: GridFeatures, width: number, height: numb
     fragiles: features.fragiles?.filter(tile => tile.x < width && tile.y < height),
     switches: features.switches?.filter(tile => tile.x < width && tile.y < height),
     toggleWalls: features.toggleWalls?.filter(tile => tile.x < width && tile.y < height),
+    terrains: features.terrains?.filter(tile => tile.x < width && tile.y < height),
+    ...(features.terrainCost !== undefined ? { terrainCost: features.terrainCost } : {}),
   }
 }
 
@@ -120,6 +124,7 @@ export function draftToRenderModel(draft: GridEditorDraft): Extract<EnvRenderMod
     // No live agent exists for a Draft — Start is shown as a stand-in so the preview
     // still renders a marker, without implying a real simulation is running there.
     agentPos: toStateKey(draft.start),
+    ...(draft.terrains?.length ? { terrainCost: draft.terrainCost ?? DEFAULT_TERRAIN_COST } : {}),
     ...(Object.keys(copyFeatures(draft)).length ? { features: copyFeatures(draft) } : {}),
   }
 }
