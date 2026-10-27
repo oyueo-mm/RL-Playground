@@ -163,7 +163,7 @@ function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onState
           width={cellSize}
           height={cellSize}
           fill="none"
-          stroke="#26352f"
+          stroke="#102B50"
           strokeWidth={2.5}
           vectorEffect="non-scaling-stroke"
           rx={0}

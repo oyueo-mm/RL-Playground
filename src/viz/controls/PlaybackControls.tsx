@@ -120,7 +120,7 @@ export function PlaybackControls({
         onClick={onRunEpisode}
         disabled={!isIdle}
         data-testid="playback-run-episode"
-        className={`${baseButtonClass} bg-green-700 text-white hover:bg-green-800`}
+        className={`${baseButtonClass} bg-blue-600 text-white hover:bg-blue-700`}
       >
         {t.playback.learn}
       </button>
@@ -137,7 +137,7 @@ export function PlaybackControls({
           onClick={onRunGreedy}
           disabled={!isIdle}
           data-testid="playback-run-greedy"
-          className={`${baseButtonClass} bg-teal-600 text-white hover:bg-teal-700`}
+          className={`${baseButtonClass} bg-blue-600 text-white hover:bg-blue-700`}
         >
           {t.playback.runGreedy}
         </button>

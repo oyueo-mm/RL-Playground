@@ -71,7 +71,8 @@ test('home real-rule scenarios and one guide scroll container fit all requested 
     await page.getByRole('button', { name: '일시정지', exact: true }).click()
     if (width >= 1200) {
       const copy = (await page.locator('.hero-copy').boundingBox())!, demo = (await page.locator('.demo-card').boundingBox())!
-      expect(Math.abs(copy.y - demo.y)).toBeLessThan(1)
+      // The redesigned hero is vertically centred against the demo card.
+      expect(Math.abs((copy.y + copy.height / 2) - (demo.y + demo.height / 2))).toBeLessThan(1)
     }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
     await page.screenshot({ animations: 'disabled', path: info.outputPath(`complex-home-${width}x${height}.png`) })

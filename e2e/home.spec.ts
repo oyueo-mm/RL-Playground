@@ -276,7 +276,7 @@ test('fixed single language selector and square editor selection survive navigat
   expect(await cell.evaluate(element => getComputedStyle(element).outlineStyle)).toBe('none')
   await cell.focus()
   await page.keyboard.press('Tab')
-  expect(await editor.getByTestId('cell-2,1').evaluate(element => getComputedStyle(element).stroke)).toBe('rgb(23, 109, 134)')
+  expect(await editor.getByTestId('cell-2,1').evaluate(element => getComputedStyle(element).stroke)).toBe('rgb(36, 121, 216)') // --focus-ring (#2479D8)
   await page.screenshot({ animations: 'disabled', path: info.outputPath(`${info.project.name}-selection.png`) })
 })
 

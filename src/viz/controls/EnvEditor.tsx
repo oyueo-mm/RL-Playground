@@ -455,8 +455,8 @@ export function EnvEditor({
     <div className={`editor-body ${mode === 'select' ? 'editor-move-mode' : 'editor-paint-mode'} ${(mode === 'select' && touchMove) || (mode !== 'select' && touchPaint) ? 'touch-element-mode' : ''}`} data-testid="env-editor-grid" data-painting={paint.preview ? 'true' : undefined}>
       <GridViewport editable locale={locale} onPanStart={() => { drag.cancel(); paint.cancel() }} width={draft.width} height={draft.height} active={active}><GridSvg interaction={mode === 'select' ? drag.interaction : paint.interaction} movable={mode === 'select' && (!touchDevice || touchMove)} renderModel={draftToRenderModel(paint.preview ?? draft)} selectedState={selectedCell} cellSize={48} onStateSelect={handleCellClick} className="stage-grid" />
       {drag.preview && <svg className="stage-overlay drag-preview" viewBox={`0 0 ${draft.width * 48} ${draft.height * 48}`} data-testid="drag-preview" data-valid={drag.preview.valid}>
-        <rect x={drag.preview.from.x * 48} y={drag.preview.from.y * 48} width={48} height={48} fill="#ffffffaa" stroke="#819282" strokeDasharray="3 3" />
-        <rect x={drag.preview.to.x * 48} y={drag.preview.to.y * 48} width={48} height={48} fill={drag.preview.valid ? '#b7d6ad99' : '#f2b5ae99'} stroke={drag.preview.valid ? '#30633e' : '#b34134'} strokeWidth={2} />
+        <rect x={drag.preview.from.x * 48} y={drag.preview.from.y * 48} width={48} height={48} fill="#ffffffaa" stroke="#5F6B7A" strokeDasharray="3 3" />
+        <rect x={drag.preview.to.x * 48} y={drag.preview.to.y * 48} width={48} height={48} fill={drag.preview.valid ? '#2479d833' : '#f2b5ae99'} stroke={drag.preview.valid ? '#0754A5' : '#b34134'} strokeWidth={2} />
         <svg x={drag.preview.to.x * 48 + 10} y={drag.preview.to.y * 48 + 10} width={28} height={28} viewBox="0 0 24 24"><EditorIcon tool={elementAt(draft, drag.preview.from)?.kind ?? 'select'} /></svg>
       </svg>}
       </GridViewport>
@@ -704,7 +704,7 @@ export function EnvEditor({
           onClick={handleApply}
           disabled={!isValid}
           data-testid="env-editor-apply"
-          className="rounded bg-purple-600 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded bg-blue-600 px-4 py-2 font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
         >
           {t.envEditor.apply}
         </button>
