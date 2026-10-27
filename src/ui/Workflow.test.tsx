@@ -245,7 +245,7 @@ describe('Editor history and keyboard', () => {
   })
   it.each(['Backspace', 'Delete'])('deletes selected elements with %s, protects start and last goal, ignores inputs and inactive editor', key => {
     render(<App />); click('nav-editor'); fireEvent.click(cell('1,1')); click('env-editor-mode-select'); fireEvent.click(cell('1,1'))
-    fireEvent.keyDown(screen.getByTestId('portal-id'), { key }); expect(wall('1,1')).toBe(true)
+    fireEvent.keyDown(screen.getByTestId('env-editor-width-input'), { key }); expect(wall('1,1')).toBe(true)
     fireEvent.keyDown(window, { key }); expect(wall('1,1')).toBe(false)
     click('editor-undo'); expect(wall('1,1')).toBe(true)
     fireEvent.click(cell('0,0')); fireEvent.keyDown(window, { key }); expect(screen.getByTestId('env-editor-errors').textContent).toContain('시작점')

@@ -17,7 +17,8 @@ export interface GridSvgProps {
   /** Currently selected State, if any (owned by the caller — GridSvg does not track its own selection). */
   selectedState?: StateKey | null
   /** Called with a cell's StateKey when it's clicked. Omit to keep the grid non-interactive. */
-  onStateSelect?: (state: StateKey) => void
+  /** `source` is 'keyboard' for Enter/Space activation; pointer clicks pass only the key. */
+  onStateSelect?: (state: StateKey, source?: 'keyboard') => void
   /**
    * Phase 37 — forwarded to the root <svg>. Only the live App.tsx grid passes a value
    * here (CSS-responsive sizing, see App.tsx's `grid-stack`); EnvEditor.tsx's Draft
@@ -27,7 +28,7 @@ export interface GridSvgProps {
   showAgent?: boolean
   ariaLabel?: string
   movable?: boolean
-  interaction?: Pick<SVGProps<SVGSVGElement>, 'onPointerDown' | 'onPointerMove' | 'onPointerUp' | 'onPointerCancel'>
+  interaction?: Pick<SVGProps<SVGSVGElement>, 'onPointerDown' | 'onPointerMove' | 'onPointerUp' | 'onPointerCancel' | 'onLostPointerCapture'>
 }
 
 /**
@@ -114,7 +115,7 @@ function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onState
               onKeyDown={onStateSelect ? (event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault()
-                  onStateSelect(cell.key)
+                  onStateSelect(cell.key, 'keyboard')
                 }
               } : undefined}
               data-testid={`cell-${cell.key}`}

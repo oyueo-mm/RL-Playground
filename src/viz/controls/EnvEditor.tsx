@@ -28,7 +28,9 @@ import { EditorIcon } from '../../ui/EditorIcon'
 import { ManualPlay } from '../../ui/ManualPlay'
 import { Notice } from '../../ui/Notice'
 import { useElementDrag } from '../../ui/hooks/useElementDrag'
-import { elementAt, nextPortalId, nextGroupId, placeElement, type EditError } from './editorOperations'
+import { elementAt, nextPortalId, nextGroupId, placeElement, setElementValue, setToggleInitialOpen, type EditError, type MapElement } from './editorOperations'
+import { usePaintStroke } from '../../ui/hooks/usePaintStroke'
+import { ElementInspector } from './ElementInspector'
 import { useDraftHistory } from '../../ui/hooks/useDraftHistory'
 import { parseStateKey } from '../grid/stateKey'
 import { translations, translateValidationError, type Dictionary, type Locale } from '../../ui/i18n'
@@ -113,8 +115,12 @@ export function EnvEditor({
   const [direction, setDirection] = useState<Direction>(3)
   const [editMessage, setEditMessage] = useState('')
   const [touchMove, setTouchMove] = useState(false)
+  const [touchPaint, setTouchPaint] = useState(false)
   const touchDevice = typeof navigator !== 'undefined' && navigator.maxTouchPoints > 0
   const drag = useElementDrag(draft, fullscreen && active && mode === 'select', (next, to) => { setDraft(next); setSelectedCell(positionId(to)) }, showEditError, touchMove || !touchDevice)
+  // V4 — one element description for both pointer strokes and keyboard/click placement.
+  const toolElement = (): MapElement | null => mode === 'erase' || mode === 'select' ? null : { kind: mode, portalId: effectivePortalId, groupId: effectiveGroupId, direction }
+  const paint = usePaintStroke(draft, fullscreen && active && !playing && mode !== 'select', toolElement, (next, first) => { setDraft(next); setSelectedCell(positionId(first)) }, showEditError, touchPaint || !touchDevice)
   const handledPreset = useRef<typeof presetRequest>(null)
   useEffect(() => {
     if (!presetRequest || handledPreset.current === presetRequest) return
@@ -237,8 +243,9 @@ export function EnvEditor({
     } : { start: 'Start is protected. Move it to another cell.', 'last-goal': 'The last goal is protected. Place another goal first.', 'portal-complete': 'This pair is complete. Use automatic pairing or another ID.', 'portal-merge': 'Portal endpoints must occupy distinct cells.', bounds: 'Drop inside the grid.' })[error])
   }
 
-  function handleCellClick(stateKey: StateKey) {
-    if (drag.consumeClick()) return
+  function handleCellClick(stateKey: StateKey, source?: 'keyboard') {
+    // Pointer clicks were already applied by the stroke/drag; keyboard activation never was.
+    if (source !== 'keyboard' && (drag.consumeClick() || paint.consumeClick())) return
     const pos = parseStateKey(stateKey)
     setSelectedCell(stateKey)
     setEditMessage('')
@@ -253,7 +260,7 @@ export function EnvEditor({
     }
     if (mode === 'erase') { deleteCell(stateKey); return }
     if (fullscreen) {
-      const result = placeElement(draft, pos, { kind: mode, portalId: effectivePortalId, groupId: effectiveGroupId, direction })
+      const result = placeElement(draft, pos, toolElement()!)
       if (result.error) showEditError(result.error)
       else if (result.draft !== draft) setDraft(result.draft)
       return
@@ -394,6 +401,16 @@ export function EnvEditor({
     reader.readAsText(file)
   }
 
+  const inspecting = mode === 'select' && !!selectedCell
+  function renamePortal(id: string) {
+    setAutoPortal(false); setPortalId(id)
+    if (mode === 'select' && selectedCell) recordInput(prev => ({ ...prev, portals: prev.portals?.map(pair => pair.ends.some(end => positionId(end) === selectedCell) ? { ...pair, id } : pair) }), 'portal-id')
+  }
+  function regroup(id: string) {
+    setAutoGroup(false); setGroupId(id)
+    if (mode === 'select' && selectedCell) recordInput(prev => ({ ...prev, switches: prev.switches?.map(tile => positionId(tile) === selectedCell ? { ...tile, groupId: id } : tile), toggleWalls: prev.toggleWalls?.map(tile => positionId(tile) === selectedCell ? { ...tile, groupId: id } : tile) }), 'group-id')
+  }
+
   // Canonical mode ids ('wall'/'start'/'goal'/'bomb') drive data-testid/aria-pressed
   // unchanged; only the visible button text is looked up per-locale.
   const modeLabel: Record<EditMode, string> = {
@@ -426,52 +443,62 @@ export function EnvEditor({
       {(mode === 'portal' || mode === 'switch' || mode === 'toggleWall') && <span className="link-indicator" data-testid="current-link-id">{mode === 'portal' ? `${effectivePortalId} · ${draft.portals?.find(pair => pair.id === effectivePortalId)?.ends.length ?? 0}/2` : effectiveGroupId}</span>}
       <span className="toolbar-separator" />
       {touchDevice && mode === 'select' && <TooltipButton tip={locale === 'ko' ? '켜면 손가락으로 요소를 이동합니다. 끄면 확대된 격자를 스크롤할 수 있습니다.' : 'Enable to move elements by touch. Disable to scroll the zoomed grid.'} aria-pressed={touchMove} onClick={() => setTouchMove(value => !value)} data-testid="touch-move-mode">{locale === 'ko' ? '터치 이동' : 'Touch move'}</TooltipButton>}
+      {touchDevice && mode !== 'select' && <TooltipButton tip={locale === 'ko' ? '켜면 한 손가락으로 끌며 연속 배치합니다. 끄면 탭으로 한 칸씩 배치하고 손가락으로 화면을 이동합니다. 두 손가락은 항상 확대·이동입니다.' : 'On: drag one finger to paint cells. Off: tap places one cell and dragging scrolls. Two fingers always zoom and pan.'} aria-pressed={touchPaint} onClick={() => setTouchPaint(value => !value)} data-testid="touch-paint-mode">{locale === 'ko' ? '터치 그리기' : 'Touch paint'}</TooltipButton>}
       <TooltipButton tip={tips.undo} aria-label={locale === 'ko' ? '실행 취소' : 'Undo'} disabled={!canUndo} onClick={undo} data-testid="editor-undo"><EditorIcon tool="undo" /></TooltipButton>
       <TooltipButton tip={tips.redo} aria-label={locale === 'ko' ? '다시 실행' : 'Redo'} disabled={!canRedo} onClick={redo} data-testid="editor-redo"><EditorIcon tool="redo" /></TooltipButton>
       <TooltipButton tip={tips.properties} onClick={() => { onOpenProperties?.(); setPropertiesOpen(!propertiesOpen || panelBlocked) }} aria-expanded={propertiesOpen && !panelBlocked} aria-controls="editor-properties">{locale === 'ko' ? '속성 / 파일' : 'Properties / files'}</TooltipButton>
       <TooltipButton tip={tips.apply} className="toolbar-primary" onClick={handleApply} disabled={!isValid} data-testid="env-editor-apply">{t.envEditor.apply}</TooltipButton>
       <TooltipButton tip={locale === 'ko' ? '현재 초안에서 방향키 / WASD로 플레이합니다. 학습 데이터는 변경되지 않습니다.' : 'Play this draft with arrows / WASD in an isolated environment.'} disabled={!isValid} onClick={() => setPlaying(true)} data-testid="manual-play-start">{locale === 'ko' ? '직접 플레이' : 'Play draft'}</TooltipButton>
     </FloatingToolbar>
-    <div className={`editor-body ${mode === 'select' ? 'editor-move-mode' : ''} ${mode === 'select' && touchMove ? 'touch-element-mode' : ''}`} data-testid="env-editor-grid">
-      <GridViewport editable locale={locale} onPanStart={drag.cancel} width={draft.width} height={draft.height} active={active}><GridSvg interaction={drag.interaction} movable={mode === 'select' && (!touchDevice || touchMove)} renderModel={draftToRenderModel(draft)} selectedState={selectedCell} cellSize={48} onStateSelect={handleCellClick} className="stage-grid" />
+    <div className={`editor-body ${mode === 'select' ? 'editor-move-mode' : 'editor-paint-mode'} ${(mode === 'select' && touchMove) || (mode !== 'select' && touchPaint) ? 'touch-element-mode' : ''}`} data-testid="env-editor-grid" data-painting={paint.preview ? 'true' : undefined}>
+      <GridViewport editable locale={locale} onPanStart={() => { drag.cancel(); paint.cancel() }} width={draft.width} height={draft.height} active={active}><GridSvg interaction={mode === 'select' ? drag.interaction : paint.interaction} movable={mode === 'select' && (!touchDevice || touchMove)} renderModel={draftToRenderModel(paint.preview ?? draft)} selectedState={selectedCell} cellSize={48} onStateSelect={handleCellClick} className="stage-grid" />
       {drag.preview && <svg className="stage-overlay drag-preview" viewBox={`0 0 ${draft.width * 48} ${draft.height * 48}`} data-testid="drag-preview" data-valid={drag.preview.valid}>
         <rect x={drag.preview.from.x * 48} y={drag.preview.from.y * 48} width={48} height={48} fill="#ffffffaa" stroke="#819282" strokeDasharray="3 3" />
         <rect x={drag.preview.to.x * 48} y={drag.preview.to.y * 48} width={48} height={48} fill={drag.preview.valid ? '#b7d6ad99' : '#f2b5ae99'} stroke={drag.preview.valid ? '#30633e' : '#b34134'} strokeWidth={2} />
         <svg x={drag.preview.to.x * 48 + 10} y={drag.preview.to.y * 48 + 10} width={28} height={28} viewBox="0 0 24 24"><EditorIcon tool={elementAt(draft, drag.preview.from)?.kind ?? 'select'} /></svg>
       </svg>}
       </GridViewport>
-      <aside className="properties-panel" id="editor-properties" hidden={!propertiesOpen || panelBlocked} aria-label={locale === 'ko' ? '맵 속성' : 'Map properties'}>
-        <header><h2>{locale === 'ko' ? '맵 속성' : 'Map properties'}</h2><button onClick={() => setPropertiesOpen(false)} aria-label={locale === 'ko' ? '속성 닫기' : 'Close properties'}>×</button></header>
+      <aside className="properties-panel" id="editor-properties" hidden={!propertiesOpen || panelBlocked} aria-label={locale === 'ko' ? '속성' : 'Properties'}>
+        <header><h2>{inspecting ? (locale === 'ko' ? '요소 속성' : 'Element properties') : (locale === 'ko' ? '맵 속성' : 'Map properties')}</h2><button onClick={() => setPropertiesOpen(false)} aria-label={locale === 'ko' ? '속성 닫기' : 'Close properties'}>×</button></header>
         <div className="property-fields" onBlurCapture={boundary}>
-          <p>{locale === 'ko' ? '현재 도구' : 'Current tool'}: <strong>{modeLabel[mode]}</strong>{selectedCell ? ` · (${selectedCell})` : ''}</p>
-          <label><input type="checkbox" checked={autoPortal} data-testid="auto-portal" onChange={event => setAutoPortal(event.target.checked)} />{locale === 'ko' ? '포털 자동 연결' : 'Automatic portal pairing'}</label>
           <datalist id="existing-portals">{draft.portals?.map(pair => <option key={pair.id} value={pair.id}>{pair.ends.length}/2</option>)}</datalist>
-          <label><input type="checkbox" checked={autoGroup} data-testid="auto-group" onChange={event => setAutoGroup(event.target.checked)} />{locale === 'ko' ? '그룹 자동 생성' : 'Automatic wall groups'}</label>
-          <label><input type="checkbox" checked={keepGroup} data-testid="keep-group" onChange={event => setKeepGroup(event.target.checked)} />{locale === 'ko' ? '현재 그룹에 계속 추가' : 'Keep adding to current group'}</label>
           <datalist id="existing-groups">{[...new Set([...(draft.switches ?? []), ...(draft.toggleWalls ?? [])].map(tile => tile.groupId))].map(id => <option key={id} value={id}>{draft.switches?.filter(tile => tile.groupId === id).length ?? 0} S / {draft.toggleWalls?.filter(tile => tile.groupId === id).length ?? 0} W</option>)}</datalist>
-          <label>{locale === 'ko' ? '포털 쌍 ID' : 'Portal pair ID'}<input value={effectivePortalId} list="existing-portals" maxLength={24} data-testid="portal-id" onChange={event => {
-            const id = event.target.value; setAutoPortal(false); setPortalId(id)
-            if (mode === 'select' && selectedCell) recordInput(prev => ({ ...prev, portals: prev.portals?.map(pair => pair.ends.some(end => positionId(end) === selectedCell) ? { ...pair, id } : pair) }), 'portal-id')
-          }} /></label>
-          <label>{locale === 'ko' ? '벽 그룹 ID' : 'Wall group ID'}<input value={effectiveGroupId} list="existing-groups" maxLength={24} data-testid="group-id" onChange={event => {
-            const id = event.target.value; setAutoGroup(false); setGroupId(id)
-            if (mode === 'select' && selectedCell) recordInput(prev => ({ ...prev, switches: prev.switches?.map(tile => positionId(tile) === selectedCell ? { ...tile, groupId: id } : tile), toggleWalls: prev.toggleWalls?.map(tile => positionId(tile) === selectedCell ? { ...tile, groupId: id } : tile) }), 'group-id')
-          }} /></label>
-          <label>{locale === 'ko' ? '허용 방향' : 'Allowed direction'}<select value={direction} data-testid="one-way-direction" onChange={event => {
-            const next = Number(event.target.value) as Direction; setDirection(next)
-            if (mode === 'select' && selectedCell) setDraft(prev => ({ ...prev, oneWays: prev.oneWays?.map(tile => positionId(tile) === selectedCell ? { ...tile, direction: next } : tile) }))
-          }}>{(locale === 'ko' ? ['↑ 위', '↓ 아래', '← 왼쪽', '→ 오른쪽'] : ['↑ Up', '↓ Down', '← Left', '→ Right']).map((label, index) => <option key={index} value={index}>{label}</option>)}</select></label>
-          <p>{locale === 'ko' ? '포털은 같은 ID로 두 셀을 배치하세요. 벽 그룹에는 스위치와 토글 벽이 모두 필요합니다. 선택 도구로 요소를 누르면 연결선과 ID를 확인·수정할 수 있습니다. ID: 영문·숫자·_·- (1~24자).' : 'Place two portal cells with the same ID. Each wall group needs a switch and toggle wall. Select an element to inspect its links or edit its ID/direction. IDs: letters, numbers, _ and -, 1–24 characters.'}</p>
+          {inspecting && selectedCell && <ElementInspector draft={draft} cell={parseStateKey(selectedCell)} locale={locale} kindLabel={modeLabel} portalId={portalId} groupId={groupId} direction={direction}
+            onPortalId={renamePortal} onGroupId={regroup}
+            onDirection={next => { setDirection(next); setDraft(prev => ({ ...prev, oneWays: prev.oneWays?.map(tile => positionId(tile) === selectedCell ? { ...tile, direction: next } : tile) })) }}
+            onValue={(kind, value, typing) => { const pos = parseStateKey(selectedCell); const change = (prev: GridEditorDraft) => setElementValue(prev, pos, kind, value); if (typing) recordInput(change, `element-value-${selectedCell}`); else setDraft(change) }}
+            onInitialOpen={open => setDraft(prev => setToggleInitialOpen(prev, parseStateKey(selectedCell), open))}
+            onDelete={() => deleteCell(selectedCell)} />}
+          {mode === 'select' && !selectedCell && <p className="inspector-empty" data-testid="element-inspector-hint">{locale === 'ko' ? '맵에서 요소를 클릭하면 이곳에 해당 요소의 설정이 표시됩니다.' : 'Click an element on the map to edit its settings here.'}</p>}
+          {['portal', 'switch', 'toggleWall', 'oneWay'].includes(mode) && <section className="tool-settings" aria-label={locale === 'ko' ? '도구 설정' : 'Tool settings'}>
+            <h3>{modeLabel[mode]} · {locale === 'ko' ? '새로 배치할 요소' : 'next placement'}</h3>
+            {mode === 'portal' && <>
+              <label><input type="checkbox" checked={autoPortal} data-testid="auto-portal" onChange={event => setAutoPortal(event.target.checked)} />{locale === 'ko' ? '포털 자동 연결' : 'Automatic portal pairing'}</label>
+              <label>{locale === 'ko' ? '포털 쌍 ID' : 'Portal pair ID'}<input value={effectivePortalId} list="existing-portals" maxLength={24} data-testid="portal-id" onChange={event => renamePortal(event.target.value)} /></label>
+            </>}
+            {(mode === 'switch' || mode === 'toggleWall') && <>
+              <label><input type="checkbox" checked={autoGroup} data-testid="auto-group" onChange={event => setAutoGroup(event.target.checked)} />{locale === 'ko' ? '그룹 자동 생성' : 'Automatic wall groups'}</label>
+              <label><input type="checkbox" checked={keepGroup} data-testid="keep-group" onChange={event => setKeepGroup(event.target.checked)} />{locale === 'ko' ? '현재 그룹에 계속 추가' : 'Keep adding to current group'}</label>
+              <label>{locale === 'ko' ? '벽 그룹 ID' : 'Wall group ID'}<input value={effectiveGroupId} list="existing-groups" maxLength={24} data-testid="group-id" onChange={event => regroup(event.target.value)} /></label>
+            </>}
+            {mode === 'toggleWall' && <p>{locale === 'ko' ? '빈 칸을 누르면 닫힌 벽이 생깁니다. 같은 벽을 다시 누르면 초기 상태가 열림 ↔ 닫힘으로 바뀝니다.' : 'Clicking an empty cell adds a closed wall. Clicking the same wall again switches its initial state between open and closed.'}</p>}
+            {mode === 'oneWay' && <label>{locale === 'ko' ? '허용 방향' : 'Allowed direction'}<select value={direction} data-testid="one-way-direction" onChange={event => setDirection(Number(event.target.value) as Direction)}>{(locale === 'ko' ? ['↑ 위', '↓ 아래', '← 왼쪽', '→ 오른쪽'] : ['↑ Up', '↓ Down', '← Left', '→ Right']).map((label, index) => <option key={index} value={index}>{label}</option>)}</select></label>}
+            <p>{locale === 'ko' ? 'ID: 영문·숫자·_·- (1~24자). 배치 후 선택 도구로 누르면 연결 상태를 확인하고 수정할 수 있습니다.' : 'IDs: letters, numbers, _ and -, 1–24 characters. Use Select on a placed element to inspect and edit its links.'}</p>
+          </section>}
+          <section className="map-settings" aria-label={locale === 'ko' ? '맵 기본 속성' : 'Map settings'}>
+          <h3>{locale === 'ko' ? '맵 기본 속성' : 'Map settings'}</h3>
           <p data-testid="state-space-estimate">{locale === 'ko' ? '이론 상태 수 상한' : 'Theoretical state upper bound'}: {stateSpaceDetails(draft).text}<br />Goal {draft.goals.length} · Fragile {draft.fragiles?.length ?? 0} · {locale === 'ko' ? '벽 그룹' : 'Wall groups'} {stateSpaceDetails(draft).groups}</p>
           {stateSpaceDetails(draft).large && <Notice inline className="complexity-warning" eventKey={seedKey} title={locale === 'ko' ? '가능한 상태 조합이 많습니다' : 'Many possible state combinations'} locale={locale} kind="warning">{locale === 'ko' ? '적용과 직접 플레이는 가능합니다. 실제 Q 상태로 자원을 관리하며 학습에는 많은 경험이 필요할 수 있습니다.' : 'Apply and manual play remain available. Resources use actual Q rows; learning may require many experiences.'}</Notice>}
           {errors.length > 0 && <details><summary>{locale === 'ko' ? '적용 / 플레이 불가 이유' : 'Why apply / play is unavailable'}</summary>{errors.map(error => <p key={error}>{translateValidationError(error, locale)}</p>)}</details>}
           <label>{t.envEditor.width}<input type="number" min={3} max={MAX_SIZE} value={draft.width} onChange={e => updateWidth(Number(e.target.value))} data-testid="env-editor-width-input" /></label>
           <label>{t.envEditor.height}<input type="number" min={3} max={MAX_SIZE} value={draft.height} onChange={e => updateHeight(Number(e.target.value))} data-testid="env-editor-height-input" /></label>
           {(['stepReward', 'wallPenalty', 'goalReward', 'bombPenalty'] as const).map(key => <label key={key}>{({ stepReward: t.envEditor.stepReward, wallPenalty: t.envEditor.wallPenalty, goalReward: t.envEditor.goalReward, bombPenalty: t.envEditor.bombPenalty })[key]}<input type="number" step="0.1" value={draft[key]} data-testid={`env-editor-${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}-input`} onChange={e => recordInput(previous => ({ ...previous, [key]: Number(e.target.value) }), key)} /></label>)}
+          <p>{locale === 'ko' ? `목표 보상과 폭탄 페널티는 개별 값을 지정하지 않은 요소의 기본값입니다. (개별 지정: 목표 ${draft.goals.filter(goal => goal.reward !== undefined).length}개 · 폭탄 ${draft.bombs.filter(bomb => bomb.penalty !== undefined).length}개)` : `Goal reward and bomb penalty are defaults for elements without their own value. (Custom: ${draft.goals.filter(goal => goal.reward !== undefined).length} goals · ${draft.bombs.filter(bomb => bomb.penalty !== undefined).length} bombs)`}</p>
           <button onClick={handleImportClick} data-testid="env-editor-import">{t.envEditor.importButton}</button><button onClick={handleExport} disabled={!isValid} data-testid="env-editor-export">{t.envEditor.exportButton}</button>
           <button onClick={handleResetEnvironment} data-testid="env-editor-reset">{t.envEditor.resetEnvironment}</button>
           <input hidden ref={importFileInputRef} type="file" accept=".json,application/json" onChange={handleImportFileChange} data-testid="env-editor-import-input" />
           <p>{locale === 'ko' ? '가져오기는 초안만 변경합니다. 적용은 현재 학습을 초기화합니다.' : 'Import changes only the draft. Applying resets the current experiment.'}</p>
+          </section>
         </div>
       </aside>
     </div>
