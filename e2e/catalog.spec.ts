@@ -5,9 +5,13 @@ test('random gallery moves four agents, replaces one card, previews and filters 
   test.setTimeout(120000)
   await page.addInitScript(() => { Math.random = () => .999999 })
   await page.clock.install()
+  let pausedAt = Date.now() + 10_000
   for (const [width,height] of info.project.name === 'mobile' ? [[390,844]] : [[1366,768],[1440,900],[1920,1080],[768,1024]]) {
     await page.setViewportSize({width,height});await page.goto('./')
     await page.getByRole('button',{name:'일시정지',exact:true}).click()
+    // Freeze fake time: clock.install() otherwise keeps advancing with wall-clock time, so a slow
+    // machine could rotate extra cards before runFor() below (reproduced by delaying 8 s).
+    pausedAt += 100_000; await page.clock.pauseAt(pausedAt)
     const cards=page.locator('.mini-demo'),before=await cards.evaluateAll(nodes=>nodes.map(n=>({id:n.getAttribute('data-scenario'),step:Number(n.getAttribute('data-step'))})))
     expect(new Set(before.map(c=>c.id)).size).toBe(4)
     await page.getByRole('button',{name:'시연 재생',exact:true}).click()
