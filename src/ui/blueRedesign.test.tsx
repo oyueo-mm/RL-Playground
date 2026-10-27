@@ -69,6 +69,21 @@ describe('Home hero is reduced to the title, two actions and the live demos', ()
     const dialog = screen.getByRole('dialog', { hidden: true })
     expect(within(dialog).getByRole('button', { name: /이 맵으로 실험하기/ })).toBeTruthy()
   })
+  it('offers learn (primary), make a map (secondary) and algorithms (text) in that order, in both languages', () => {
+    render(<App />)
+    const actions = [...document.querySelectorAll('.hero-actions button')]
+    expect(actions.map(b => b.className.split(' ')[0])).toEqual(['primary-button', 'secondary-button', 'text-button'])
+    expect(actions.map(b => b.textContent)).toEqual(['학습 시작하기 ↗', '맵 만들기', '알고리즘 알아보기 →'])
+    fireEvent.change(screen.getAllByTestId('language-selector')[0], { target: { value: 'en' } })
+    expect([...document.querySelectorAll('.hero-actions button')].map(b => b.textContent)).toEqual(['Start learning ↗', 'Make a map', 'Explore algorithms →'])
+  })
+  it('opens the map editor from the Make a map button', () => {
+    render(<App />)
+    fireEvent.click(screen.getByTestId('home-make-map'))
+    expect(screen.getByTestId('nav-editor').getAttribute('aria-current')).toBe('page')
+    expect(screen.getByTestId('env-editor')).toBeTruthy()
+    expect(document.querySelector('.home-page')).toBeNull()
+  })
   it('navigates from the two hero actions', () => {
     render(<App />)
     fireEvent.click(screen.getByRole('button', { name: /학습 시작하기/ }))
