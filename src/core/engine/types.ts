@@ -88,7 +88,25 @@ export interface EngineStats {
   episodeStatsHistory: EpisodeStats[]
 }
 
+/**
+ * Facts about ONE finished training request (`run({ episodes })`, normal or Turbo): only the
+ * episodes that request itself ran, never earlier history. Present only after the request
+ * reached its target; "training finished" says nothing about the policy having converged.
+ */
+export interface TrainingRunSummary {
+  /** Strictly increasing per engine instance; lets the UI show each completion exactly once. */
+  id: number
+  turbo: boolean
+  targetEpisodes: number
+  completedEpisodes: number
+  successes: number
+  successRate: number
+  meanReward: number
+}
+
 export interface EngineSnapshot {
+  /** Set once a requested training run completed normally; cleared by the next run or reset. */
+  completedRun?: TrainingRunSummary
   /** While active, UI consumers receive frozen visual fields plus fresh summaries. */
   turbo?: import('./turbo').TurboProgress
   resources?: ResourceMetrics

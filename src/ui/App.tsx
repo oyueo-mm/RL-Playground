@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Simulator from './Simulator'
 import { Home } from './Home'
+import { TrainingCompleteDialog } from './TrainingCompleteDialog'
 import { AlgorithmGuide } from './guide/AlgorithmGuide'
 import { LanguageSelector } from '../viz/controls/LanguageSelector'
 import { translations, type Locale } from './i18n'
@@ -70,6 +71,7 @@ export default function App() {
         <div hidden={!experimentVisible && !presetsOpen} className="experiment-workspace" data-testid="experiment-workspace"><Simulator homeAppliedDifficulty={homeAppliedDifficulty} homeAppliedVersion={homeAppliedVersion} onEditPreset={() => navigate('editor')} onApplied={() => navigate('environment')} locale={locale} section={section} active={experimentVisible || presetsOpen} presetsOpen={presetsOpen} onClosePresets={() => setPresetsOpen(false)} /></div>
       </main>
     </div>
+    <TrainingCompleteDialog locale={locale} onViewResults={() => navigate('results')} />
     <div className="mobile-language"><LanguageSelector locale={locale} onChange={setLocale} t={translations[locale]} /></div>
   </div>
 }
