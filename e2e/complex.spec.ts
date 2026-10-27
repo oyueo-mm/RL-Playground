@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { navigate, expectFits } from './helpers'
+import { navigate, expectFits, openSheet } from './helpers'
 
 async function drag(page: Page, from: string, to: string, touch = false, cancel = false) {
   const editor = page.getByTestId('env-editor')
@@ -108,7 +108,7 @@ test('huge presets are applicable and actual budgets safely pause with distinct 
   await page.getByTestId('preset-search').fill('붕괴하는 군도')
   await expect(page.locator('.gallery-thumbnails > button')).toHaveCount(1)
   await page.getByTestId('preset-21_collapsing_archipelago').click(); await page.getByRole('button', { name: '맵 적용하기' }).click()
-  await navigate(page, 'editor'); await page.getByRole('button', { name: '속성 / 파일' }).click()
+  await navigate(page, 'editor'); await openSheet(page.getByTestId('env-editor'), 'map')
   await expect(page.getByTestId('env-editor-apply')).toBeEnabled()
   await expect(page.locator('.complexity-warning')).toBeVisible()
   await expect(page.getByTestId('state-space-estimate')).not.toContainText(/Infinity|NaN/)
@@ -122,6 +122,8 @@ test('huge presets are applicable and actual budgets safely pause with distinct 
   await expect.poll(async () => Number(await page.getByTestId('resource-total-steps').getAttribute('data-total-steps'))).toBeGreaterThan(5)
   await expect(page.getByTestId('resource-pause-reason')).toHaveCount(0)
   await expect(page.getByTestId('playback-run-episode')).toBeEnabled()
+  await expect(page.getByTestId('training-complete')).toBeVisible() // the run reached its target normally
+  await page.getByTestId('completion-close').click()
   const rows = await page.getByTestId('q-state-count').textContent()
   await page.getByRole('button', { name: '설정', exact: true }).click()
   await page.getByTestId('budget-maxRecordedSteps').fill('20')

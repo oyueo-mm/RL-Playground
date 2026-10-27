@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { navigate } from './helpers'
+import { navigate, openSheet } from './helpers'
 
 const SIZES = [[390, 844], [768, 1024], [1366, 768], [1440, 900], [1920, 1080]] as const
 const rgb = (hex: string) => { const n = parseInt(hex.slice(1), 16); return `rgb(${n >> 16}, ${(n >> 8) & 255}, ${n & 255})` }
@@ -115,7 +115,8 @@ test('interface text stays at or above 11px and form controls have 3:1 borders o
   await page.getByRole('button', { name: '설정', exact: true }).click(); await audit('settings')
   for (const tab of await page.getByRole('tab').all()) { await tab.click(); await audit('settings tab') }
   await page.getByRole('button', { name: '설정', exact: true }).click()
-  await nav('editor'); await page.getByRole('button', { name: /속성 \/ 파일/ }).click(); await audit('editor properties')
+  await nav('editor'); await openSheet(page.getByTestId('env-editor'), 'map'); await audit('editor properties')
+  for (const tab of ['element', 'file'] as const) { const t = page.getByTestId(`sheet-tab-${tab}`); if (await t.count()) { await t.click(); await audit(`phone sheet ${tab} tab`) } }
   await page.getByTestId('env-editor-mode-select').click(); await page.getByTestId('env-editor-grid').getByTestId('cell-6,6').click(); await audit('editor inspector')
   await nav('presets'); await page.locator('.gallery-thumbnails > button').nth(2).click(); await audit('presets')
   await nav('guide'); await page.locator('.chapter-navigation button').nth(4).click(); await audit('guide calculator')

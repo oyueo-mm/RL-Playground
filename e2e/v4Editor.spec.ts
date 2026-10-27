@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { navigate } from './helpers'
+import { navigate, openSheet } from './helpers'
 
 const SIZES = [[390, 844], [768, 1024], [1366, 768], [1440, 900], [1920, 1080]] as const
 const gateMap = {
@@ -15,7 +15,7 @@ async function openEditor(page: Page, data?: object) {
   await navigate(page, 'editor')
   const editor = page.getByTestId('env-editor')
   if (data) {
-    await editor.getByRole('button', { name: /속성 \/ 파일/ }).click()
+    await openSheet(editor, 'file')
     await editor.getByTestId('env-editor-import-input').setInputFiles({ name: 'v4.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data)) })
     await editor.getByRole('button', { name: '속성 닫기' }).click()
   }

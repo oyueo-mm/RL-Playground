@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { navigate } from './helpers'
+import { navigate, openSheet } from './helpers'
 
 const PHONES = [[320, 568], [390, 844], [430, 932]] as const
 const config = (extra: object) => ({ version: 4, type: 'gridworld', width: 7, height: 7, start: { x: 0, y: 0 }, goals: [{ x: 6, y: 6 }], walls: [], bombs: [], stepReward: -0.1, wallPenalty: -1, goalReward: 10, bombPenalty: -10, ...extra })
@@ -10,7 +10,7 @@ async function openEditor(page: Page, data?: object) {
   await navigate(page, 'editor')
   const editor = page.getByTestId('env-editor')
   if (data) {
-    await editor.getByRole('button', { name: /속성 \/ 파일/ }).click()
+    await openSheet(editor, 'file')
     await editor.getByTestId('env-editor-import-input').setInputFiles({ name: 'v5.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data)) })
     await editor.getByRole('button', { name: '속성 닫기' }).click()
   }
@@ -145,7 +145,7 @@ test('one-way portal teleports A to B and never back', async ({ page }) => {
 test('swamp and one-way portal survive export and import', async ({ page }, info) => {
   test.skip(info.project.name === 'mobile', 'desktop file flow')
   const editor = await openEditor(page, config({ terrains: [{ x: 1, y: 1, cost: -3 }], terrainCost: -2, portals: [{ id: 'P1', ends: [{ x: 2, y: 4 }, { x: 5, y: 4 }], directed: true }] }))
-  await editor.getByRole('button', { name: /속성 \/ 파일/ }).click()
+  await openSheet(editor, 'file')
   const download = page.waitForEvent('download'); await editor.getByTestId('env-editor-export').click()
   const path = await (await download).path()
   const saved = JSON.parse(await (await import('node:fs/promises')).readFile(path!, 'utf8'))

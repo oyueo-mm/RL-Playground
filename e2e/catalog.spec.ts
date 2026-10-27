@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import { navigate, config } from './helpers'
+import { navigate, config, openSheet } from './helpers'
 
 test('random gallery moves four agents, replaces one card, previews and filters all 20 maps', async ({ page }, info) => {
   test.setTimeout(120000)
@@ -72,7 +72,7 @@ test('random gallery moves four agents, replaces one card, previews and filters 
 test('held keyboard and pointer movement stop on release blur pause restart and navigation', async ({page},info)=>{
   await page.goto('./');await navigate(page,'editor')
   const editor=page.getByTestId('env-editor')
-  await editor.getByRole('button',{name:'속성 / 파일'}).click()
+  await openSheet(editor)
   await editor.getByTestId('env-editor-import-input').setInputFiles({name:'manual.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(config(12,12)))})
   await editor.getByRole('button',{name:'속성 닫기'}).click();await editor.getByTestId('manual-play-start').click()
   const play=page.getByTestId('manual-play'),progress=play.getByTestId('manual-progress')

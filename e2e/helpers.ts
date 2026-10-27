@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 
 export async function navigate(page: Page, item: string) {
   if (item !== 'presets' && await page.locator('#preset-panel').isVisible()) await page.locator('#preset-panel > header button').click()
@@ -11,7 +11,7 @@ export const config = (width: number, height: number) => ({ version: 1, type: 'g
 export async function loadMap(page: Page, data: object) {
   await navigate(page, 'editor')
   const editor = page.getByTestId('env-editor')
-  await editor.getByRole('button', { name: /속성 \/ 파일/ }).click()
+  await openSheet(editor, 'file')
   await editor.getByTestId('env-editor-import-input').setInputFiles({ name: 'map.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data)) })
   await editor.getByTestId('env-editor-apply').click()
   await expect(page.getByTestId('learning-grid')).toBeVisible()
@@ -40,4 +40,15 @@ export async function expectFits(page: Page, scope = 'learning-grid') {
       && (!actions || box.y + box.height <= actions.y + 1)
   }).toBe(true)
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1 && document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+}
+
+/**
+ * Opens the editor's settings panel and, on phones, switches the bottom sheet to the wanted tab
+ * (desktop has a single properties panel, so the tab step is skipped there).
+ */
+export async function openSheet(scope: Locator, tab: 'map' | 'element' | 'file' = 'file') {
+  // Idempotent: the panel keeps its open state between steps, and the button toggles it.
+  if (!(await scope.locator('#editor-properties').isVisible())) await scope.getByRole('button', { name: /^(속성 \/ 파일|설정 · 파일)$/ }).click()
+  const tabButton = scope.getByTestId(`sheet-tab-${tab}`)
+  if (await tabButton.count()) await tabButton.click()
 }

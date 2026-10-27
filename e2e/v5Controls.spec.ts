@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { navigate } from './helpers'
+import { navigate, openSheet } from './helpers'
 
 const PHONES = [[320, 568], [390, 844], [430, 932]] as const
 const map = (extra: object) => ({ version: 4, type: 'gridworld', width: 7, height: 7, start: { x: 0, y: 0 }, goals: [{ x: 6, y: 6 }], walls: [], bombs: [], stepReward: -0.1, wallPenalty: -1, goalReward: 10, bombPenalty: -10, ...extra })
@@ -10,7 +10,7 @@ async function openEditor(page: Page, data?: object) {
   await navigate(page, 'editor')
   const editor = page.getByTestId('env-editor')
   if (data) {
-    await editor.getByRole('button', { name: /속성 \/ 파일/ }).click()
+    await openSheet(editor, 'file')
     await editor.getByTestId('env-editor-import-input').setInputFiles({ name: 'm.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(data)) })
     await editor.getByRole('button', { name: '속성 닫기' }).click()
   }
@@ -120,7 +120,7 @@ test('Backspace deletes the last clicked tile with any tool but never eats text 
   await editor.getByTestId('cell-0,0').click(); await page.keyboard.press('Backspace')
   expect(await kind('0,0')).toBe('start')
   await editor.getByTestId('env-editor-mode-wall').click(); await editor.getByTestId('cell-4,4').click()
-  await editor.getByRole('button', { name: /속성 \/ 파일/ }).click()
+  await openSheet(editor, 'file')
   const step = editor.getByTestId('env-editor-step-reward-input'); await step.click(); await page.keyboard.press('End'); await page.keyboard.press('Backspace')
   expect(await kind('4,4')).toBe('wall') // the text field consumed the key
   await expect(step).not.toHaveValue('-0.1') // the digit was deleted from the field

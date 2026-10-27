@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { navigate, config, loadMap, expectFits } from './helpers'
+import { navigate, config, loadMap, expectFits, openSheet } from './helpers'
 
 test('preset workflow, tooltips, editor history and guide fit all requested viewports', async ({ page }, info) => {
   test.setTimeout(120000)
@@ -41,7 +41,7 @@ test('preset workflow, tooltips, editor history and guide fit all requested view
     const editor = page.getByTestId('env-editor')
     for (const tool of ['select', 'wall', 'start', 'goal', 'bomb', 'portal', 'oneWay', 'fragile', 'switch', 'toggleWall', 'erase']) await expect(editor.getByTestId(`env-editor-mode-${tool}`)).toBeVisible()
     await editor.getByTestId('env-editor-mode-oneWay').click()
-    await editor.getByRole('button', { name: '속성 / 파일' }).click()
+    await openSheet(editor, 'element')
     await editor.getByTestId('one-way-direction').selectOption('3')
     await editor.getByRole('button', { name: '속성 닫기' }).click()
     await editor.getByTestId('cell-1,1').click()
@@ -291,7 +291,7 @@ test('new elements can be placed, linked, changed and exported through mouse and
   await navigate(page, 'editor')
   const editor = page.getByTestId('env-editor')
   const choose = async (mode: string) => { await editor.getByTestId(`env-editor-mode-${mode}`).click() }
-  await editor.getByRole('button', { name: '속성 / 파일' }).click()
+  await openSheet(editor, 'element')
   await choose('portal')
   await editor.getByTestId('portal-id').fill('PairA')
   await editor.getByTestId('cell-1,1').click()
@@ -316,6 +316,7 @@ test('new elements can be placed, linked, changed and exported through mouse and
   await editor.getByTestId('one-way-direction').selectOption('0')
   await expect(editor.getByTestId('one-way-2,1')).toContainText('↑')
   const download = page.waitForEvent('download')
+  await openSheet(editor, 'file')
   await editor.getByTestId('env-editor-export').click()
   expect((await download).suggestedFilename()).toContain('.json')
   await editor.getByTestId('env-editor-apply').click()

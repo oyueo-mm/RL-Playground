@@ -85,6 +85,9 @@ test('difficulty defaults, turbo controls, navigation safety, completion and pol
   await loadMap(page,{...config(3,3),start:{x:0,y:1},goals:[{x:0,y:0}]})
   await page.getByRole('button',{name:'설정',exact:true}).click();await page.getByTestId('episode-count-input').fill('5');await page.getByTestId('epsilon-number').fill('0');await page.getByRole('button',{name:'설정',exact:true}).click()
   await page.getByTestId('playback-run-episode').click();await expect(page.getByTestId('turbo-dashboard')).toContainText('완료');await expect(page.getByTestId('turbo-progress')).toHaveText('100.0%')
+  // Turbo finished its 5 requested episodes: the completion dialog reports exactly this run, then gets out of the way.
+  await expect(page.getByTestId('training-complete')).toBeVisible();await expect(page.getByTestId('completion-episodes')).toHaveText('5')
+  await page.getByTestId('completion-close').click();await expect(page.getByTestId('training-complete')).toHaveCount(0)
   await page.getByTestId('training-mode').selectOption('normal');await expect(page.getByTestId('learning-grid').getByTestId('grid-svg')).toBeVisible()
   await settings(page);await expect(page.getByTestId('toggle-rewards')).toBeChecked();await expect(page.getByTestId('toggle-reward-animation')).toBeChecked();await expect(page.getByTestId('toggle-live-rewards')).not.toBeChecked()
 })

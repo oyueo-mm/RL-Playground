@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { navigate } from './helpers'
+import { navigate, openSheet } from './helpers'
 
 test('manual play and dismissible import errors preserve editing across all target sizes', async ({ page }, info) => {
   for (const [width, height] of info.project.name === 'mobile' ? [[390,844]] : [[1366,768],[1440,900],[1920,1080],[768,1024]]) {
@@ -25,7 +25,7 @@ test('manual play and dismissible import errors preserve editing across all targ
     await expect(editor.getByTestId('cell-2,2')).toHaveAttribute('data-cell-kind', 'wall')
     await editor.getByTestId('editor-undo').click()
     await expect(editor.getByTestId('cell-2,2')).not.toHaveAttribute('data-cell-kind', 'wall')
-    await editor.getByRole('button', { name: '속성 / 파일' }).click()
+    await openSheet(editor)
     const invalid = { name: 'invalid.json', mimeType: 'application/json', buffer: Buffer.from('{') }
     await editor.getByTestId('env-editor-import-input').setInputFiles(invalid)
     const notice = page.getByTestId('env-editor-errors')
