@@ -32,7 +32,7 @@ test('manual play and dismissible import errors preserve editing across all targ
     await expect(notice).toBeVisible()
     const box = (await notice.boundingBox())!, sidebar = (await page.locator('.sidebar').boundingBox())!
     expect(box.x).toBeGreaterThanOrEqual(Math.max(0, sidebar.x + sidebar.width))
-    const toolbar = (await editor.locator('.floating-toolbar').boundingBox())!
+    const toolbar = (await editor.locator('.floating-toolbar, .mobile-status').first().boundingBox())!
     expect(box.y).toBeGreaterThanOrEqual(toolbar.y + toolbar.height)
     await page.screenshot({ animations: 'disabled', path: info.outputPath(`usability-notice-${width}x${height}.png`) })
     await notice.getByRole('button', { name: '알림 닫기' }).focus(); await page.keyboard.press('Enter')

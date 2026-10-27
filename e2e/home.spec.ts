@@ -61,12 +61,17 @@ test('preset workflow, tooltips, editor history and guide fit all requested view
     await page.keyboard.press('Control+z')
     await expect(editor.getByTestId('one-way-1,1')).toBeVisible()
     await expectFits(page, 'env-editor')
-    await editor.getByTestId('env-editor-mode-oneWay').hover()
-    await expect(page.getByRole('tooltip')).toContainText('시계 방향')
-    const tip = (await page.getByRole('tooltip').boundingBox())!
-    expect(tip.x).toBeGreaterThanOrEqual(0)
-    expect(tip.x + tip.width).toBeLessThanOrEqual(width)
-    expect(tip.y + tip.height).toBeLessThanOrEqual(height)
+    if (info.project.name === 'mobile') {
+      // Touch has no hover: the phone tool row carries the same description as the button's title.
+      await expect(editor.getByTestId('env-editor-mode-oneWay')).toHaveAttribute('title', /시계 방향/)
+    } else {
+      await editor.getByTestId('env-editor-mode-oneWay').hover()
+      await expect(page.getByRole('tooltip')).toContainText('시계 방향')
+      const tip = (await page.getByRole('tooltip').boundingBox())!
+      expect(tip.x).toBeGreaterThanOrEqual(0)
+      expect(tip.x + tip.width).toBeLessThanOrEqual(width)
+      expect(tip.y + tip.height).toBeLessThanOrEqual(height)
+    }
     await page.screenshot({ animations: 'disabled', path: info.outputPath(`workflow-editor-${width}x${height}.png`) })
     await page.keyboard.press('Escape')
     await expect(page.getByRole('tooltip')).toHaveCount(0)

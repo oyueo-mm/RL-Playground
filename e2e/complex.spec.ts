@@ -26,7 +26,7 @@ test('element drag, touch, overwrite, automatic links and undo preserve the expe
   await page.goto('./'); await navigate(page, 'editor')
   const e = page.getByTestId('env-editor')
   await e.getByTestId('cell-1,1').click(); await e.getByTestId('env-editor-mode-select').click()
-  if (info.project.name === 'mobile') await e.getByTestId('touch-move-mode').click()
+  if (info.project.name === 'mobile') await e.getByTestId('touch-edit-mode').click() // phone: one finger moves the selected element
   await drag(page, '1,1', '3,3', info.project.name === 'mobile')
   await expect(e.getByTestId('cell-3,3')).toHaveAttribute('data-cell-kind', 'wall')
   await expect(e.getByTestId('selected-cell-outline')).toHaveAttribute('x', '144')

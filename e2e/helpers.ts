@@ -24,7 +24,10 @@ export async function expectFits(page: Page, scope = 'learning-grid') {
     const box = await grid.boundingBox()
     const viewport = page.viewportSize()!
     const area = await page.getByTestId(scope).getByTestId('grid-viewport').boundingBox()
-    const toolbar = await page.getByTestId(scope).locator('.floating-toolbar').boundingBox()
+    // Desktop floats a toolbar over the stage; the phone editor stacks tool row, status row and action bar around it.
+    const top = page.getByTestId(scope).locator('.floating-toolbar, .mobile-status'), bottom = page.getByTestId(scope).locator('.mobile-actions')
+    const toolbar = (await top.count()) ? await top.first().boundingBox() : null
+    const actions = (await bottom.count()) ? await bottom.first().boundingBox() : null
     const svg = page.getByTestId(scope).getByTestId('grid-svg')
     const columns = Number(await svg.getAttribute('width')) / 48
     const rows = Number(await svg.getAttribute('height')) / 48
@@ -34,6 +37,7 @@ export async function expectFits(page: Page, scope = 'learning-grid') {
       && Math.abs(box.width - columns * cellSize) < 1 && Math.abs(box.height - rows * cellSize) < 1
       && Math.abs(box.x - area.x - (area.width - box.width) / 2) < 1 && Math.abs(box.y - area.y - (area.height - box.height) / 2) < 1
       && (!toolbar || box.y >= toolbar.y + toolbar.height - 1)
+      && (!actions || box.y + box.height <= actions.y + 1)
   }).toBe(true)
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight + 1 && document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
 }

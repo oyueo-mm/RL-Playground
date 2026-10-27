@@ -512,7 +512,7 @@ export function EnvEditor({
     {playing && <ManualPlay config={draftToGridWorldConfig(draft)} locale={locale} active={active} onClose={() => { setPlaying(false); requestAnimationFrame(() => document.querySelector<HTMLButtonElement>('[data-testid=manual-play-start]')?.focus()) }} />}
     <div className="editor-edit-session mobile-editor-session" hidden={playing}>
       <h2 className="sr-only">{t.envEditor.heading}</h2>
-      <ToolStrip tools={MOBILE_TOOLS} mode={mode} labels={modeLabel} onSelect={setMode} ariaLabel={locale === 'ko' ? '맵 편집 도구' : 'Map editing tools'} />
+      <ToolStrip tools={MOBILE_TOOLS} mode={mode} labels={modeLabel} descriptions={tips} onSelect={setMode} ariaLabel={locale === 'ko' ? '맵 편집 도구' : 'Map editing tools'} />
       <div className="mobile-status" role="status" aria-live="polite" data-testid="mobile-status">
         <span className="status-tool" data-testid="mobile-active-tool"><EditorIcon tool={mode} />{modeLabel[mode]}</span>
         {(mode === 'portal' || mode === 'switch' || mode === 'toggleWall') && <span className="link-indicator" data-testid="current-link-id">{mode === 'portal' ? `${effectivePortalId} · ${draft.portals?.find(pair => pair.id === effectivePortalId)?.ends.length ?? 0}/2${portalDirected ? ' →' : ''}` : effectiveGroupId}</span>}

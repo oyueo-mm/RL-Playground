@@ -9,7 +9,7 @@ const color = (id: string) => `hsl(${Math.abs([...id].reduce((sum, letter) => (M
 const formatCost = (value: number) => `${value < 0 ? '−' : ''}${Math.abs(Number(value.toFixed(2)))}`
 /** Triangle pointing from `from` to `to`, placed just before `to`, so a one-way link reads without colour. */
 function arrowHead(from: { x: number; y: number }, to: { x: number; y: number }, size: number) {
-  const angle = Math.atan2(to.y - from.y, to.x - from.x), tip = { x: to.x - Math.cos(angle) * size * 1.2, y: to.y - Math.sin(angle) * size * 1.2 }
+  const angle = Math.atan2(to.y - from.y, to.x - from.x), tip = { x: to.x - Math.cos(angle) * size * 2.6, y: to.y - Math.sin(angle) * size * 2.6 }
   const back = (side: number) => `${tip.x - Math.cos(angle) * size + Math.cos(angle + Math.PI / 2) * side * size * .6},${tip.y - Math.sin(angle) * size + Math.sin(angle + Math.PI / 2) * side * size * .6}`
   return `${tip.x},${tip.y} ${back(1)} ${back(-1)}`
 }
@@ -22,12 +22,13 @@ export function FeatureOverlay({ model, cellSize: s, selected }: { model: EnvRen
       const connected = pair.ends.some(end => positionId(end) === selected)
       const complete = pair.ends.length === 2
       return [connected && complete ? <line key={`link-${pair.id}`} x1={center(pair.ends[0]).x} y1={center(pair.ends[0]).y} x2={center(pair.ends[1]).x} y2={center(pair.ends[1]).y} stroke={color(pair.id)} strokeDasharray="4 4" strokeWidth={1.5} vectorEffect="non-scaling-stroke" /> : null,
-        connected && complete && pair.directed ? <polygon key={`head-${pair.id}`} data-testid={`portal-arrow-${pair.id}`} points={arrowHead(center(pair.ends[0]), center(pair.ends[1]), s * .16)} fill={color(pair.id)} /> : null,
         ...pair.ends.map((end, index) => {
           // One-way pairs: ends[0] is the entrance (A, ◎ with an outgoing arrow label), ends[1] the exit (B, ◉).
           const role = pair.directed ? (index === 0 ? 'entrance' : 'exit') : undefined
           return <g key={`${pair.id}-${positionId(end)}`} data-testid={`portal-${positionId(end)}`} data-portal-role={role}><title>{role ? `One-way portal ${pair.id}: ${role}` : `Portal ${pair.id}`}</title><rect x={end.x * s + 1} y={end.y * s + 1} width={s - 2} height={s - 2} fill={role === 'exit' ? '#e8e3f4' : '#f2eff9'} /><text {...center(end)} textAnchor="middle" dominantBaseline="central" fontSize={s * .47} fill={color(pair.id)}>{role === 'exit' ? '◉' : '◎'}</text><text x={(end.x + .5) * s} y={(end.y + .91) * s} textAnchor="middle" fontSize={s * .18} fill={color(pair.id)}>{role === 'entrance' ? `${pair.id.slice(0, 3)}→` : role === 'exit' ? `→${pair.id.slice(0, 3)}` : pair.id.slice(0, 4)}</text></g>
-        })]
+        }),
+        // Drawn last so the tiles cannot cover it; the tip sits on the exit tile's edge, pointing in.
+        connected && complete && pair.directed ? <polygon key={`head-${pair.id}`} data-testid={`portal-arrow-${pair.id}`} points={arrowHead(center(pair.ends[0]), center(pair.ends[1]), s * .17)} fill={color(pair.id)} stroke="#fff" strokeWidth={s * .03} /> : null]
     })}
     {features.terrains?.map(tile => {
       const cost = tile.cost ?? model.terrainCost ?? -1

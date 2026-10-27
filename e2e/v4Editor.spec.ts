@@ -64,11 +64,21 @@ test('touch editing keeps taps, separates touch painting from scrolling and igno
   expect(await kind(page, '1,1')).toBe('wall')
   const svg = editor.getByTestId('grid-svg')
   const touch = async (type: string, key: string, pointerId = 7) => { const p = await center(page, key); await svg.dispatchEvent(type, { pointerType: 'touch', pointerId, isPrimary: pointerId === 7, button: 0, buttons: 1, clientX: p.x, clientY: p.y }) }
-  // Touch paint off: a finger drag does not paint.
-  await touch('pointerdown', '1,3'); await touch('pointermove', '4,3'); await touch('pointerup', '4,3')
+  // Pan-view mode: a finger drag moves the camera and does not paint.
+  const camera = editor.getByTestId('grid-viewport'), panBefore = await camera.getAttribute('data-pan-x')
+  await editor.getByTestId('touch-pan-mode').click()
+  await expect(editor.getByTestId('touch-pan-mode')).toHaveAttribute('aria-pressed', 'true')
+  // Real touch events through CDP (synthetic pointer ids cannot be captured by the camera).
+  const cdp = await page.context().newCDPSession(page), from = await center(page, '1,3'), to = await center(page, '4,3')
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: from.x, y: from.y }] })
+  for (let i = 1; i <= 6; i++) await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: from.x + (to.x - from.x) * i / 6, y: from.y }] })
+  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
   expect(await kind(page, '2,3')).toBe('empty')
-  await editor.getByTestId('touch-paint-mode').click()
-  await expect(editor.getByTestId('touch-paint-mode')).toHaveAttribute('aria-pressed', 'true')
+  expect(await camera.getAttribute('data-pan-x')).not.toBe(panBefore)
+  await editor.getByTestId('env-editor-grid').getByRole('button', { name: 'Fit entire map' }).click()
+  // Draw mode (the default): the same drag paints.
+  await editor.getByTestId('touch-edit-mode').click()
+  await expect(editor.getByTestId('touch-edit-mode')).toHaveAttribute('aria-pressed', 'true')
   await touch('pointerdown', '1,3'); await touch('pointermove', '4,3'); await touch('pointerup', '4,3')
   for (const key of ['1,3', '2,3', '3,3', '4,3']) expect(await kind(page, key)).toBe('wall')
   // A second finger turns the gesture into a pinch and discards the stroke.
@@ -77,7 +87,7 @@ test('touch editing keeps taps, separates touch painting from scrolling and igno
   await page.getByTestId('env-editor').getByTestId('grid-viewport').dispatchEvent('pointerdown', { pointerType: 'touch', pointerId: 8, isPrimary: false, button: 0, clientX: second.x, clientY: second.y })
   await touch('pointerup', '3,5')
   expect(await kind(page, '2,5')).toBe('empty')
-  await page.screenshot({ animations: 'disabled', path: 'docs/screenshots/v4/touch-paint-390x844.png' })
+  await page.screenshot({ animations: 'disabled', path: info.outputPath('touch-paint-390x844.png') })
 })
 
 test('element inspector edits per-element values and mixed initial gate states at every target size', async ({ page }, info) => {
