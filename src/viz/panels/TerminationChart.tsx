@@ -86,7 +86,7 @@ export function TerminationChart({ episodeStatsHistory, lifetimeCounts, t = tran
           const barWidth = (count / maxCount) * barAreaWidth
           return (
             <g key={reason} data-testid={`termination-chart-bar-${reason}`}>
-              <text x={PADDING} y={y + BAR_HEIGHT / 2} dominantBaseline="middle" fontSize={11} fill="#374151">
+              <text x={PADDING} y={y + BAR_HEIGHT / 2} dominantBaseline="middle" fontSize={12} fill="#374151">
                 {label[reason]}
               </text>
               <rect
@@ -101,7 +101,7 @@ export function TerminationChart({ episodeStatsHistory, lifetimeCounts, t = tran
                 x={PADDING + LABEL_WIDTH + barAreaWidth + 4}
                 y={y + BAR_HEIGHT / 2}
                 dominantBaseline="middle"
-                fontSize={11}
+                fontSize={12}
                 fill="#374151"
                 data-testid={`termination-chart-count-${reason}`}
               >

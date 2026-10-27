@@ -127,7 +127,7 @@ function RewardChartView({
             y={yTickPos(tick)}
             textAnchor="end"
             dominantBaseline="middle"
-            fontSize={8}
+            fontSize={11}
             fill="#6b7280"
             data-testid={`reward-chart-y-tick-${formatTick(tick)}`}
           >
@@ -140,7 +140,7 @@ function RewardChartView({
             x={xTickPos(tick)}
             y={height - PADDING_BOTTOM + 10}
             textAnchor="middle"
-            fontSize={8}
+            fontSize={11}
             fill="#6b7280"
             data-testid={`reward-chart-x-tick-${Math.round(tick)}`}
           >

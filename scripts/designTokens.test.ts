@@ -20,6 +20,18 @@ describe('Design tokens', () => {
     }
     expect([...offenders]).toEqual([])
   })
+  it('uses a control border that meets 3:1 on every surface a control sits on (WCAG 1.4.11), while dividers stay light', () => {
+    const lum = (hex: string) => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2] }
+    const ratio = (a: string, b: string) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + .05) / (y + .05) }
+    const control = token('control-border')!
+    for (const surface of ['surface', 'bg-app', 'surface-muted', 'primary-soft', 'hover']) expect(ratio(control, token(surface)!), `control-border on ${surface}`).toBeGreaterThanOrEqual(3)
+    expect(ratio(token('line')!, token('surface')!)).toBeLessThan(2) // decorative divider is deliberately not darkened
+    expect(css).toMatch(/input:not\(\[type=checkbox\]\)[^{]*\{ border-color: var\(--control-border\)/)
+  })
+  it('sets no interface text below 10px in the stylesheet', () => {
+    const small = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].filter(m => /font-size:\s*(\d+(?:\.\d+)?)px/.test(m[2]) && Number(/font-size:\s*(\d+(?:\.\d+)?)px/.exec(m[2])![1]) < 10).map(m => m[1].trim())
+    expect(small).toEqual([])
+  })
   it('meets WCAG AA for the main text/background pairs', () => {
     const lum = (hex: string) => { const c = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(v => v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2] }
     const ratio = (a: string, b: string) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + .05) / (y + .05) }

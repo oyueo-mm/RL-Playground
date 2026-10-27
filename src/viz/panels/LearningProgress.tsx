@@ -139,7 +139,7 @@ function MiniTrendChart({
             y={yTickPos(tick)}
             textAnchor="end"
             dominantBaseline="middle"
-            fontSize={7}
+            fontSize={10}
             fill="#6b7280"
             data-testid={`${testIdPrefix}-y-tick-${formatTick(tick)}`}
           >
@@ -152,7 +152,7 @@ function MiniTrendChart({
             x={xTickPos(tick)}
             y={CHART_HEIGHT - PADDING_BOTTOM + 9}
             textAnchor="middle"
-            fontSize={7}
+            fontSize={10}
             fill="#6b7280"
             data-testid={`${testIdPrefix}-x-tick-${Math.round(tick)}`}
           >

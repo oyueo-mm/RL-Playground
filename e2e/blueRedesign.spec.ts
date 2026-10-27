@@ -79,3 +79,47 @@ test('mobile menu and language switching keep working on the simplified home', a
   await expect(page.getByRole('button', { name: /Start learning/ })).toBeVisible()
   await page.screenshot({ animations: 'disabled', path: info.outputPath('blue-home-en-390x844.png') })
 })
+
+test('interface text stays at or above 11px and form controls have 3:1 borders on the main screens', async ({ page }) => {
+  test.setTimeout(120000)
+  page.on('dialog', d => d.accept())
+  await page.goto('./')
+  const smallText = () => page.evaluate(() => {
+    const out = new Set<string>(), walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+    for (let n; (n = walker.nextNode());) {
+      const el = n.parentElement!, t = n.textContent!.trim()
+      if (!t || el.closest('script,style,.sr-only,svg')) continue // SVG labels scale with the map/chart and are checked separately
+      const r = el.getBoundingClientRect(), cs = getComputedStyle(el)
+      if (!r.width || !r.height || cs.visibility === 'hidden' || parseFloat(cs.fontSize) === 0) continue
+      if (parseFloat(cs.fontSize) < 10.99) out.add(`${el.tagName.toLowerCase()}.${el.className} ${cs.fontSize} "${t.slice(0, 30)}"`)
+    }
+    return [...out]
+  })
+  const weakControls = () => page.evaluate(() => {
+    const lum = (c: number[]) => { const v = c.map(x => x / 255).map(x => x <= .03928 ? x / 12.92 : ((x + .055) / 1.055) ** 2.4); return .2126 * v[0] + .7152 * v[1] + .0722 * v[2] }
+    const parse = (v: string) => { const m = /rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)/.exec(v); return m ? [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]] : null }
+    const under = (el: Element) => { for (let e = el.parentElement; e; e = e.parentElement) { const c = parse(getComputedStyle(e).backgroundColor); if (c && c[3] > .9) return c } return [250, 251, 253, 1] }
+    const out: string[] = []
+    for (const el of document.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):not([type=hidden]), select, textarea')) {
+      const r = el.getBoundingClientRect(); if (!r.width || !r.height || (el as HTMLInputElement).disabled) continue
+      const cs = getComputedStyle(el), b = parse(cs.borderTopColor), w = parseFloat(cs.borderTopWidth)
+      const [x, y] = [lum(b ?? [0, 0, 0]), lum(under(el))].sort((p, q) => q - p)
+      if (!b || w < 1 || (x + .05) / (y + .05) < 3) out.push(`${el.getAttribute('data-testid') ?? el.tagName} ${cs.borderTopColor} ${w}px`)
+    }
+    return out
+  })
+  const nav = async (id: string) => { if (id !== 'presets' && await page.locator('#preset-panel').isVisible()) await page.locator('#preset-panel > header button').click(); const m = page.locator('#mobile-menu'); if (await m.isVisible()) await m.click(); await page.getByTestId(`nav-${id}`).click(); await page.waitForTimeout(300) }
+  const audit = async (label: string) => { expect(await smallText(), `small text on ${label}`).toEqual([]); expect(await weakControls(), `weak control borders on ${label}`).toEqual([]) }
+  await audit('home')
+  await nav('environment'); await audit('environment')
+  await page.getByRole('button', { name: '설정', exact: true }).click(); await audit('settings')
+  for (const tab of await page.getByRole('tab').all()) { await tab.click(); await audit('settings tab') }
+  await page.getByRole('button', { name: '설정', exact: true }).click()
+  await nav('editor'); await page.getByRole('button', { name: /속성 \/ 파일/ }).click(); await audit('editor properties')
+  await page.getByTestId('env-editor-mode-select').click(); await page.getByTestId('env-editor-grid').getByTestId('cell-6,6').click(); await audit('editor inspector')
+  await nav('presets'); await page.locator('.gallery-thumbnails > button').nth(2).click(); await audit('presets')
+  await nav('guide'); await page.locator('.chapter-navigation button').nth(4).click(); await audit('guide calculator')
+  await nav('home')
+  expect(await page.evaluate(() => document.body.textContent!.includes('30 WORLDS'))).toBe(false)
+  await expect(page.locator('.demo-label')).toHaveText('설명용 시연')
+})

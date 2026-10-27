@@ -31,6 +31,9 @@ describe('Home hero is reduced to the title, two actions and the live demos', ()
     for (const gone of REMOVED) expect(outside.textContent, gone).not.toContain(gone)
     expect(outside.children).toHaveLength(1) // only the hero layout
     expect(document.body.textContent).not.toContain('RL Playground')
+    // The decorative card label is gone in both languages, while the scripted-demo disclosure stays.
+    expect(page.textContent).not.toContain('30 WORLDS')
+    expect(page.querySelector('.demo-heading')!.textContent).toBe(locale === 'ko' ? '설명용 시연' : 'SCRIPTED DEMO')
     expect(document.querySelector('.home-eyebrow, .eyebrow-line, .hero-kicker, .hero-description, .hero-meta, .algorithm-tags, .home-footer, .home-feature-links, .status-dot, .heading-dot')).toBeNull()
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(title)
     const lines = [...page.querySelector('.hero-copy h2')!.childNodes].map(node => node.nodeName === 'BR' ? ' ' : node.textContent).join('')
