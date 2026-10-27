@@ -21,6 +21,7 @@ export function RewardInfo({model,locale}:{model:EnvRenderModel;locale:Locale}) 
     {open&&<div role="dialog" aria-label={l.rules} className="reward-info-popover" data-testid="reward-info-popover">
       <strong>{l.rules}</strong><button aria-label={l.close} onClick={close}>×</button>
       <dl>{[['Goal',model.goalReward],['Bomb',model.bombPenalty],[t.step,model.stepReward],[t.wall,model.wallPenalty]].map(([label,value])=><div key={label}><dt>{label}</dt><dd>{Number(value)>0?'+':''}{value}</dd></div>)}</dl>
+      {(model.goalRewards||model.bombPenalties)&&<p data-testid="reward-info-overrides">{locale==='ko'?`개별 값: 목표 ${Object.keys(model.goalRewards??{}).length}개 · 폭탄 ${Object.keys(model.bombPenalties??{}).length}개 (나머지는 위 기본값)`:`Custom values: ${Object.keys(model.goalRewards??{}).length} goals · ${Object.keys(model.bombPenalties??{}).length} bombs (others use the defaults above)`}</p>}
       <p>{t.firstGoal}</p>
     </div>}
   </div>

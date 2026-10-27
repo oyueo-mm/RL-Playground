@@ -2,12 +2,12 @@
 import { expect, it } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createElement } from 'react'
-import { SimulationEngine } from './SimulationEngine'
-import { DEFAULT_RESOURCE_BUDGET } from './resources'
-import { GREEDY_PLAYBACK_SLIDER, GREEDY_PLAYBACK_SPEED, speedToSlider } from '../../viz/controls/speedSlider'
-import { SpeedControl } from '../../viz/controls/SpeedControl'
-import { createDefaultGridWorldConfig } from '../environments/gridworld/GridWorldEnv'
-import type { TimerSource } from './Scheduler'
+import { SimulationEngine } from '../core/engine/SimulationEngine'
+import { DEFAULT_RESOURCE_BUDGET } from '../core/engine/resources'
+import { GREEDY_PLAYBACK_SLIDER, GREEDY_PLAYBACK_SPEED, speedToSlider } from '../viz/controls/speedSlider'
+import { SpeedControl } from '../viz/controls/SpeedControl'
+import { createDefaultGridWorldConfig } from '../core/environments/gridworld/GridWorldEnv'
+import type { TimerSource } from '../core/engine/Scheduler'
 
 const manual = (): TimerSource => ({ now: () => 0, setTimeout: () => 1, clearTimeout: () => {}, requestAnimationFrame: () => 2, cancelAnimationFrame: () => {} })
 

@@ -10,12 +10,19 @@
 // already implements — no duplicated/diverging validation logic between the Editor's own
 // manual-edit path and this file-import path.
 
-import type { Position } from '../../core/environments/gridworld/types'
+import type { BombTile, GoalTile, Position } from '../../core/environments/gridworld/types'
 import type { GridFeatures } from '../../core/environments/gridworld/types'
-import { copyFeatures, readFeatures } from '../../core/environments/gridworld/features'
+import { copyFeatures, hasElementOverrides, readFeatures } from '../../core/environments/gridworld/features'
 import { validateDraft, type GridEditorDraft } from './envEditorDraft'
 
-export const ENV_EXPORT_VERSION = 2
+/**
+ * V4 — version 3 adds optional per-element fields (goal `reward`, bomb `penalty`, toggle
+ * wall `initialOpen`). Exports use the lowest version able to represent the map, so a map
+ * without those fields still exports as version 2 and stays readable by earlier builds,
+ * while a file that relies on them can never be silently misread as a version 2 map.
+ */
+export const ENV_EXPORT_VERSION = 3
+const LEGACY_FEATURE_VERSION = 2
 export const ENV_EXPORT_TYPE = 'gridworld'
 
 export interface EnvExportFile extends GridFeatures {
@@ -24,9 +31,9 @@ export interface EnvExportFile extends GridFeatures {
   width: number
   height: number
   start: Position
-  goals: Position[]
+  goals: GoalTile[]
   walls: Position[]
-  bombs: Position[]
+  bombs: BombTile[]
   stepReward: number
   wallPenalty: number
   goalReward: number
@@ -35,7 +42,7 @@ export interface EnvExportFile extends GridFeatures {
 
 export function draftToExportFile(draft: GridEditorDraft): EnvExportFile {
   return {
-    version: ENV_EXPORT_VERSION,
+    version: hasElementOverrides(draft) ? ENV_EXPORT_VERSION : LEGACY_FEATURE_VERSION,
     type: ENV_EXPORT_TYPE,
     width: draft.width,
     height: draft.height,
@@ -98,7 +105,7 @@ export function parseEnvImport(text: string): ImportResult {
   const candidate = parsed as Record<string, unknown>
   if (candidate.rewardTiles !== undefined && (!Array.isArray(candidate.rewardTiles) || candidate.rewardTiles.length > 0)) return { ok: false, error: 'Reward tiles are no longer supported. Remove rewardTiles explicitly before importing this map.' }
 
-  if (candidate.version !== 1 && candidate.version !== ENV_EXPORT_VERSION) {
+  if (candidate.version !== 1 && candidate.version !== LEGACY_FEATURE_VERSION && candidate.version !== ENV_EXPORT_VERSION) {
     return { ok: false, error: `Unsupported export version (expected ${ENV_EXPORT_VERSION}).` }
   }
   if (candidate.type !== ENV_EXPORT_TYPE) {
@@ -132,14 +139,18 @@ export function parseEnvImport(text: string): ImportResult {
   let features: GridFeatures
   try { features = readFeatures(candidate) } catch (error) { return { ok: false, error: (error as Error).message } }
   if (candidate.version === 1 && Object.keys(features).length) return { ok: false, error: 'New environment elements require schema version 2.' }
+  // Keep only known per-element fields; the semantic check of their values is validateDraft()'s.
+  const goals: GoalTile[] = candidate.goals.map(({ x, y, reward }: GoalTile) => reward === undefined ? { x, y } : { x, y, reward })
+  const bombList: BombTile[] = bombs.map(({ x, y, penalty }: BombTile) => penalty === undefined ? { x, y } : { x, y, penalty })
+  if (candidate.version !== ENV_EXPORT_VERSION && hasElementOverrides({ goals, bombs: bombList, ...features })) return { ok: false, error: 'Per-element rewards and initial gate states require schema version 3.' }
 
   const draft: GridEditorDraft = {
     width: candidate.width,
     height: candidate.height,
     start: candidate.start,
-    goals: candidate.goals,
+    goals,
     walls,
-    bombs,
+    bombs: bombList,
     stepReward,
     wallPenalty,
     goalReward,

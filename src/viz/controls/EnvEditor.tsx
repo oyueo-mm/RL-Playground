@@ -90,7 +90,7 @@ export function EnvEditor({
   const redo = () => { if (canRedo) { dirty.current = true; redoHistory() } }
   const setDraft: Dispatch<SetStateAction<GridEditorDraft>> = action => { dirty.current = true; commit(action) }
   const recordInput = (action: SetStateAction<GridEditorDraft>, key: string) => { dirty.current = true; commit(action, key) }
-  const seedKey = JSON.stringify([currentRenderModel.width, currentRenderModel.height, currentRenderModel.start, currentRenderModel.allGoals ?? currentRenderModel.goals, currentRenderModel.staticWalls ?? currentRenderModel.walls, currentRenderModel.bombs, currentRenderModel.stepReward, currentRenderModel.wallPenalty, currentRenderModel.goalReward, currentRenderModel.bombPenalty, currentRenderModel.features])
+  const seedKey = JSON.stringify([currentRenderModel.width, currentRenderModel.height, currentRenderModel.start, currentRenderModel.allGoals ?? currentRenderModel.goals, currentRenderModel.staticWalls ?? currentRenderModel.walls, currentRenderModel.bombs, currentRenderModel.stepReward, currentRenderModel.wallPenalty, currentRenderModel.goalReward, currentRenderModel.bombPenalty, currentRenderModel.features, currentRenderModel.goalRewards, currentRenderModel.bombPenalties])
   const previousSeed = useRef(seedKey)
   useEffect(() => {
     const incoming = draftFromRenderModel(currentRenderModel)

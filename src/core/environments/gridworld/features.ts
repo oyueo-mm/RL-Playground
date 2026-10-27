@@ -1,4 +1,4 @@
-import type { GridFeatures, GridWorldConfig, Position } from './types'
+import type { BombTile, GoalTile, GridFeatures, GridWorldConfig, Position, ToggleWallTile } from './types'
 
 export const FEATURE_FIELDS = ['portals', 'oneWays', 'fragiles', 'switches', 'toggleWalls'] as const
 /** Informational complexity threshold, never an admission limit. */
@@ -20,10 +20,28 @@ export function readFeatures(raw: Record<string, unknown>): GridFeatures {
         if (!isPosition(item)) throw new Error(`Invalid ${name} coordinates.`)
         if (name === 'oneWays' && ![0, 1, 2, 3].includes((item as unknown as { direction: number }).direction)) throw new Error('One-way direction must be 0, 1, 2 or 3.')
         if ((name === 'switches' || name === 'toggleWalls') && !validId((item as unknown as { groupId: string }).groupId)) throw new Error('Invalid switch/wall group ID.')
+        if (name === 'toggleWalls' && (item as ToggleWallTile).initialOpen !== undefined && typeof (item as ToggleWallTile).initialOpen !== 'boolean') throw new Error('Toggle wall initial state must be open or closed.')
       }
     }
   }
   return Object.fromEntries(FEATURE_FIELDS.filter(name => Array.isArray(raw[name]) && (raw[name] as unknown[]).length > 0).map(name => [name, structuredClone(raw[name])])) as GridFeatures
+}
+
+/** V4 — a toggle wall's live state: its own initial state flipped once per odd group toggle. */
+export const toggleWallOpen = (tile: ToggleWallTile, groupToggled: boolean): boolean => !!tile.initialOpen !== groupToggled
+/** V4 — per-element values; omitted means "inherit the map-wide goalReward/bombPenalty". */
+export const goalRewardOf = (goal: GoalTile, fallback: number): number => goal.reward ?? fallback
+export const bombPenaltyOf = (bomb: BombTile, fallback: number): number => bomb.penalty ?? fallback
+/** Any finite real (positive, zero or negative) is a valid per-element override, same policy as the map-wide fields. */
+export function elementValueErrors(map: { goals: GoalTile[]; bombs: BombTile[] }): string[] {
+  const errors: string[] = []
+  if (map.goals.some(goal => goal.reward !== undefined && (typeof goal.reward !== 'number' || !Number.isFinite(goal.reward)))) errors.push('Goal rewards must be finite numbers.')
+  if (map.bombs.some(bomb => bomb.penalty !== undefined && (typeof bomb.penalty !== 'number' || !Number.isFinite(bomb.penalty)))) errors.push('Bomb penalties must be finite numbers.')
+  return errors
+}
+/** True when a map uses any V4-only per-element field (drives the export schema version). */
+export function hasElementOverrides(map: { goals: GoalTile[]; bombs: BombTile[] } & GridFeatures): boolean {
+  return map.goals.some(goal => goal.reward !== undefined) || map.bombs.some(bomb => bomb.penalty !== undefined) || !!map.toggleWalls?.some(tile => tile.initialOpen)
 }
 
 export function featurePositions(features: GridFeatures): Position[] {
@@ -50,8 +68,8 @@ export function stateSpaceDetails(map: Pick<GridWorldConfig, 'width' | 'height' 
 
 /** New features share no coordinates with each other or any ordinary map element. */
 export function validateFeatures(map: Pick<GridWorldConfig, 'width' | 'height' | 'start' | 'goals' | 'walls' | 'bombs'> & GridFeatures): string[] {
-  const errors: string[] = []
-  try { readFeatures(map as unknown as Record<string, unknown>) } catch (error) { return [(error as Error).message] }
+  const errors: string[] = elementValueErrors(map)
+  try { readFeatures(map as unknown as Record<string, unknown>) } catch (error) { return [...errors, (error as Error).message] }
   const positions = featurePositions(map)
   if (!Number.isInteger(map.width) || !Number.isInteger(map.height) || map.width < 1 || map.height < 1 || map.width > 64 || map.height > 64) errors.push('Feature maps require integer dimensions between 1 and 64.')
   if (!positions.length && !map.portals?.length) return errors

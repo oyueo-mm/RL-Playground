@@ -7,12 +7,22 @@ export type Direction = 0 | 1 | 2 | 3
 export interface PortalPair { id: string; ends: Position[] }
 export interface OneWayTile extends Position { direction: Direction }
 export interface GroupTile extends Position { groupId: string }
+/**
+ * V4 — a toggle wall may start open. Omitted/false means closed (every pre-V4 map).
+ * A switch flips every wall of its group relative to its own current state, so the wall's
+ * live state is `initialOpen XOR (group toggled an odd number of times)`.
+ */
+export interface ToggleWallTile extends GroupTile { initialOpen?: boolean }
+/** V4 — a Goal with an optional own first-collection reward; omitted inherits `goalReward`. */
+export interface GoalTile extends Position { reward?: number }
+/** V4 — a Bomb with an optional own penalty (same sign convention as `bombPenalty`); omitted inherits it. */
+export interface BombTile extends Position { penalty?: number }
 export interface GridFeatures {
   portals?: PortalPair[]
   oneWays?: OneWayTile[]
   fragiles?: Position[]
   switches?: GroupTile[]
-  toggleWalls?: GroupTile[]
+  toggleWalls?: ToggleWallTile[]
 }
 
 export interface GridWorldConfig extends GridFeatures {
@@ -20,7 +30,7 @@ export interface GridWorldConfig extends GridFeatures {
   height: number
   start: Position
   /** Phase 30 — one or more Goals; Episode ends only once every Goal has been collected. */
-  goals: Position[]
+  goals: GoalTile[]
   walls: Position[]
   stepReward: number
   /**
@@ -39,7 +49,7 @@ export interface GridWorldConfig extends GridFeatures {
    * `terminalCells` carries no reward information of its own — bombs need a distinct,
    * uniform penalty value alongside their positions.
    */
-  bombs: Position[]
+  bombs: BombTile[]
   bombPenalty: number
 }
 

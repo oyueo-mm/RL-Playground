@@ -2,8 +2,8 @@
 // file only exports the React component (keeps Fast Refresh happy — react-refresh/
 // only-export-components). No React here at all.
 
-import { createDefaultGridWorldConfig } from '../../core/environments/gridworld/GridWorldEnv'
-import type { GridWorldConfig, GridFeatures, Position } from '../../core/environments/gridworld/types'
+import { createDefaultGridWorldConfig, elementRewardFields } from '../../core/environments/gridworld/GridWorldEnv'
+import type { BombTile, GoalTile, GridWorldConfig, GridFeatures, Position } from '../../core/environments/gridworld/types'
 import { copyFeatures, validateFeatures } from '../../core/environments/gridworld/features'
 import type { EnvRenderModel } from '../../core/types/render'
 import { parseStateKey, toStateKey } from '../grid/stateKey'
@@ -19,10 +19,11 @@ export interface GridEditorDraft extends GridFeatures {
   width: number
   height: number
   start: Position
-  /** Phase 30 — one or more Goals; at least one is required. */
-  goals: Position[]
+  /** Phase 30 — one or more Goals; at least one is required. V4: optional own `reward`. */
+  goals: GoalTile[]
   walls: Position[]
-  bombs: Position[]
+  /** V4: optional own `penalty`; omitted inherits `bombPenalty`. */
+  bombs: BombTile[]
   stepReward: number
   wallPenalty: number
   goalReward: number
@@ -59,15 +60,19 @@ export function samePosition(a: Position, b: Position): boolean {
   return a.x === b.x && a.y === b.y
 }
 
+function withValue(pos: Position, key: 'reward' | 'penalty', value: number | undefined): GoalTile & BombTile {
+  return value === undefined ? pos : { ...pos, [key]: value }
+}
+
 export function draftFromRenderModel(renderModel: Extract<EnvRenderModel, { kind: 'grid' }>): GridEditorDraft {
   return {
     width: renderModel.width,
     height: renderModel.height,
     start: parseStateKey(renderModel.start),
-    goals: (renderModel.allGoals ?? renderModel.goals).map(parseStateKey),
+    goals: (renderModel.allGoals ?? renderModel.goals).map(key => withValue(parseStateKey(key), 'reward', renderModel.goalRewards?.[key])),
     walls: (renderModel.staticWalls ?? renderModel.walls).map(parseStateKey),
     ...copyFeatures(renderModel.features ?? {}),
-    bombs: renderModel.bombs.map(parseStateKey),
+    bombs: renderModel.bombs.map(key => withValue(parseStateKey(key), 'penalty', renderModel.bombPenalties?.[key])),
     // renderModel's reward fields are optional (see EnvRenderModel's Phase 30 comment) —
     // fall back to the environment's own documented defaults when a caller's renderModel
     // doesn't carry them (e.g. an older/synthetic renderModel in a test).
@@ -109,6 +114,7 @@ export function draftToRenderModel(draft: GridEditorDraft): Extract<EnvRenderMod
     stepReward: draft.stepReward,
     wallPenalty: draft.wallPenalty,
     goalReward: draft.goalReward,
+    ...elementRewardFields(draft),
     start: toStateKey(draft.start),
     goals: draft.goals.map(toStateKey),
     // No live agent exists for a Draft — Start is shown as a stand-in so the preview

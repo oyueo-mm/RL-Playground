@@ -61,10 +61,17 @@ export type EnvRenderModel = {
    * do not need to be touched.
    */
   allGoals?: StateKey[]
+  /**
+   * V4 — per-element overrides only (cells absent here use goalReward / bombPenalty).
+   * Keyed by the static cell, so a collected Goal keeps its entry for the editor seed.
+   */
+  goalRewards?: Record<StateKey, number>
+  bombPenalties?: Record<StateKey, number>
   agentPos: StateKey
   features?: GridFeatures
   staticWalls?: StateKey[]
   collapsedFragiles?: StateKey[]
+  /** Groups toggled an odd number of times this Episode; each wall's state is toggleWallOpen(tile, toggled). */
   openGroups?: string[]
 }
 // Future non-grid environments add a member to this union (e.g. { kind: 'graph'; ... }).

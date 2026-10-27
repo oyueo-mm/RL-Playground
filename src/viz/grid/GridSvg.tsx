@@ -6,6 +6,7 @@
 import type { EnvRenderModel } from '../../core/types/render'
 import type { StateKey } from '../../core/types/rl'
 import { FeatureOverlay } from './FeatureOverlay'
+import { toggleWallOpen } from '../../core/environments/gridworld/features'
 import { memo, type SVGProps } from 'react'
 
 type GridRenderModel = Extract<EnvRenderModel, { kind: 'grid' }>
@@ -54,7 +55,7 @@ function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onState
   renderModel.features?.oneWays?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `One-way ${['up', 'down', 'left', 'right'][tile.direction]}`))
   renderModel.features?.fragiles?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, renderModel.collapsedFragiles?.includes(`${tile.x},${tile.y}`) ? 'Collapsed fragile tile' : 'Fragile tile'))
   renderModel.features?.switches?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `Switch ${tile.groupId}`))
-  renderModel.features?.toggleWalls?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `Toggle wall ${tile.groupId}, ${renderModel.openGroups?.includes(tile.groupId) ? 'open' : 'closed'}`))
+  renderModel.features?.toggleWalls?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `Toggle wall ${tile.groupId}, ${toggleWallOpen(tile, renderModel.openGroups?.includes(tile.groupId) ?? false) ? 'open' : 'closed'}`))
 
   const cellFill: Record<CellKind, string> = {
     empty: '#ffffff',
@@ -87,6 +88,8 @@ function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onState
       height={svgHeight}
       viewBox={`0 0 ${svgWidth} ${svgHeight}`}
       className={className}
+      // Grid glyphs are graphics, not prose: repeated clicks must never paint a text selection.
+      style={{ userSelect: 'none', WebkitUserSelect: 'none' }}
       role={onStateSelect ? 'group' : 'img'}
       aria-label={ariaLabel}
       data-testid="grid-svg"

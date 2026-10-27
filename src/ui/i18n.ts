@@ -604,6 +604,10 @@ export function translateValidationError(message: string, locale: Locale): strin
     'Each toggle group needs at least one switch and one wall.': '각 그룹에 스위치와 토글 벽이 최소 하나씩 필요합니다.',
     'Special element coordinates are outside the map.': '특수 요소가 맵 범위를 벗어났습니다. 연결과 좌표를 수정하세요.',
     'New environment elements require schema version 2.': '새 환경 요소는 JSON 버전 2가 필요합니다.',
+    'Goal rewards must be finite numbers.': '목표별 보상은 유한한 숫자여야 합니다.',
+    'Bomb penalties must be finite numbers.': '폭탄별 페널티는 유한한 숫자여야 합니다.',
+    'Toggle wall initial state must be open or closed.': '토글 벽의 초기 상태는 열림 또는 닫힘이어야 합니다.',
+    'Per-element rewards and initial gate states require schema version 3.': '개별 보상·토글 벽 초기 상태는 JSON 버전 3이 필요합니다.',
   }
   if (featureMessages[message]) return featureMessages[message]
   if (message.startsWith('Overlapping map elements at ')) return `같은 셀에 여러 요소가 겹칩니다: ${message.slice(28)}`

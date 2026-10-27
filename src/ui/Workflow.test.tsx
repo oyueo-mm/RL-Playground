@@ -57,14 +57,14 @@ describe('Preset and settings workflow', () => {
     expect(input.value).toBe(String(expected));expect(screen.getByTestId('nav-environment').getAttribute('aria-current')).toBe('page')
     fireEvent.change(input,{target:{value:'6789'}});click('nav-editor');click('nav-environment');expect(input.value).toBe('6789')
   })
-  it.each([['01_meadow_walk','100'],['07_forked_village','250'],['13_crossroads_expedition','500'],['19_multi_goal_expedition','1000'],['25_obsidian_citadel','2000']])('applies difficulty defaults only on accepted application of %s',(id,count)=>{
+  it.each([['01_meadow_walk','500'],['07_forked_village','1000'],['13_crossroads_expedition','2000'],['19_multi_goal_expedition','3000'],['25_obsidian_citadel','5000']])('applies difficulty defaults only on accepted application of %s',(id,count)=>{
     render(<App/>);click('nav-environment')
     const input=screen.getByTestId('episode-count-input') as HTMLInputElement
-    fireEvent.change(input,{target:{value:'5000'}})
+    fireEvent.change(input,{target:{value:'4321'}})
     click('nav-presets');click(`preset-${id}`)
-    expect(input.value).toBe('5000')
+    expect(input.value).toBe('4321')
     const confirm=vi.spyOn(window,'confirm').mockReturnValue(false)
-    fireEvent.click(screen.getByRole('button',{name:'맵 적용하기'}));expect(input.value).toBe('5000')
+    fireEvent.click(screen.getByRole('button',{name:'맵 적용하기'}));expect(input.value).toBe('4321')
     confirm.mockReturnValue(true);fireEvent.click(screen.getByRole('button',{name:'맵 적용하기'}));expect(input.value).toBe(count)
     fireEvent.change(input,{target:{value:'10000'}});click('nav-home');click('nav-results');click('nav-environment');expect(input.value).toBe('10000')
     click('nav-presets');click('preset-01_meadow_walk');fireEvent.click(screen.getByRole('button',{name:'편집기로 불러오기'}));expect(input.value).toBe('10000')

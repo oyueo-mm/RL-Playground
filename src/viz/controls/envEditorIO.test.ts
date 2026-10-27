@@ -21,7 +21,9 @@ function sampleDraft(overrides: Partial<GridEditorDraft> = {}): GridEditorDraft 
 describe('envEditorIO — draftToExportFile / serializeEnvExport', () => {
   it('draftToExportFile carries version/type plus every Draft field', () => {
     const file = draftToExportFile(sampleDraft())
-    expect(file.version).toBe(ENV_EXPORT_VERSION)
+    // V4: maps without per-element fields keep exporting as version 2 (lowest representable).
+    expect(file.version).toBe(2)
+    expect(ENV_EXPORT_VERSION).toBe(3)
     expect(file.type).toBe(ENV_EXPORT_TYPE)
     expect(file.width).toBe(4)
     expect(file.height).toBe(4)

@@ -32,7 +32,7 @@ import type { Environment, EnvironmentDefinition } from '../Environment'
 import type { StateKey, StepResult } from '../../types/rl'
 import type { EnvRenderModel } from '../../types/render'
 import type { GridWorldConfig, LegacyGridWorldConfigInput, Position } from './types'
-import { groupIds, readFeatures, validateFeatures, positionId } from './features'
+import { bombPenaltyOf, goalRewardOf, groupIds, readFeatures, toggleWallOpen, validateFeatures, positionId } from './features'
 
 // 0=up, 1=down, 2=left, 3=right — same encoding as the reference repo (LEGACY_ANALYSIS.md §2).
 const ACTION_SPACE = 4
@@ -94,6 +94,15 @@ export function normalizeGridWorldConfig(raw: unknown): GridWorldConfig {
   return structuredClone(result)
 }
 
+/** V4 — only overridden cells are listed, so legacy maps produce no extra render fields. */
+export function elementRewardFields(config: Pick<GridWorldConfig, 'goals' | 'bombs'>): Pick<EnvRenderModel, 'goalRewards' | 'bombPenalties'> {
+  const goals = config.goals.filter(goal => goal.reward !== undefined), bombs = config.bombs.filter(bomb => bomb.penalty !== undefined)
+  return {
+    ...(goals.length ? { goalRewards: Object.fromEntries(goals.map(goal => [positionKey(goal), goal.reward!])) } : {}),
+    ...(bombs.length ? { bombPenalties: Object.fromEntries(bombs.map(bomb => [positionKey(bomb), bomb.penalty!])) } : {}),
+  }
+}
+
 export function createDefaultGridWorldConfig(): GridWorldConfig {
   return {
     width: 7,
@@ -131,6 +140,11 @@ export class GridWorldEnv implements Environment {
   private directionIndex = new Map<string, number>()
   private switchIndex = new Map<string, string>()
   private wallGroups = new Map<string, string>()
+  /** V4 — toggle walls that start open; a group toggle flips them closed (see toggleWallOpen). */
+  private initiallyOpenWalls = new Set<string>()
+  /** V4 — resolved per-cell rewards (own override, else the map-wide default). */
+  private goalRewards = new Map<string, number>()
+  private bombPenalties = new Map<string, number>()
   private goalMask = 0n
   private fragileMask = 0n
   private toggleMask = 0n
@@ -148,6 +162,9 @@ export class GridWorldEnv implements Environment {
     this.directionIndex = new Map(this.config.oneWays?.map(tile => [positionKey(tile), tile.direction]))
     this.switchIndex = new Map(this.config.switches?.map(tile => [positionKey(tile), tile.groupId]))
     this.wallGroups = new Map(this.config.toggleWalls?.map(tile => [positionKey(tile), tile.groupId]))
+    this.initiallyOpenWalls = new Set(this.config.toggleWalls?.filter(tile => tile.initialOpen).map(positionKey))
+    this.goalRewards = new Map(this.config.goals.map(goal => [positionKey(goal), goalRewardOf(goal, this.config.goalReward)]))
+    this.bombPenalties = new Map(this.config.bombs.map(bomb => [positionKey(bomb), bombPenaltyOf(bomb, this.config.bombPenalty)]))
     this.fullGoalMask = (1n << BigInt(this.config.goals.length)) - 1n
     // setConfig preserves episode contents until reset, including reordered bit indices.
     this.goalMask = [...this.collectedGoals].reduce((mask, key) => mask | (this.goalBits.get(key) ?? 0n), 0n)
@@ -231,8 +248,11 @@ export class GridWorldEnv implements Environment {
     let attempted = applyAction(current, action)
     const oneWay = this.directionIndex.get(positionKey(current))
     const blockedByDirection = oneWay !== undefined && oneWay !== action
-    const wallGroup = this.wallGroups.get(positionKey(attempted))
-    const closedWall = wallGroup !== undefined && !this.openGroups.has(wallGroup)
+    const attemptedKey = positionKey(attempted)
+    const wallGroup = this.wallGroups.get(attemptedKey)
+    // V4: open = initialOpen XOR group toggled; the state key's toggleMask (group parity)
+    // plus the static initial states fully determine every wall, so no new state bits.
+    const closedWall = wallGroup !== undefined && this.initiallyOpenWalls.has(attemptedKey) === this.openGroups.has(wallGroup)
     const blockedByDynamic = this.collapsed.has(positionId(attempted)) || closedWall
     if (!blockedByDirection && !blockedByDynamic && !isOutOfBounds(attempted, this.config) && !this.wallIndex.has(positionKey(attempted))) {
       attempted = this.portalIndex.get(positionKey(attempted)) ?? attempted
@@ -256,7 +276,7 @@ export class GridWorldEnv implements Environment {
       // construction (Environment Editor prevents placing one on top of another), so
       // this branch never competes with the wall/goal branches for the same cell.
       next = attempted
-      reward = this.config.bombPenalty
+      reward = this.bombPenalties.get(positionKey(attempted))!
     } else {
       const key = positionKey(attempted)
       const goalBit = this.goalBits.get(key)
@@ -264,7 +284,7 @@ export class GridWorldEnv implements Environment {
         const alreadyCollected = this.collectedGoals.has(key)
         // Phase 30 §10: goalReward is paid only on a Goal's first visit this Episode;
         // a revisit to an already-collected Goal behaves like any other plain cell.
-        reward = alreadyCollected ? this.config.stepReward : this.config.goalReward
+        reward = alreadyCollected ? this.config.stepReward : this.goalRewards.get(key)!
         if (!alreadyCollected) { this.collectedGoals.add(key); this.goalMask |= goalBit; this.terrain = null }
         next = attempted
       } else {
@@ -302,12 +322,13 @@ export class GridWorldEnv implements Environment {
       kind: 'grid',
       width: this.config.width,
       height: this.config.height,
-      walls: [...this.config.walls.map(positionKey), ...this.collapsed, ...(this.config.toggleWalls ?? []).filter(tile => !this.openGroups.has(tile.groupId)).map(positionId)],
+      walls: [...this.config.walls.map(positionKey), ...this.collapsed, ...(this.config.toggleWalls ?? []).filter(tile => !toggleWallOpen(tile, this.openGroups.has(tile.groupId))).map(positionId)],
       bombs: this.config.bombs.map(positionKey),
       bombPenalty: this.config.bombPenalty,
       stepReward: this.config.stepReward,
       wallPenalty: this.config.wallPenalty,
       goalReward: this.config.goalReward,
+      ...elementRewardFields(this.config),
       start: positionKey(this.config.start),
       // Phase 32: visible goals = configured goals minus this Episode's collectedGoals —
       // `this.config.goals` itself is never mutated (stays the static, restorable

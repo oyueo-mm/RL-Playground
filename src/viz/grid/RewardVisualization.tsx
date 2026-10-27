@@ -36,7 +36,7 @@ export function RewardVisualization({ snapshot, locale, live = false, map = fals
   if (!map && !animate) return null
   const [x, y] = (transition?.nextState ?? model.agentPos).split(',').map(Number)
   return <svg ref={svg} className="stage-overlay reward-overlay" viewBox={`0 0 ${model.width * 48} ${model.height * 48}`} aria-label={t.map}>
-    {map && legible && <g className="map-reward-numbers" data-testid="map-rewards">{[...model.goals.map(pos => ({pos, value:model.goalReward ?? 0})), ...model.bombs.map(pos => ({pos, value:model.bombPenalty}))].map(({pos,value}) => {
+    {map && legible && <g className="map-reward-numbers" data-testid="map-rewards">{[...model.goals.map(pos => ({pos, value:model.goalRewards?.[pos] ?? model.goalReward ?? 0})), ...model.bombs.map(pos => ({pos, value:model.bombPenalties?.[pos] ?? model.bombPenalty}))].map(({pos,value}) => {
       const [gx,gy] = pos.split(',').map(Number)
       return <text key={pos} x={(gx+.5)*48} y={(gy+.91)*48} textAnchor="middle" fontSize="12" fill={value >= 0 ? '#135c32' : '#91281c'}>{formatReward(value)}</text>
     })}</g>}
