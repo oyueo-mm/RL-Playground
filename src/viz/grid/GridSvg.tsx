@@ -7,7 +7,7 @@ import type { EnvRenderModel } from '../../core/types/render'
 import type { StateKey } from '../../core/types/rl'
 import { FeatureOverlay } from './FeatureOverlay'
 import { toggleWallOpen } from '../../core/environments/gridworld/features'
-import { memo, useCallback, useLayoutEffect, useRef, type SVGProps } from 'react'
+import { memo, type SVGProps } from 'react'
 
 type GridRenderModel = Extract<EnvRenderModel, { kind: 'grid' }>
 
@@ -57,11 +57,13 @@ const cellFill: Record<CellKind, string> = {
 }
 
 interface GridCellProps { cellKey: StateKey; x: number; y: number; kind: CellKind; cellSize: number; select?: (key: StateKey, source?: 'keyboard') => void; description?: string; movable?: boolean; badge?: string }
-const GridCell = memo(function GridCell({ cellKey, x, y, kind, cellSize, select, description, movable, badge }: GridCellProps) {
+// Rendered as a plain function, not a memoized component: a fiber per cell measurably
+// slowed the initial render of 48×40 / 64×64 maps (see EDITOR_UX_V4_REPORT.md §16).
+function renderCell({ cellKey, x, y, kind, cellSize, select, description, movable, badge }: GridCellProps) {
   const cx = x * cellSize + cellSize / 2
   const cy = y * cellSize + cellSize / 2
   return (
-    <g>
+    <g key={cellKey}>
       <rect
         x={x * cellSize}
         y={y * cellSize}
@@ -109,7 +111,7 @@ const GridCell = memo(function GridCell({ cellKey, x, y, kind, cellSize, select,
       )}
     </g>
   )
-})
+}
 
 function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onStateSelect, className, showAgent = true, ariaLabel = 'GridWorld', movable, interaction }: GridSvgProps) {
   const { width, height, walls, bombs, start, goals, agentPos } = renderModel
@@ -125,12 +127,6 @@ function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onState
   renderModel.features?.fragiles?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, renderModel.collapsedFragiles?.includes(`${tile.x},${tile.y}`) ? 'Collapsed fragile tile' : 'Fragile tile'))
   renderModel.features?.switches?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `Switch ${tile.groupId}`))
   renderModel.features?.toggleWalls?.forEach(tile => descriptions.set(`${tile.x},${tile.y}`, `Toggle wall ${tile.groupId}, ${toggleWallOpen(tile, renderModel.openGroups?.includes(tile.groupId) ?? false) ? 'open' : 'closed'}`))
-
-  // V4 — a ref-backed, identity-stable select callback lets unchanged cells skip
-  // re-rendering (drag painting on 64×64 re-renders ~4k cells per crossed cell otherwise).
-  const selectRef = useRef(onStateSelect)
-  useLayoutEffect(() => { selectRef.current = onStateSelect })
-  const select = useCallback((key: StateKey, source?: 'keyboard') => source ? selectRef.current?.(key, source) : selectRef.current?.(key), [])
 
   const cells: Array<{ key: string; x: number; y: number; kind: CellKind }> = []
   for (let y = 0; y < height; y++) {
@@ -158,7 +154,7 @@ function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onState
       aria-label={ariaLabel}
       data-testid="grid-svg"
     >
-      {cells.map(cell => <GridCell key={cell.key} cellKey={cell.key} x={cell.x} y={cell.y} kind={cell.kind} cellSize={cellSize} select={onStateSelect ? select : undefined} description={descriptions.get(cell.key)} movable={movable} badge={valueBadge(cell.kind === 'goal' ? renderModel.goalRewards?.[cell.key] : cell.kind === 'bomb' ? renderModel.bombPenalties?.[cell.key] : undefined)} />)}
+      {cells.map(cell => renderCell({ cellKey: cell.key, x: cell.x, y: cell.y, kind: cell.kind, cellSize, select: onStateSelect, description: descriptions.get(cell.key), movable, badge: valueBadge(cell.kind === 'goal' ? renderModel.goalRewards?.[cell.key] : cell.kind === 'bomb' ? renderModel.bombPenalties?.[cell.key] : undefined) }))}
       <FeatureOverlay model={renderModel} cellSize={cellSize} selected={selectedState} />
       {selectedState ? (
         <rect

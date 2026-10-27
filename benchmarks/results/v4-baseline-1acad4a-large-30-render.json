@@ -1,0 +1,151 @@
+{
+  "mode": "Actual SVG with policy and value overlays enabled, 2s production-engine run per map. A short observation, not a long-term memory proof.",
+  "results": [
+    {
+      "width": 20,
+      "height": 20,
+      "renderMs": 64.59999996423721,
+      "transitionMs": 247,
+      "transitionCalls": 100000,
+      "frameP95Ms": 77.09999996423721,
+      "pauseMs": 0.8999999761581421,
+      "resources": {
+        "lifetime": {
+          "exploration": 1060,
+          "exploitation": 9840,
+          "reasons": {
+            "goal": 7
+          }
+        },
+        "qStates": 399,
+        "qVersion": 11299,
+        "estimatedQBytes": 55858,
+        "totalSteps": 10900,
+        "completedEpisodes": 7,
+        "episodeSteps": 431,
+        "recordedSteps": 10900,
+        "stepsPerSecond": 5212.355212355213,
+        "uiUpdatesPerSecond": 11.583011583011583,
+        "qStateGrowth": 34,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "cells": 400
+    },
+    {
+      "width": 32,
+      "height": 20,
+      "renderMs": 48.59999996423721,
+      "transitionMs": 244.39999997615814,
+      "transitionCalls": 100000,
+      "frameP95Ms": 88.89999997615814,
+      "pauseMs": 0.7000000476837158,
+      "resources": {
+        "lifetime": {
+          "exploration": 1014,
+          "exploitation": 8986,
+          "reasons": {
+            "goal": 4
+          }
+        },
+        "qStates": 639,
+        "qVersion": 10639,
+        "estimatedQBytes": 89698,
+        "totalSteps": 10000,
+        "completedEpisodes": 4,
+        "episodeSteps": 837,
+        "recordedSteps": 10000,
+        "stepsPerSecond": 4719.764011799411,
+        "uiUpdatesPerSecond": 11.799410029498526,
+        "qStateGrowth": 124,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "cells": 640
+    },
+    {
+      "width": 48,
+      "height": 40,
+      "renderMs": 163.30000001192093,
+      "transitionMs": 362.7999999523163,
+      "transitionCalls": 100000,
+      "frameP95Ms": 78.89999997615814,
+      "pauseMs": 2.300000011920929,
+      "resources": {
+        "lifetime": {
+          "exploration": 901,
+          "exploitation": 8499,
+          "reasons": {
+            "bomb": 26
+          }
+        },
+        "qStates": 201,
+        "qVersion": 9601,
+        "estimatedQBytes": 29632,
+        "totalSteps": 9400,
+        "completedEpisodes": 26,
+        "episodeSteps": 60,
+        "recordedSteps": 9400,
+        "stepsPerSecond": 4970.178926441352,
+        "uiUpdatesPerSecond": 9.940357852882704,
+        "qStateGrowth": 110,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "cells": 1920
+    },
+    {
+      "width": 64,
+      "height": 64,
+      "renderMs": 394.60000002384186,
+      "transitionMs": 248.5999999642372,
+      "transitionCalls": 100000,
+      "frameP95Ms": 110.69999998807907,
+      "pauseMs": 2.300000011920929,
+      "resources": {
+        "lifetime": {
+          "exploration": 701,
+          "exploitation": 6399,
+          "reasons": {}
+        },
+        "qStates": 858,
+        "qVersion": 7958,
+        "estimatedQBytes": 120370,
+        "totalSteps": 7100,
+        "completedEpisodes": 0,
+        "episodeSteps": 7100,
+        "recordedSteps": 7100,
+        "stepsPerSecond": 2689.2430278884462,
+        "uiUpdatesPerSecond": 10.95617529880478,
+        "qStateGrowth": 251,
+        "pauseReason": null,
+        "level": "normal",
+        "budget": {
+          "maxQStates": 100000,
+          "maxRecordedSteps": 500000,
+          "maxEpisodeSteps": 10000,
+          "maxDetailedEpisodes": 100
+        }
+      },
+      "cells": 4096
+    }
+  ]
+}

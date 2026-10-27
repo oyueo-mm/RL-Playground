@@ -1,0 +1,622 @@
+{
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36 Edg/156.0.0.0",
+  "snapshotCosts": [
+    {
+      "count": 1000,
+      "fullMs": 0.275,
+      "visibleMs": 0.05899999976158142
+    },
+    {
+      "count": 10000,
+      "fullMs": 1.1849999994039535,
+      "visibleMs": 0.04899999976158142
+    },
+    {
+      "count": 50000,
+      "fullMs": 8.32999999821186,
+      "visibleMs": 0.13200000047683716
+    }
+  ],
+  "runs": [
+    {
+      "size": 7,
+      "repetition": 0,
+      "updates": 121,
+      "samples": [
+        {
+          "elapsedMs": 1003.1000000238419,
+          "episode": 579,
+          "episodeSteps": 9,
+          "totalSteps": 12000,
+          "qStates": 48,
+          "snapshotMs": 0.10000002384185791,
+          "heapBytes": 32236115
+        },
+        {
+          "elapsedMs": 2010.300000011921,
+          "episode": 1293,
+          "episodeSteps": 9,
+          "totalSteps": 24100,
+          "qStates": 48,
+          "snapshotMs": 0.10000002384185791,
+          "heapBytes": 31291900
+        },
+        {
+          "elapsedMs": 3013.199999988079,
+          "episode": 1979,
+          "episodeSteps": 20,
+          "totalSteps": 35900,
+          "qStates": 48,
+          "snapshotMs": 0.09999996423721313,
+          "heapBytes": 40002415
+        },
+        {
+          "elapsedMs": 4019.399999976158,
+          "episode": 2646,
+          "episodeSteps": 6,
+          "totalSteps": 47100,
+          "qStates": 48,
+          "snapshotMs": 0,
+          "heapBytes": 46010730
+        },
+        {
+          "elapsedMs": 5026.300000011921,
+          "episode": 3223,
+          "episodeSteps": 15,
+          "totalSteps": 56800,
+          "qStates": 48,
+          "snapshotMs": 0,
+          "heapBytes": 40778696
+        },
+        {
+          "elapsedMs": 6032.699999988079,
+          "episode": 3868,
+          "episodeSteps": 9,
+          "totalSteps": 67600,
+          "qStates": 48,
+          "snapshotMs": 0.09999996423721313,
+          "heapBytes": 47684362
+        },
+        {
+          "elapsedMs": 7039.699999988079,
+          "episode": 4539,
+          "episodeSteps": 7,
+          "totalSteps": 79000,
+          "qStates": 48,
+          "snapshotMs": 0.09999996423721313,
+          "heapBytes": 53062291
+        },
+        {
+          "elapsedMs": 8049.5,
+          "episode": 5184,
+          "episodeSteps": 19,
+          "totalSteps": 89900,
+          "qStates": 48,
+          "snapshotMs": 0.10000002384185791,
+          "heapBytes": 63315312
+        },
+        {
+          "elapsedMs": 9054.399999976158,
+          "episode": 5836,
+          "episodeSteps": 9,
+          "totalSteps": 101100,
+          "qStates": 48,
+          "snapshotMs": 0.09999996423721313,
+          "heapBytes": 47095284
+        },
+        {
+          "elapsedMs": 10056.399999976158,
+          "episode": 6464,
+          "episodeSteps": 16,
+          "totalSteps": 111800,
+          "qStates": 48,
+          "snapshotMs": 0.09999996423721313,
+          "heapBytes": 64221732
+        }
+      ],
+      "pauseMs": 0.2999999523162842,
+      "resumeMs": 0.5,
+      "stopMs": 0.20000004768371582
+    },
+    {
+      "size": 14,
+      "repetition": 0,
+      "updates": 117,
+      "samples": [
+        {
+          "elapsedMs": 1007.6000000238419,
+          "episode": 18,
+          "episodeSteps": 232,
+          "totalSteps": 12400,
+          "qStates": 846,
+          "snapshotMs": 0.30000001192092896,
+          "heapBytes": 50976896
+        },
+        {
+          "elapsedMs": 2012.5,
+          "episode": 35,
+          "episodeSteps": 303,
+          "totalSteps": 24300,
+          "qStates": 1804,
+          "snapshotMs": 0.40000003576278687,
+          "heapBytes": 67508296
+        },
+        {
+          "elapsedMs": 3016.100000023842,
+          "episode": 60,
+          "episodeSteps": 155,
+          "totalSteps": 37000,
+          "qStates": 2389,
+          "snapshotMs": 0.800000011920929,
+          "heapBytes": 71420036
+        },
+        {
+          "elapsedMs": 4018.800000011921,
+          "episode": 87,
+          "episodeSteps": 257,
+          "totalSteps": 47900,
+          "qStates": 2772,
+          "snapshotMs": 1.199999988079071,
+          "heapBytes": 84769589
+        },
+        {
+          "elapsedMs": 5028.5,
+          "episode": 107,
+          "episodeSteps": 64,
+          "totalSteps": 58500,
+          "qStates": 3286,
+          "snapshotMs": 2.400000035762787,
+          "heapBytes": 70228298
+        },
+        {
+          "elapsedMs": 6035.899999976158,
+          "episode": 126,
+          "episodeSteps": 232,
+          "totalSteps": 65100,
+          "qStates": 3499,
+          "snapshotMs": 3.799999952316284,
+          "heapBytes": 44904878
+        },
+        {
+          "elapsedMs": 7046.899999976158,
+          "episode": 153,
+          "episodeSteps": 779,
+          "totalSteps": 75300,
+          "qStates": 3812,
+          "snapshotMs": 2.5,
+          "heapBytes": 47290208
+        },
+        {
+          "elapsedMs": 8059.699999988079,
+          "episode": 175,
+          "episodeSteps": 890,
+          "totalSteps": 85163,
+          "qStates": 4204,
+          "snapshotMs": 1.600000023841858,
+          "heapBytes": 54158689
+        },
+        {
+          "elapsedMs": 9062.199999988079,
+          "episode": 197,
+          "episodeSteps": 110,
+          "totalSteps": 95263,
+          "qStates": 4427,
+          "snapshotMs": 1.199999988079071,
+          "heapBytes": 52973829
+        },
+        {
+          "elapsedMs": 10167.5,
+          "episode": 228,
+          "episodeSteps": 596,
+          "totalSteps": 106163,
+          "qStates": 4553,
+          "snapshotMs": 1.5,
+          "heapBytes": 84286708
+        }
+      ],
+      "pauseMs": 0.40000003576278687,
+      "resumeMs": 1,
+      "stopMs": 0.19999998807907104
+    },
+    {
+      "size": 20,
+      "repetition": 0,
+      "updates": 119,
+      "samples": [
+        {
+          "elapsedMs": 1008.6000000238419,
+          "episode": 5,
+          "episodeSteps": 331,
+          "totalSteps": 9300,
+          "qStates": 532,
+          "snapshotMs": 0.2999999523162842,
+          "heapBytes": 83804494
+        },
+        {
+          "elapsedMs": 2013.300000011921,
+          "episode": 12,
+          "episodeSteps": 1874,
+          "totalSteps": 19100,
+          "qStates": 1020,
+          "snapshotMs": 0.5,
+          "heapBytes": 77810853
+        },
+        {
+          "elapsedMs": 3023.699999988079,
+          "episode": 18,
+          "episodeSteps": 1826,
+          "totalSteps": 29600,
+          "qStates": 1593,
+          "snapshotMs": 0.699999988079071,
+          "heapBytes": 93822014
+        },
+        {
+          "elapsedMs": 4086.300000011921,
+          "episode": 27,
+          "episodeSteps": 396,
+          "totalSteps": 40900,
+          "qStates": 1946,
+          "snapshotMs": 0.699999988079071,
+          "heapBytes": 85676154
+        },
+        {
+          "elapsedMs": 5122.300000011921,
+          "episode": 42,
+          "episodeSteps": 700,
+          "totalSteps": 53300,
+          "qStates": 2603,
+          "snapshotMs": 1,
+          "heapBytes": 46660235
+        },
+        {
+          "elapsedMs": 6126.900000035763,
+          "episode": 52,
+          "episodeSteps": 807,
+          "totalSteps": 65500,
+          "qStates": 3339,
+          "snapshotMs": 1.300000011920929,
+          "heapBytes": 51952599
+        },
+        {
+          "elapsedMs": 7140,
+          "episode": 56,
+          "episodeSteps": 2221,
+          "totalSteps": 74300,
+          "qStates": 4055,
+          "snapshotMs": 1.600000023841858,
+          "heapBytes": 57353975
+        },
+        {
+          "elapsedMs": 8147.600000023842,
+          "episode": 68,
+          "episodeSteps": 797,
+          "totalSteps": 86300,
+          "qStates": 4379,
+          "snapshotMs": 2.199999988079071,
+          "heapBytes": 61673788
+        },
+        {
+          "elapsedMs": 9230.600000023842,
+          "episode": 79,
+          "episodeSteps": 460,
+          "totalSteps": 95100,
+          "qStates": 4604,
+          "snapshotMs": 1.899999976158142,
+          "heapBytes": 67757839
+        },
+        {
+          "elapsedMs": 10236.600000023842,
+          "episode": 92,
+          "episodeSteps": 57,
+          "totalSteps": 105500,
+          "qStates": 4769,
+          "snapshotMs": 2.799999952316284,
+          "heapBytes": 83145767
+        }
+      ],
+      "pauseMs": 0.5,
+      "resumeMs": 1.100000023841858,
+      "stopMs": 0.3999999761581421
+    },
+    {
+      "size": 7,
+      "repetition": 1,
+      "updates": 117,
+      "samples": [
+        {
+          "elapsedMs": 1001.8999999761581,
+          "episode": 574,
+          "episodeSteps": 9,
+          "totalSteps": 11900,
+          "qStates": 48,
+          "snapshotMs": 0,
+          "heapBytes": 85376631
+        },
+        {
+          "elapsedMs": 2007,
+          "episode": 1145,
+          "episodeSteps": 4,
+          "totalSteps": 21700,
+          "qStates": 48,
+          "snapshotMs": 0,
+          "heapBytes": 78366532
+        },
+        {
+          "elapsedMs": 3009.599999964237,
+          "episode": 1827,
+          "episodeSteps": 13,
+          "totalSteps": 33300,
+          "qStates": 48,
+          "snapshotMs": 0.10000002384185791,
+          "heapBytes": 83342094
+        },
+        {
+          "elapsedMs": 4018,
+          "episode": 2511,
+          "episodeSteps": 1,
+          "totalSteps": 44800,
+          "qStates": 48,
+          "snapshotMs": 0.10000002384185791,
+          "heapBytes": 86536648
+        },
+        {
+          "elapsedMs": 5022,
+          "episode": 3076,
+          "episodeSteps": 9,
+          "totalSteps": 54300,
+          "qStates": 48,
+          "snapshotMs": 0.10000002384185791,
+          "heapBytes": 105329462
+        },
+        {
+          "elapsedMs": 6027.599999964237,
+          "episode": 3632,
+          "episodeSteps": 11,
+          "totalSteps": 63600,
+          "qStates": 48,
+          "snapshotMs": 0.09999996423721313,
+          "heapBytes": 106600066
+        },
+        {
+          "elapsedMs": 7034.399999976158,
+          "episode": 4294,
+          "episodeSteps": 2,
+          "totalSteps": 74800,
+          "qStates": 48,
+          "snapshotMs": 0,
+          "heapBytes": 104613812
+        },
+        {
+          "elapsedMs": 8040,
+          "episode": 5007,
+          "episodeSteps": 2,
+          "totalSteps": 86800,
+          "qStates": 48,
+          "snapshotMs": 0,
+          "heapBytes": 99227622
+        },
+        {
+          "elapsedMs": 9048.299999952316,
+          "episode": 5706,
+          "episodeSteps": 17,
+          "totalSteps": 98900,
+          "qStates": 48,
+          "snapshotMs": 0.09999996423721313,
+          "heapBytes": 122448598
+        },
+        {
+          "elapsedMs": 10077.5,
+          "episode": 6275,
+          "episodeSteps": 15,
+          "totalSteps": 108600,
+          "qStates": 48,
+          "snapshotMs": 0,
+          "heapBytes": 118204921
+        }
+      ],
+      "pauseMs": 0.699999988079071,
+      "resumeMs": 0.5,
+      "stopMs": 0.10000002384185791
+    },
+    {
+      "size": 14,
+      "repetition": 1,
+      "updates": 115,
+      "samples": [
+        {
+          "elapsedMs": 1010.7000000476837,
+          "episode": 12,
+          "episodeSteps": 48,
+          "totalSteps": 9600,
+          "qStates": 748,
+          "snapshotMs": 2,
+          "heapBytes": 125573062
+        },
+        {
+          "elapsedMs": 2019.2000000476837,
+          "episode": 30,
+          "episodeSteps": 114,
+          "totalSteps": 21000,
+          "qStates": 1532,
+          "snapshotMs": 0.7999999523162842,
+          "heapBytes": 64744762
+        },
+        {
+          "elapsedMs": 3027.900000035763,
+          "episode": 53,
+          "episodeSteps": 846,
+          "totalSteps": 32400,
+          "qStates": 2276,
+          "snapshotMs": 0.9000000357627869,
+          "heapBytes": 60839486
+        },
+        {
+          "elapsedMs": 4035.7000000476837,
+          "episode": 72,
+          "episodeSteps": 88,
+          "totalSteps": 42100,
+          "qStates": 2626,
+          "snapshotMs": 0.8999999761581421,
+          "heapBytes": 62245968
+        },
+        {
+          "elapsedMs": 5044.400000035763,
+          "episode": 101,
+          "episodeSteps": 269,
+          "totalSteps": 53400,
+          "qStates": 3053,
+          "snapshotMs": 1.2999999523162842,
+          "heapBytes": 49141933
+        },
+        {
+          "elapsedMs": 6047.100000023842,
+          "episode": 118,
+          "episodeSteps": 243,
+          "totalSteps": 62600,
+          "qStates": 3441,
+          "snapshotMs": 1.199999988079071,
+          "heapBytes": 74683682
+        },
+        {
+          "elapsedMs": 7052,
+          "episode": 152,
+          "episodeSteps": 85,
+          "totalSteps": 74300,
+          "qStates": 3744,
+          "snapshotMs": 1.699999988079071,
+          "heapBytes": 79509100
+        },
+        {
+          "elapsedMs": 8057.200000047684,
+          "episode": 169,
+          "episodeSteps": 63,
+          "totalSteps": 82900,
+          "qStates": 4019,
+          "snapshotMs": 1.100000023841858,
+          "heapBytes": 73908897
+        },
+        {
+          "elapsedMs": 9062.800000011921,
+          "episode": 195,
+          "episodeSteps": 57,
+          "totalSteps": 94700,
+          "qStates": 4391,
+          "snapshotMs": 1.800000011920929,
+          "heapBytes": 78456038
+        },
+        {
+          "elapsedMs": 10066.5,
+          "episode": 222,
+          "episodeSteps": 72,
+          "totalSteps": 103900,
+          "qStates": 4551,
+          "snapshotMs": 1.800000011920929,
+          "heapBytes": 90274080
+        }
+      ],
+      "pauseMs": 0.3999999761581421,
+      "resumeMs": 0.699999988079071,
+      "stopMs": 0.40000003576278687
+    },
+    {
+      "size": 20,
+      "repetition": 1,
+      "updates": 115,
+      "samples": [
+        {
+          "elapsedMs": 1008.1000000238419,
+          "episode": 6,
+          "episodeSteps": 140,
+          "totalSteps": 9900,
+          "qStates": 569,
+          "snapshotMs": 0.30000001192092896,
+          "heapBytes": 85169813
+        },
+        {
+          "elapsedMs": 2011.300000011921,
+          "episode": 12,
+          "episodeSteps": 3274,
+          "totalSteps": 20500,
+          "qStates": 1020,
+          "snapshotMs": 0.40000003576278687,
+          "heapBytes": 101005818
+        },
+        {
+          "elapsedMs": 3016.400000035763,
+          "episode": 18,
+          "episodeSteps": 3426,
+          "totalSteps": 31200,
+          "qStates": 1666,
+          "snapshotMs": 0.6000000238418579,
+          "heapBytes": 108418839
+        },
+        {
+          "elapsedMs": 4028.199999988079,
+          "episode": 29,
+          "episodeSteps": 469,
+          "totalSteps": 42300,
+          "qStates": 2083,
+          "snapshotMs": 0.800000011920929,
+          "heapBytes": 110307378
+        },
+        {
+          "elapsedMs": 5034.800000011921,
+          "episode": 42,
+          "episodeSteps": 500,
+          "totalSteps": 53100,
+          "qStates": 2603,
+          "snapshotMs": 1.600000023841858,
+          "heapBytes": 123003908
+        },
+        {
+          "elapsedMs": 6039.400000035763,
+          "episode": 49,
+          "episodeSteps": 15,
+          "totalSteps": 62900,
+          "qStates": 3219,
+          "snapshotMs": 1.399999976158142,
+          "heapBytes": 109848524
+        },
+        {
+          "elapsedMs": 7046.199999988079,
+          "episode": 56,
+          "episodeSteps": 2021,
+          "totalSteps": 74100,
+          "qStates": 4055,
+          "snapshotMs": 1.4000000357627869,
+          "heapBytes": 118172172
+        },
+        {
+          "elapsedMs": 8116.100000023842,
+          "episode": 66,
+          "episodeSteps": 431,
+          "totalSteps": 84717,
+          "qStates": 4377,
+          "snapshotMs": 1.800000011920929,
+          "heapBytes": 58461661
+        },
+        {
+          "elapsedMs": 9120.900000035763,
+          "episode": 81,
+          "episodeSteps": 474,
+          "totalSteps": 96817,
+          "qStates": 4613,
+          "snapshotMs": 3.300000011920929,
+          "heapBytes": 66018867
+        },
+        {
+          "elapsedMs": 10126.100000023842,
+          "episode": 94,
+          "episodeSteps": 152,
+          "totalSteps": 107017,
+          "qStates": 4842,
+          "snapshotMs": 2.199999988079071,
+          "heapBytes": 69195470
+        }
+      ],
+      "pauseMs": 0.699999988079071,
+      "resumeMs": 0.9000000357627869,
+      "stopMs": 0.3999999761581421
+    }
+  ]
+}
