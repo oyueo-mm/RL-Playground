@@ -4,27 +4,27 @@
     {
       "width": 20,
       "height": 20,
-      "renderMs": 44.5,
-      "transitionMs": 107.69999998807907,
+      "renderMs": 33.200000047683716,
+      "transitionMs": 84.39999997615814,
       "transitionCalls": 100000,
-      "frameP95Ms": 47.90000003576279,
-      "pauseMs": 0.5999999642372131,
+      "frameP95Ms": 38.19999998807907,
+      "pauseMs": 0.5,
       "resources": {
         "lifetime": {
-          "exploration": 1755,
-          "exploitation": 15545,
+          "exploration": 3171,
+          "exploitation": 28329,
           "reasons": {
-            "goal": 15
+            "goal": 35
           }
         },
         "qStates": 399,
-        "qVersion": 17699,
+        "qVersion": 31899,
         "estimatedQBytes": 55858,
-        "totalSteps": 17300,
-        "completedEpisodes": 15,
-        "episodeSteps": 439,
-        "recordedSteps": 17300,
-        "stepsPerSecond": 6800,
+        "totalSteps": 31500,
+        "completedEpisodes": 35,
+        "episodeSteps": 102,
+        "recordedSteps": 31500,
+        "stepsPerSecond": 15800,
         "uiUpdatesPerSecond": 12,
         "qStateGrowth": 0,
         "pauseReason": null,
@@ -41,29 +41,29 @@
     {
       "width": 32,
       "height": 20,
-      "renderMs": 33,
-      "transitionMs": 223.39999997615814,
+      "renderMs": 53,
+      "transitionMs": 115.29999995231628,
       "transitionCalls": 100000,
-      "frameP95Ms": 76.19999998807907,
-      "pauseMs": 0.5999999642372131,
+      "frameP95Ms": 55,
+      "pauseMs": 0.6000000238418579,
       "resources": {
         "lifetime": {
-          "exploration": 1140,
-          "exploitation": 10260,
+          "exploration": 2216,
+          "exploitation": 20084,
           "reasons": {
-            "goal": 4
+            "goal": 10
           }
         },
         "qStates": 639,
-        "qVersion": 12039,
+        "qVersion": 22939,
         "estimatedQBytes": 89698,
-        "totalSteps": 11400,
-        "completedEpisodes": 4,
-        "episodeSteps": 1666,
-        "recordedSteps": 11400,
-        "stepsPerSecond": 4766.536964980544,
-        "uiUpdatesPerSecond": 11.673151750972762,
-        "qStateGrowth": 43,
+        "totalSteps": 22300,
+        "completedEpisodes": 10,
+        "episodeSteps": 474,
+        "recordedSteps": 22300,
+        "stepsPerSecond": 10875.842155919154,
+        "uiUpdatesPerSecond": 12.512030798845045,
+        "qStateGrowth": 0,
         "pauseReason": null,
         "level": "normal",
         "budget": {
@@ -78,29 +78,29 @@
     {
       "width": 48,
       "height": 40,
-      "renderMs": 366.5999999642372,
-      "transitionMs": 370.69999998807907,
+      "renderMs": 100.19999998807907,
+      "transitionMs": 157,
       "transitionCalls": 100000,
-      "frameP95Ms": 68.09999996423721,
+      "frameP95Ms": 60.10000002384186,
       "pauseMs": 0.800000011920929,
       "resources": {
         "lifetime": {
-          "exploration": 1273,
-          "exploitation": 11406,
+          "exploration": 1937,
+          "exploitation": 16563,
           "reasons": {
-            "bomb": 30
+            "bomb": 35
           }
         },
-        "qStates": 281,
-        "qVersion": 12960,
-        "estimatedQBytes": 41322,
-        "totalSteps": 12679,
-        "completedEpisodes": 30,
-        "episodeSteps": 478,
-        "recordedSteps": 12679,
-        "stepsPerSecond": 6313.834726090994,
-        "uiUpdatesPerSecond": 11.142061281337048,
-        "qStateGrowth": 112,
+        "qStates": 380,
+        "qVersion": 18880,
+        "estimatedQBytes": 55920,
+        "totalSteps": 18500,
+        "completedEpisodes": 35,
+        "episodeSteps": 307,
+        "recordedSteps": 18500,
+        "stepsPerSecond": 9172.482552342972,
+        "uiUpdatesPerSecond": 10.967098703888336,
+        "qStateGrowth": 117,
         "pauseReason": null,
         "level": "normal",
         "budget": {
@@ -115,27 +115,29 @@
     {
       "width": 64,
       "height": 64,
-      "renderMs": 415.69999998807907,
-      "transitionMs": 246.20000004768372,
+      "renderMs": 143.39999997615814,
+      "transitionMs": 126.59999996423721,
       "transitionCalls": 100000,
-      "frameP95Ms": 89,
-      "pauseMs": 2.099999964237213,
+      "frameP95Ms": 105.5,
+      "pauseMs": 1.5,
       "resources": {
         "lifetime": {
-          "exploration": 789,
-          "exploitation": 7311,
-          "reasons": {}
+          "exploration": 1374,
+          "exploitation": 11926,
+          "reasons": {
+            "truncated": 1
+          }
         },
-        "qStates": 1127,
-        "qVersion": 9227,
-        "estimatedQBytes": 158360,
-        "totalSteps": 8100,
-        "completedEpisodes": 0,
-        "episodeSteps": 8100,
-        "recordedSteps": 8100,
-        "stepsPerSecond": 3638.1514257620456,
-        "uiUpdatesPerSecond": 11.799410029498526,
-        "qStateGrowth": 500,
+        "qStates": 1406,
+        "qVersion": 14706,
+        "estimatedQBytes": 197926,
+        "totalSteps": 13300,
+        "completedEpisodes": 1,
+        "episodeSteps": 3300,
+        "recordedSteps": 13300,
+        "stepsPerSecond": 5100,
+        "uiUpdatesPerSecond": 11,
+        "qStateGrowth": 351,
         "pauseReason": null,
         "level": "normal",
         "budget": {
