@@ -36,6 +36,8 @@ export interface GridSvgProps {
  * (ARCHITECTURE.md §4.1's `StateKey` comment), not a GridWorldEnv-private detail — safe
  * to parse here since this component is itself grid-shape-specific (`kind: 'grid'`).
  */
+const valueBadge = (value: number | undefined) => value === undefined ? undefined : `${value > 0 ? '+' : ''}${value}`
+
 function parsePosition(stateKey: string): { x: number; y: number } {
   const [x, y] = stateKey.split(',').map(Number)
   return { x, y }
@@ -54,8 +56,8 @@ const cellFill: Record<CellKind, string> = {
   bomb: '#fecaca',
 }
 
-interface GridCellProps { cellKey: StateKey; x: number; y: number; kind: CellKind; cellSize: number; select?: (key: StateKey, source?: 'keyboard') => void; description?: string; movable?: boolean }
-const GridCell = memo(function GridCell({ cellKey, x, y, kind, cellSize, select, description, movable }: GridCellProps) {
+interface GridCellProps { cellKey: StateKey; x: number; y: number; kind: CellKind; cellSize: number; select?: (key: StateKey, source?: 'keyboard') => void; description?: string; movable?: boolean; badge?: string }
+const GridCell = memo(function GridCell({ cellKey, x, y, kind, cellSize, select, description, movable, badge }: GridCellProps) {
   const cx = x * cellSize + cellSize / 2
   const cy = y * cellSize + cellSize / 2
   return (
@@ -88,6 +90,8 @@ const GridCell = memo(function GridCell({ cellKey, x, y, kind, cellSize, select,
         dependency. pointerEvents="none" so it never intercepts the cell's own
         click handler above.
       */}
+      {/* V4 — a goal/bomb with its own value shows it, so overrides are visible without opening the inspector. */}
+      {badge && <text pointerEvents="none" data-testid={`value-badge-${cellKey}`} x={x * cellSize + cellSize * 0.06} y={y * cellSize + cellSize * 0.24} fontSize={cellSize * 0.2} fontWeight={600} fill={kind === 'goal' ? '#0f4d27' : '#7f1d1d'} stroke="white" strokeWidth={cellSize * 0.06} paintOrder="stroke">{badge}</text>}
       {kind === 'bomb' && (
         <g pointerEvents="none" data-testid={`bomb-marker-${cellKey}`}>
           <circle cx={cx} cy={cy + cellSize * 0.08} r={cellSize * 0.24} fill="#1f2937" />
@@ -154,7 +158,7 @@ function GridSvgView({ renderModel, cellSize = 48, selectedState = null, onState
       aria-label={ariaLabel}
       data-testid="grid-svg"
     >
-      {cells.map(cell => <GridCell key={cell.key} cellKey={cell.key} x={cell.x} y={cell.y} kind={cell.kind} cellSize={cellSize} select={onStateSelect ? select : undefined} description={descriptions.get(cell.key)} movable={movable} />)}
+      {cells.map(cell => <GridCell key={cell.key} cellKey={cell.key} x={cell.x} y={cell.y} kind={cell.kind} cellSize={cellSize} select={onStateSelect ? select : undefined} description={descriptions.get(cell.key)} movable={movable} badge={valueBadge(cell.kind === 'goal' ? renderModel.goalRewards?.[cell.key] : cell.kind === 'bomb' ? renderModel.bombPenalties?.[cell.key] : undefined)} />)}
       <FeatureOverlay model={renderModel} cellSize={cellSize} selected={selectedState} />
       {selectedState ? (
         <rect

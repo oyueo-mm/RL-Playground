@@ -185,6 +185,9 @@ describe('V4 element inspector', () => {
     fireEvent.change(screen.getByTestId('element-value-input'), { target: { value: '50' } })
     click('cell-3,3'); click('element-value-custom')
     fireEvent.change(screen.getByTestId('element-value-input'), { target: { value: '-75' } })
+    expect(screen.getByTestId('value-badge-5,6').textContent).toBe('+50')
+    expect(screen.getByTestId('value-badge-3,3').textContent).toBe('-75')
+    expect(screen.queryByTestId('value-badge-6,6')).toBeNull() // inherited values show no badge
     click('env-editor-apply')
     expect(apply.mock.calls[0][0]).toMatchObject({ goals: [{ x: 6, y: 6 }, { x: 5, y: 6, reward: 50 }], bombs: [{ x: 3, y: 3, penalty: -75 }] })
     expect(apply.mock.calls[0][0].goals[0]).not.toHaveProperty('reward')

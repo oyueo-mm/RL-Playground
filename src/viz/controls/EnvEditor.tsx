@@ -28,7 +28,7 @@ import { EditorIcon } from '../../ui/EditorIcon'
 import { ManualPlay } from '../../ui/ManualPlay'
 import { Notice } from '../../ui/Notice'
 import { useElementDrag } from '../../ui/hooks/useElementDrag'
-import { elementAt, nextPortalId, nextGroupId, placeElement, setElementValue, setToggleInitialOpen, type EditError, type MapElement } from './editorOperations'
+import { elementAt, nextPortalId, nextGroupId, placeElement, setElementValue, setToggleInitialOpen, PAINTABLE_TOOLS, type EditError, type MapElement } from './editorOperations'
 import { usePaintStroke } from '../../ui/hooks/usePaintStroke'
 import { ElementInspector } from './ElementInspector'
 import { useDraftHistory } from '../../ui/hooks/useDraftHistory'
@@ -441,7 +441,7 @@ export function EnvEditor({
         { name: locale === 'ko' ? '기본 요소' : 'Basic', tools: ['select','wall','start','goal','bomb'] as EditMode[] },
         { name: locale === 'ko' ? '특수 요소' : 'Special', tools: ['portal','oneWay','fragile','switch','toggleWall'] as EditMode[] },
         { name: locale === 'ko' ? '보조 도구' : 'Utility', tools: ['erase'] as EditMode[] },
-      ].map(group => <div className="tool-buttons" role="group" aria-label={group.name} key={group.name}><small>{group.name}</small>{group.tools.map(tool => <TooltipButton key={tool} tip={tips[tool]} aria-label={modeLabel[tool]} aria-pressed={mode===tool} onClick={()=>setMode(tool)} data-testid={`env-editor-mode-${tool}`}><EditorIcon tool={tool}/><span>{modeLabel[tool]}</span></TooltipButton>)}</div>)}<p className="palette-help" role="status">{modeLabel[mode]}: {tips[mode].split('. ')[0]}</p></div>
+      ].map(group => <div className="tool-buttons" role="group" aria-label={group.name} key={group.name}><small>{group.name}</small>{group.tools.map(tool => <TooltipButton key={tool} tip={tips[tool]} aria-label={modeLabel[tool]} aria-pressed={mode===tool} onClick={()=>setMode(tool)} data-testid={`env-editor-mode-${tool}`}><EditorIcon tool={tool}/><span>{modeLabel[tool]}</span></TooltipButton>)}</div>)}<p className="palette-help" role="status">{modeLabel[mode]}: {tips[mode].split('. ')[0]}{PAINTABLE_TOOLS.has(mode) ? (locale === 'ko' ? ' · 끌어서 연속 편집 (Space+드래그: 화면 이동)' : ' · drag to paint (Space+drag pans)') : ''}</p></div>
       {(mode === 'portal' || mode === 'switch' || mode === 'toggleWall') && <span className="link-indicator" data-testid="current-link-id">{mode === 'portal' ? `${effectivePortalId} · ${draft.portals?.find(pair => pair.id === effectivePortalId)?.ends.length ?? 0}/2` : effectiveGroupId}</span>}
       <span className="toolbar-separator" />
       {touchDevice && mode === 'select' && <TooltipButton tip={locale === 'ko' ? '켜면 손가락으로 요소를 이동합니다. 끄면 확대된 격자를 스크롤할 수 있습니다.' : 'Enable to move elements by touch. Disable to scroll the zoomed grid.'} aria-pressed={touchMove} onClick={() => setTouchMove(value => !value)} data-testid="touch-move-mode">{locale === 'ko' ? '터치 이동' : 'Touch move'}</TooltipButton>}
