@@ -706,3 +706,30 @@ input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]):
 
 @media (max-width: 760px) { .manual-controls .key-hint { display: none; } }
 @media (max-width: 760px) and (max-height: 640px) { .mobile-editor .manual-controls button { min-height: 38px; } .direction-pad { gap: 4px; } }
+
+/* Training-complete dialog: flat surface, deep-blue action, comfortable on a phone. */
+.completion-dialog { margin: auto; width: min(92vw, 440px); padding: 26px 24px 22px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--text-primary); }
+.completion-dialog::backdrop { background: #102b5059; }
+.completion-dialog h2 { margin: 0 0 8px; font-size: 24px; font-weight: 750; color: var(--navy); }
+.completion-dialog p { margin: 0; font-size: 14px; line-height: 1.7; color: var(--text-body); }
+.completion-stats { display: grid; gap: 8px; margin: 18px 0 14px; }
+.completion-stats > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-app); }
+.completion-stats dt { font-size: 13px; color: var(--text-secondary); }
+.completion-stats dd { margin: 0; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--primary); text-align: right; }
+.completion-stats dd small { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+.completion-dialog .completion-note { font-size: 12px; color: var(--text-secondary); }
+.completion-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
+.completion-actions button { min-height: 44px; padding: 0 18px; border: 1px solid var(--control-border); border-radius: 8px; background: var(--surface); color: var(--text-body); font-size: 14px; font-weight: 600; }
+.completion-actions .primary-button { background: var(--primary); border-color: var(--primary); color: #fff; padding: 0 20px; }
+@media (max-width: 480px) { .completion-actions { flex-direction: column-reverse; } .completion-actions button { width: 100%; } .completion-dialog { padding: 22px 18px 18px; } }
+
+/* Phone settings sheet: three tabs (Map / Element / Files) so nothing hides behind a long scroll. */
+.sheet-tabs { position: sticky; top: 28px; z-index: 3; display: flex; gap: 4px; margin: 0 -14px 8px; padding: 0 14px; background: var(--surface); border-bottom: 1px solid var(--line); }
+.sheet-tabs button { flex: 1 1 0; min-height: 44px; padding: 0 6px; border: 0; border-bottom: 3px solid transparent; background: transparent; color: var(--text-secondary); font-size: 14px; font-weight: 600; }
+.sheet-tabs button[aria-selected=true] { color: var(--primary); border-bottom-color: var(--primary); }
+.mobile-editor .properties-panel.is-sheet > header { top: 28px; }
+.mobile-editor .sheet-tabs { top: 28px; }
+.file-actions { display: flex; flex-direction: column; gap: 10px; }
+.file-actions p { margin: 0; }
+.mobile-editor .file-actions button, .inspector-empty button { min-height: 44px; }
+.inspector-empty button { margin-top: 8px; padding: 0 14px; border: 1px solid var(--control-border); border-radius: 8px; background: var(--surface); color: var(--text-body); font-weight: 600; }

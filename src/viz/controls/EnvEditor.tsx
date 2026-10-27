@@ -124,6 +124,7 @@ export function EnvEditor({
   const compact = useMediaQuery('(max-width: 760px)') && fullscreen
   const [touchMode, setTouchMode] = useState<'edit' | 'pan'>('edit')
   const [sheetExpanded, setSheetExpanded] = useState(false)
+  const [sheetTab, setSheetTab] = useState<'map' | 'element' | 'file'>('map')
   const [portalDirected, setPortalDirectedTool] = useState(false)
   const keyboardInset = useKeyboardInset(compact)
   const touchMoveOn = compact ? touchMode === 'edit' : touchMove
@@ -272,7 +273,7 @@ export function EnvEditor({
       if (group) setGroupId(group.groupId)
       const way = draft.oneWays?.find(tile => samePosition(tile, pos))
       if (way) setDirection(way.direction)
-      onOpenProperties?.(); setPropertiesOpen(true); return
+      setSheetTab('element'); onOpenProperties?.(); setPropertiesOpen(true); return
     }
     if (mode === 'erase') { deleteCell(stateKey); return }
     if (fullscreen) {
@@ -447,6 +448,12 @@ export function EnvEditor({
   const presetLabel = { custom: t.envEditor.presetCustom }
   const presetDescription = Object.fromEntries(ENVIRONMENT_PRESETS.map(preset => [preset.id, preset.metadata.description[locale]]))
 
+  const fileBlock = <div className="file-actions" data-testid="file-actions">
+    <button onClick={handleImportClick} data-testid="env-editor-import">{t.envEditor.importButton}</button><button onClick={handleExport} disabled={!isValid} data-testid="env-editor-export">{t.envEditor.exportButton}</button>
+    <button onClick={handleResetEnvironment} data-testid="env-editor-reset">{t.envEditor.resetEnvironment}</button>
+    <input hidden ref={importFileInputRef} type="file" accept=".json,application/json" onChange={handleImportFileChange} data-testid="env-editor-import-input" />
+    <p>{locale === 'ko' ? '가져오기는 초안만 변경합니다. 적용은 현재 학습을 초기화합니다.' : 'Import changes only the draft. Applying resets the current experiment.'}</p>
+  </div>
   const bodyEl = (
     <div className={`editor-body ${mode === 'select' ? 'editor-move-mode' : 'editor-paint-mode'} ${(mode === 'select' && touchMoveOn) || (mode !== 'select' && touchPaintOn) ? 'touch-element-mode' : ''} ${compact ? 'is-compact' : ''}`} data-testid="env-editor-grid" data-painting={paint.preview ? 'true' : undefined}>
       <GridViewport editable touchPan={compact && touchMode === 'pan'} locale={locale} onPanStart={() => { drag.cancel(); paint.cancel() }} width={draft.width} height={draft.height} active={active}><GridSvg interaction={mode === 'select' ? drag.interaction : paint.interaction} movable={mode === 'select' && (!touchDevice || touchMoveOn)} renderModel={draftToRenderModel(paint.preview ?? draft)} selectedState={selectedCell} cellSize={48} onStateSelect={handleCellClick} className="stage-grid" />
@@ -458,11 +465,17 @@ export function EnvEditor({
       </GridViewport>
       <aside className={`properties-panel ${compact ? 'is-sheet' : ''}`} id="editor-properties" hidden={!propertiesOpen || panelBlocked} aria-label={locale === 'ko' ? '속성' : 'Properties'} data-sheet={compact ? (sheetExpanded ? 'expanded' : 'peek') : undefined}>
         {compact && <button type="button" className="sheet-handle" aria-expanded={sheetExpanded} aria-controls="editor-properties" aria-label={sheetExpanded ? (locale === 'ko' ? '속성 시트 줄이기' : 'Collapse properties') : (locale === 'ko' ? '속성 시트 펼치기' : 'Expand properties')} onClick={() => setSheetExpanded(value => !value)} data-testid="sheet-handle"><span aria-hidden="true" /></button>}
-        <header><h2>{inspecting ? (locale === 'ko' ? '요소 속성' : 'Element properties') : (locale === 'ko' ? '맵 속성' : 'Map properties')}</h2><button onClick={() => setPropertiesOpen(false)} aria-label={locale === 'ko' ? '속성 닫기' : 'Close properties'}>×</button></header>
-        <div className="property-fields" onBlurCapture={boundary}>
+        <header><h2>{compact ? (locale === 'ko' ? '설정 · 파일' : 'Settings · Files') : inspecting ? (locale === 'ko' ? '요소 속성' : 'Element properties') : (locale === 'ko' ? '맵 속성' : 'Map properties')}</h2><button onClick={() => setPropertiesOpen(false)} aria-label={locale === 'ko' ? '속성 닫기' : 'Close properties'}>×</button></header>
+        {compact && <div className="sheet-tabs" role="tablist" aria-label={locale === 'ko' ? '설정 · 파일' : 'Settings and files'} onKeyDown={event => {
+          const order = ['map', 'element', 'file'] as const, index = order.indexOf(sheetTab)
+          if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') { event.preventDefault(); const next = order[(index + (event.key === 'ArrowRight' ? 1 : 2)) % 3]; setSheetTab(next); requestAnimationFrame(() => document.getElementById(`sheet-tab-${next}`)?.focus()) }
+        }}>{([['map', locale === 'ko' ? '맵 설정' : 'Map'], ['element', locale === 'ko' ? '요소 속성' : 'Element'], ['file', locale === 'ko' ? '파일' : 'Files']] as const).map(([id, label]) => <button key={id} id={`sheet-tab-${id}`} type="button" role="tab" aria-selected={sheetTab === id} aria-controls="sheet-panel" tabIndex={sheetTab === id ? 0 : -1} onClick={() => setSheetTab(id)} data-testid={`sheet-tab-${id}`}>{label}</button>)}</div>}
+        <div className="property-fields" id="sheet-panel" role={compact ? 'tabpanel' : undefined} aria-labelledby={compact ? `sheet-tab-${sheetTab}` : undefined} onBlurCapture={boundary} onFocusCapture={compact ? event => { const el = event.target as HTMLElement; if (el.matches('input,select,textarea')) requestAnimationFrame(() => el.scrollIntoView?.({ block: 'center', behavior: 'smooth' })) } : undefined}>
           <datalist id="existing-portals">{draft.portals?.map(pair => <option key={pair.id} value={pair.id}>{pair.ends.length}/2</option>)}</datalist>
           <datalist id="existing-groups">{[...new Set([...(draft.switches ?? []), ...(draft.toggleWalls ?? [])].map(tile => tile.groupId))].map(id => <option key={id} value={id}>{draft.switches?.filter(tile => tile.groupId === id).length ?? 0} S / {draft.toggleWalls?.filter(tile => tile.groupId === id).length ?? 0} W</option>)}</datalist>
-          {inspecting && selectedCell && <ElementInspector draft={draft} cell={parseStateKey(selectedCell)} locale={locale} kindLabel={modeLabel} portalId={portalId} groupId={groupId} direction={direction}
+          {compact && sheetTab === 'file' && fileBlock}
+          {compact && sheetTab === 'element' && mode !== 'select' && !['portal', 'switch', 'toggleWall', 'oneWay', 'terrain'].includes(mode) && <div className="inspector-empty" data-testid="element-tab-empty"><p>{locale === 'ko' ? '선택된 요소가 없습니다. 선택 도구로 격자의 요소를 누르면 이곳에서 속성을 확인하고 수정할 수 있습니다.' : 'No element selected. With the Select tool, tap an element on the grid to inspect and edit it here.'}</p><button type="button" onClick={() => setMode('select')} data-testid="element-tab-select-tool">{locale === 'ko' ? '선택 도구로 전환' : 'Switch to Select'}</button></div>}
+          {(!compact || sheetTab === 'element') && inspecting && selectedCell && <ElementInspector draft={draft} cell={parseStateKey(selectedCell)} locale={locale} kindLabel={modeLabel} portalId={portalId} groupId={groupId} direction={direction}
             onPortalId={renamePortal} onGroupId={regroup}
             onDirection={next => { setDirection(next); setDraft(prev => ({ ...prev, oneWays: prev.oneWays?.map(tile => positionId(tile) === selectedCell ? { ...tile, direction: next } : tile) })) }}
             onValue={(kind, value, typing) => { const pos = parseStateKey(selectedCell); const change = (prev: GridEditorDraft) => setElementValue(prev, pos, kind, value); if (typing) recordInput(change, `element-value-${selectedCell}`); else setDraft(change) }}
@@ -471,8 +484,8 @@ export function EnvEditor({
             onPortalDirected={directed => { const id = draft.portals?.find(pair => pair.ends.some(end => positionId(end) === selectedCell))?.id; if (id) setDraft(prev => setPortalDirected(prev, id, directed)) }}
             onFlipPortal={() => { const id = draft.portals?.find(pair => pair.ends.some(end => positionId(end) === selectedCell))?.id; if (id) setDraft(prev => flipPortal(prev, id)) }}
             onDelete={() => deleteCell(selectedCell)} />}
-          {mode === 'select' && !selectedCell && <p className="inspector-empty" data-testid="element-inspector-hint">{locale === 'ko' ? '맵에서 요소를 클릭하면 이곳에 해당 요소의 설정이 표시됩니다.' : 'Click an element on the map to edit its settings here.'}</p>}
-          {['portal', 'switch', 'toggleWall', 'oneWay', 'terrain'].includes(mode) && <section className="tool-settings" aria-label={locale === 'ko' ? '도구 설정' : 'Tool settings'}>
+          {(!compact || sheetTab === 'element') && mode === 'select' && !selectedCell && <p className="inspector-empty" data-testid="element-inspector-hint">{locale === 'ko' ? '맵에서 요소를 클릭하면 이곳에 해당 요소의 설정이 표시됩니다.' : 'Click an element on the map to edit its settings here.'}</p>}
+          {(!compact || sheetTab === 'element') && ['portal', 'switch', 'toggleWall', 'oneWay', 'terrain'].includes(mode) && <section className="tool-settings" aria-label={locale === 'ko' ? '도구 설정' : 'Tool settings'}>
             <h3>{modeLabel[mode]} · {locale === 'ko' ? '새로 배치할 요소' : 'next placement'}</h3>
             {mode === 'portal' && <>
               <label><input type="checkbox" checked={autoPortal} data-testid="auto-portal" onChange={event => setAutoPortal(event.target.checked)} />{locale === 'ko' ? '포털 자동 연결' : 'Automatic portal pairing'}</label>
@@ -489,7 +502,7 @@ export function EnvEditor({
             {mode === 'oneWay' && <label>{locale === 'ko' ? '허용 방향' : 'Allowed direction'}<select value={direction} data-testid="one-way-direction" onChange={event => setDirection(Number(event.target.value) as Direction)}>{(locale === 'ko' ? ['↑ 위', '↓ 아래', '← 왼쪽', '→ 오른쪽'] : ['↑ Up', '↓ Down', '← Left', '→ Right']).map((label, index) => <option key={index} value={index}>{label}</option>)}</select></label>}
             <p>{locale === 'ko' ? 'ID: 영문·숫자·_·- (1~24자). 배치 후 선택 도구로 누르면 연결 상태를 확인하고 수정할 수 있습니다.' : 'IDs: letters, numbers, _ and -, 1–24 characters. Use Select on a placed element to inspect and edit its links.'}</p>
           </section>}
-          <section className="map-settings" aria-label={locale === 'ko' ? '맵 기본 속성' : 'Map settings'}>
+          {(!compact || sheetTab === 'map') && <section className="map-settings" aria-label={locale === 'ko' ? '맵 기본 속성' : 'Map settings'}>
           <h3>{locale === 'ko' ? '맵 기본 속성' : 'Map settings'}</h3>
           <p data-testid="state-space-estimate">{locale === 'ko' ? '이론 상태 수 상한' : 'Theoretical state upper bound'}: {stateSpaceDetails(draft).text}<br />Goal {draft.goals.length} · Fragile {draft.fragiles?.length ?? 0} · {locale === 'ko' ? '벽 그룹' : 'Wall groups'} {stateSpaceDetails(draft).groups}</p>
           {stateSpaceDetails(draft).large && <Notice inline className="complexity-warning" eventKey={seedKey} title={locale === 'ko' ? '가능한 상태 조합이 많습니다' : 'Many possible state combinations'} locale={locale} kind="warning">{locale === 'ko' ? '적용과 직접 플레이는 가능합니다. 실제 Q 상태로 자원을 관리하며 학습에는 많은 경험이 필요할 수 있습니다.' : 'Apply and manual play remain available. Resources use actual Q rows; learning may require many experiences.'}</Notice>}
@@ -499,11 +512,8 @@ export function EnvEditor({
           <label>{locale === 'ko' ? '늪 기본 비용' : 'Swamp default cost'}<input type="number" step="0.1" max={0} value={draft.terrainCost ?? -1} data-testid="env-editor-terrain-cost-input" onChange={e => recordInput(previous => ({ ...previous, terrainCost: e.target.value === '' ? Number.NaN : Number(e.target.value) }), 'terrainCost')} /></label>
           {(['stepReward', 'wallPenalty', 'goalReward', 'bombPenalty'] as const).map(key => <label key={key}>{({ stepReward: t.envEditor.stepReward, wallPenalty: t.envEditor.wallPenalty, goalReward: t.envEditor.goalReward, bombPenalty: t.envEditor.bombPenalty })[key]}<input type="number" step="0.1" value={draft[key]} data-testid={`env-editor-${key.replace(/[A-Z]/g, letter => `-${letter.toLowerCase()}`)}-input`} onChange={e => recordInput(previous => ({ ...previous, [key]: Number(e.target.value) }), key)} /></label>)}
           <p>{locale === 'ko' ? `목표 보상과 폭탄 페널티는 개별 값을 지정하지 않은 요소의 기본값입니다. (개별 지정: 목표 ${draft.goals.filter(goal => goal.reward !== undefined).length}개 · 폭탄 ${draft.bombs.filter(bomb => bomb.penalty !== undefined).length}개)` : `Goal reward and bomb penalty are defaults for elements without their own value. (Custom: ${draft.goals.filter(goal => goal.reward !== undefined).length} goals · ${draft.bombs.filter(bomb => bomb.penalty !== undefined).length} bombs)`}</p>
-          <button onClick={handleImportClick} data-testid="env-editor-import">{t.envEditor.importButton}</button><button onClick={handleExport} disabled={!isValid} data-testid="env-editor-export">{t.envEditor.exportButton}</button>
-          <button onClick={handleResetEnvironment} data-testid="env-editor-reset">{t.envEditor.resetEnvironment}</button>
-          <input hidden ref={importFileInputRef} type="file" accept=".json,application/json" onChange={handleImportFileChange} data-testid="env-editor-import-input" />
-          <p>{locale === 'ko' ? '가져오기는 초안만 변경합니다. 적용은 현재 학습을 초기화합니다.' : 'Import changes only the draft. Applying resets the current experiment.'}</p>
-          </section>
+          {!compact && fileBlock}
+          </section>}
         </div>
       </aside>
     </div>
@@ -527,7 +537,7 @@ export function EnvEditor({
       <div className="mobile-actions" role="group" aria-label={locale === 'ko' ? '편집 작업' : 'Editor actions'}>
         <button type="button" className="icon-action" aria-label={locale === 'ko' ? '실행 취소' : 'Undo'} disabled={!canUndo} onClick={undo} data-testid="editor-undo"><EditorIcon tool="undo" /></button>
         <button type="button" className="icon-action" aria-label={locale === 'ko' ? '다시 실행' : 'Redo'} disabled={!canRedo} onClick={redo} data-testid="editor-redo"><EditorIcon tool="redo" /></button>
-        <button type="button" aria-label={locale === 'ko' ? '속성 / 파일' : 'Properties / files'} aria-expanded={propertiesOpen && !panelBlocked} aria-controls="editor-properties" onClick={() => { onOpenProperties?.(); setPropertiesOpen(!propertiesOpen || panelBlocked) }} data-testid="properties-toggle">{locale === 'ko' ? '속성' : 'Properties'}</button>
+        <button type="button" aria-label={locale === 'ko' ? '설정 · 파일' : 'Settings · Files'} aria-expanded={propertiesOpen && !panelBlocked} aria-controls="editor-properties" onClick={() => { onOpenProperties?.(); setPropertiesOpen(!propertiesOpen || panelBlocked) }} data-testid="properties-toggle">{locale === 'ko' ? '설정 · 파일' : 'Settings · Files'}</button>
         <button type="button" aria-label={locale === 'ko' ? '직접 플레이' : 'Play draft'} disabled={!isValid} onClick={() => setPlaying(true)} data-testid="manual-play-start">{locale === 'ko' ? '플레이' : 'Play'}</button>
         <button type="button" className="primary-action" onClick={handleApply} disabled={!isValid} data-testid="env-editor-apply">{t.envEditor.apply}</button>
       </div>
